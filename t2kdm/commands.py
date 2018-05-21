@@ -122,7 +122,7 @@ class Command(object):
 
 ls = Command('ls', t2kdm.backend.ls, "List contents of a remote logical path.")
 ls.add_argument('remotepath', type=str,
-    help="the logical path, e.g. '/nd280'")
+    help="the remote logical path, e.g. '/nd280'")
 ls.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
 all_commands.append(ls)

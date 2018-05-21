@@ -26,14 +26,14 @@ Type 'help' or '?' to list commands.
         self.localdir = path.abspath('./')
 
     def do_pwd(self, arg):
-        """pwd
+        """usage: pwd
 
         Print the current remote directory.
         """
         print_(self.remotedir)
 
     def do_lpwd(self, arg):
-        """lpwd
+        """usage: lpwd
 
         Print the current local directory.
         """
@@ -54,14 +54,16 @@ Type 'help' or '?' to list commands.
             return path.normpath(path.join(self.localdir, arg))
 
     def do_cd(self, arg):
-        """cd remotepath
+        """usage: cd remotepath
 
         Change the current remote diretory.
+
+        Note: Currently there are no checks done whether the remote directory actually exists.
         """
         self.remotedir = self.get_abs_remote_path(arg)
 
     def do_lcd(self, arg):
-        """cd remotepath
+        """usage: cd localpath
 
         Change the current local diretory.
         """
