@@ -18,20 +18,20 @@ class GridBackend(object):
 
         self.basedir = kwargs.pop('basedir', '')
         if len(kwargs) > 0:
-            raise TypeError("Invalid keyword arguments: %s"%(str(kwargs.keys)))
+            raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
-    def _ls(self, path, **kwargs):
+    def _ls(self, remotepath, **kwargs):
         raise NotImplementedError()
 
-    def ls(self, path, **kwargs):
-        """List files in a directory.
+    def ls(self, remotepath, **kwargs):
+        """List contents of a remote logical path.
 
         Supported keyword arguments:
 
         long: Bool. Default: False
             Print a longer, more detailed listing.
         """
-        _path = self.basedir+path
+        _path = self.basedir+remotepath
         return self._ls(_path, **kwargs)
 
 class LCGBackend(GridBackend):
@@ -45,11 +45,11 @@ class LCGBackend(GridBackend):
 
         self._ls_cmd = sh.Command('lfc-ls')
 
-    def _ls(self, path, **kwargs):
+    def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
         l = kwargs.pop('long', False)
         if l:
-            args = ['-l', path]
+            args = ['-l', remotepath]
         else:
-            args = [path]
+            args = [remotepath]
         return self._ls_cmd(*args, **kwargs)

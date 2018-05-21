@@ -43,7 +43,10 @@ setup(name='t2kdm',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
     ],
-    scripts=[
-        'bin/t2kdm-ls',
-    ],
+    entry_points = {
+        'console_scripts': [
+            't2kdm-ls2=t2kdm.commands:ls.run_from_console',
+            't2kdm-cli=t2kdm.cli:run_cli',
+        ],
+    },
     zip_safe=True)
