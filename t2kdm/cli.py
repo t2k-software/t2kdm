@@ -113,23 +113,12 @@ Type 'help' or '?' to list commands.
 for command in all_commands:
     do_name = 'do_'+command.name
     def do_cmd(cli, arg): # Since this is a method, the first argument will be the CLI instance
-        try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
-            for line in command.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir,
-                    _iter=True, _err_to_out=True, _ok_code=list(range(256))):
-                print_(line, end='')
-        except SystemExit:
-            pass
-        except ValueError as e: # Catch errors from bad bash syntax
-            print_(e)
+        return command.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir)
     setattr(T2KDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
 
     help_name = 'help_'+command.name
     def help_cmd(cli): # Since this is a method, the first argument will be the CLI instance
-        try: # We do *not* want to exit after printing a help message, so we have to catch that.
-            for line in command.run_from_arglist(['-h'], _iter=True):
-                print_(line, end='')
-        except SystemExit:
-            pass
+        return command.run_from_cli('-h')
     setattr(T2KDmCli, help_name, help_cmd) # Set the `help_X` attribute of the class
 
 def run_cli():

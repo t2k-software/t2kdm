@@ -1,5 +1,7 @@
 """Module handling the CLI and stand-alone script commands."""
 
+from six import print_
+import sh
 import shlex
 import argparse
 import t2kdm
@@ -65,17 +67,56 @@ class Command(object):
         """Entry point for console scripts.
 
         Parses command line arguments from sys.argv.
+        Prints output on screen.
+        Returns error code (0 if successful).
         """
-        args = self.parser.parse_args()
-        return self.run(args, **kwargs)
+
+        kwargs1 = {
+            '_iter': True,
+            '_bg_exc': False,
+        }
+        kwargs1.update(kwargs)
+
+        try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
+            for line in self.run(self.parser.parse_args(), **kwargs1):
+                print_(line, end='')
+        except sh.ErrorReturnCode as e:
+            print_(e.stderr, file=sys.stderr, end='')
+            return e.exit_code
+
+        return 0
 
     def run_from_cli(self, argstring, **kwargs):
         """Run command from command line interface.
 
         Parses single string into arguments.
+        Prints output on screen.
+        Returns `False`.
         """
-        args = shlex.split(argstring)
-        return self.run_from_arglist(args, **kwargs)
+
+        try:
+            args = shlex.split(argstring)
+        except ValueError as e: # Catch errors from bad bash syntax
+            print_(e)
+            return False
+
+        kwargs1 = {
+            '_iter': True,
+            '_err_to_out': True,
+            '_bg_exc': False,
+        }
+        kwargs1.update(kwargs)
+
+        try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
+            for line in self.run_from_arglist(args, **kwargs1):
+                print_(line, end='')
+        except sh.ErrorReturnCode as e:
+            print_(e.stderr, end='')
+            return e.exit_code
+        except SystemExit:
+            pass
+
+        return False
 
     def run_from_arglist(self, arglist, **kwargs):
         """Run command with list of arguments."""
