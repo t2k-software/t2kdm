@@ -115,6 +115,30 @@ Type 'help' or '?' to list commands.
         """Exit the CLI."""
         return True
 
+    def completedefault(self, text, line, begidx, endidx):
+        """Complete with content of current remote or local dir."""
+
+        candidates = []
+
+        # Local commands start with 'l'.
+        # Special case 'ls'
+        if line[0] == 'l' and line[1] != 's':
+            # Local path
+            # Get contents of dir
+            for l in sh.ls(self.localdir, '-1', _iter=True):
+                l = l.strip()
+                if l.startswith(text):
+                    candidates.append(l)
+        else:
+            # Remote path
+            # Get contents of dir
+            for l in t2kdm.ls(self.remotedir, _iter=True):
+                l = l.strip()
+                if l.startswith(text):
+                    candidates.append(l)
+
+        return candidates
+
 # Load all commands into the CLI
 # Each `do_X` method in the class is interpreted as a possible command for the CLI.
 # Each `help_X` method in the class is called when `help X` is executed.
