@@ -100,8 +100,16 @@ Type 'help' or '?' to list commands.
 
         List contents of local directory.
         """
-        argv = shlex.split(arg)
-        print_(sh.ls('-1', *argv), end='')
+        try:
+            argv = shlex.split(arg)
+        except ValueError as e: # Catch errors from bad bash syntax
+            print_(e)
+            return False
+
+        try:
+            print_(sh.ls('-1', *argv, _bg_exc=False), end='')
+        except sh.ErrorReturnCode as e:
+            print_(e.stderr, end='')
 
     def do_exit(self, arg):
         """Exit the CLI."""
