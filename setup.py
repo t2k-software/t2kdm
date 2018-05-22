@@ -45,7 +45,7 @@ setup(name='t2kdm',
     ],
     entry_points = {
         'console_scripts': [
-            't2kdm-ls2=t2kdm.commands:ls.run_from_console',
+            't2kdm-ls=t2kdm.commands:ls.run_from_console',
             't2kdm-cli=t2kdm.cli:run_cli',
         ],
     },
