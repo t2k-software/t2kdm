@@ -3,7 +3,9 @@
 from six import print_
 import cmd
 import sh
+import shlex
 import argparse
+import os
 from os import path
 import posixpath
 import t2kdm
@@ -25,7 +27,7 @@ Type 'help' or '?' to list commands.
 
         # Current directories for relative paths
         self.remotedir = posixpath.abspath('/')
-        self.localdir = path.abspath('./')
+        self.localdir = path.abspath(os.getcwd())
 
     def do_pwd(self, arg):
         """usage: pwd
@@ -77,9 +79,21 @@ Type 'help' or '?' to list commands.
         """
         pwd = self.get_abs_local_path(arg)
         if path.isdir(pwd):
-            self.localdir = pwd
+            try:
+                os.chdir(pwd)
+            except OSError as e: # Catch permission errors
+                print_(e)
+            self.localdir = path.abspath(os.getcwd())
         else:
             print_("ERROR, no such local directory: %s"%(pwd,))
+
+    def do_lls(self, arg):
+        """usage: lls [-l] localpath
+
+        List contents of local directory.
+        """
+        argv = shlex.split(arg)
+        print_(sh.ls('-1', *argv), end='')
 
     def do_exit(self, arg):
         """Exit the CLI."""
