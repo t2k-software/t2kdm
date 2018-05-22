@@ -3,6 +3,14 @@
 from six import print_
 import cmd
 import sh
+"""T2K Data Manager Command Line Interface (CLI)
+
+The CLI makes it possible to comfortably browse the grid files. All commands
+that are exposed as stand-alone scripts are also available in the CLI. This is
+ensured by registering the Commands in the `all_commands` list in the
+`commands` module.
+"""
+
 import shlex
 import argparse
 import os
