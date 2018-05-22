@@ -161,8 +161,8 @@ class Command(object):
         """Call the underlying function directly."""
         return self.function(*args, **kwargs)
 
-ls = Command('ls', t2kdm.backend.ls, "List contents of a remote logical path.")
-ls.add_argument('remotepath', type=str,
+ls = Command('ls', t2kdm.ls, "List contents of a remote logical path.")
+ls.add_argument('remotepath', type=str, nargs='?', default='',
     help="the remote logical path, e.g. '/nd280'")
 ls.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
