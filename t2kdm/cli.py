@@ -120,6 +120,22 @@ Type 'help' or '?' to list commands.
 
         candidates = []
 
+        # The built-in argument parsing is not very good.
+        # Let's try our own.
+        try:
+            args = shlex.split(line)
+        except ValueError: # Catch badly formatted strings
+            args = line.split()
+
+        if len(args) == 1:
+            # Just the main command
+            # Text should be empty
+            search_text = ''
+        else:
+            search_text = args[-1]
+
+        text_offset = len(search_text) - len(text)
+
         # Local commands start with 'l'.
         # Special case 'ls'
         if line[0] == 'l' and line[1] != 's':
@@ -127,15 +143,15 @@ Type 'help' or '?' to list commands.
             # Get contents of dir
             for l in sh.ls(self.localdir, '-1', _iter=True):
                 l = l.strip()
-                if l.startswith(text):
-                    candidates.append(l)
+                if l.startswith(search_text):
+                    candidates.append(l[text_offset:])
         else:
             # Remote path
             # Get contents of dir
             for l in t2kdm.ls(self.remotedir, _iter=True):
                 l = l.strip()
-                if l.startswith(text):
-                    candidates.append(l)
+                if l.startswith(search_text):
+                    candidates.append(l[text_offset:])
 
         return candidates
 
