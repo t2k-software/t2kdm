@@ -6,6 +6,7 @@ import sh
 import argparse
 from os import path
 import posixpath
+import t2kdm
 from t2kdm.commands import all_commands
 
 class T2KDmCli(cmd.Cmd):
@@ -61,7 +62,13 @@ Type 'help' or '?' to list commands.
 
         Note: Currently there are no checks done whether the remote directory actually exists.
         """
-        self.remotedir = self.get_abs_remote_path(arg)
+        pwd = self.get_abs_remote_path(arg)
+        try: # Let us see whether the path is a directory
+            t2kdm.ls(pwd)
+        except sh.ErrorReturnCode_1 as e:
+            print_("ERROR, no such remote directory: %s"%(pwd,))
+        else:
+            self.remotedir = pwd
 
     def do_lcd(self, arg):
         """usage: cd localpath
