@@ -43,14 +43,14 @@ Type 'help' or '?' to list commands.
     def get_abs_remote_path(self, arg):
         """Return absolute remote path."""
         if posixpath.isabs(arg):
-            return path
+            return arg
         else:
             return posixpath.normpath(posixpath.join(self.remotedir, arg))
 
     def get_abs_local_path(self, arg):
         """Return absolute local path."""
         if path.isabs(arg):
-            return path
+            return arg
         else:
             return path.normpath(path.join(self.localdir, arg))
 
