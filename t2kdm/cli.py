@@ -22,6 +22,7 @@ Type 'help' or '?' to list commands.
     def __init__(self, *args, **kwargs):
         cmd.Cmd.__init__(self, *args, **kwargs)
 
+        # Current directories for relative paths
         self.remotedir = posixpath.abspath('/')
         self.localdir = path.abspath('./')
 
@@ -89,7 +90,10 @@ for command in all_commands:
                 print_(line, end='')
         except SystemExit:
             pass
+        except ValueError as e: # Catch errors from bad bash syntax
+            print_(e)
     setattr(T2KDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
+
     help_name = 'help_'+command.name
     def help_cmd(cli): # Since this is a method, the first argument will be the CLI instance
         try: # We do *not* want to exit after printing a help message, so we have to catch that.
