@@ -35,6 +35,10 @@ def run_read_only_tests(backend = t2kdm.backend):
     assert('nd280' in backend.ls('/'))
     assert('nd280' in backend.ls('/', long=True))
 
+    print_("Testing replicas...")
+    assert('srm-t2k.gridpp.rl.ac.uk' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'))
+    #assert('RAL-LCG22-tape' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz', '-l'))
+
     print_("Testing Commands...")
     with open('/dev/null', 'w') as out:
         cmd.ls.run_from_cli('-l /', _out=out) # This should work, but return `False`

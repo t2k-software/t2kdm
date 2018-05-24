@@ -8,3 +8,4 @@ import backends
 backend = backends.LCGBackend(basedir='/t2k.org')
 
 ls = backend.ls
+replicas = backend.replicas

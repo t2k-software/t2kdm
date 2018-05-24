@@ -39,6 +39,13 @@ class GridBackend(object):
         _path = self.full_path(remotepath)
         return self._ls(_path, **kwargs)
 
+    def _replicas(self, remotepath, **kwargs):
+        raise NotImplementedError()
+
+    def replicas(self, remotepath, **kwargs):
+        _path = self.full_path(remotepath)
+        return self._replicas(_path, **kwargs)
+
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
@@ -49,6 +56,7 @@ class LCGBackend(GridBackend):
         GridBackend.__init__(self, **kwargs)
 
         self._ls_cmd = sh.Command('lfc-ls')
+        self._replicas_cmd = sh.Command('lcg-lr')
 
     def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
@@ -58,3 +66,6 @@ class LCGBackend(GridBackend):
         else:
             args = [remotepath]
         return self._ls_cmd(*args, **kwargs)
+
+    def _replicas(self, remotepath, **kwargs):
+        return(self._replicas_cmd('lfn:'+remotepath, **kwargs))
