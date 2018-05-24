@@ -77,9 +77,10 @@ class Command(object):
         }
         kwargs1.update(kwargs)
 
+        out = kwargs1.pop('_out', sys.stdout)
         try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
             for line in self.run(self.parser.parse_args(), **kwargs1):
-                print_(line, end='')
+                print_(line, file=out, end='')
         except sh.ErrorReturnCode as e:
             print_(e.stderr, file=sys.stderr, end='')
             return e.exit_code
@@ -107,12 +108,13 @@ class Command(object):
         }
         kwargs1.update(kwargs)
 
+        out = kwargs1.pop('_out', sys.stdout)
         try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
             for line in self.run_from_arglist(args, **kwargs1):
-                print_(line, end='')
+                print_(line, file=out, end='')
         except sh.ErrorReturnCode as e:
-            print_(e.stderr, end='')
-            return e.exit_code
+            print_(e.stderr, file=out, end='')
+            return False
         except SystemExit:
             pass
 
