@@ -1,4 +1,5 @@
 import sh
+import posixpath
 
 class GridBackend(object):
     """Class that handles the actual work on the grid.
@@ -20,6 +21,10 @@ class GridBackend(object):
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
+    def full_path(self, path):
+        """Prepend the base dir to a path."""
+        return posixpath.normpath(self.basedir + path)
+
     def _ls(self, remotepath, **kwargs):
         raise NotImplementedError()
 
@@ -31,7 +36,7 @@ class GridBackend(object):
         long: Bool. Default: False
             Print a longer, more detailed listing.
         """
-        _path = self.basedir+remotepath
+        _path = self.full_path(remotepath)
         return self._ls(_path, **kwargs)
 
 class LCGBackend(GridBackend):

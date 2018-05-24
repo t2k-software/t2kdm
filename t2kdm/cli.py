@@ -160,13 +160,17 @@ Type 'help' or '?' to list commands.
 # Each `help_X` method in the class is called when `help X` is executed.
 for command in all_commands:
     do_name = 'do_'+command.name
-    def do_cmd(cli, arg): # Since this is a method, the first argument will be the CLI instance
-        return command.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir)
+    # Since this is a method, the first argument will be the CLI instance
+    # Also need to pass the command as default value of argument,
+    # so it does not change when the variable `command` changes.
+    do_cmd = lambda cli, arg, com=command: com.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir)
     setattr(T2KDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
 
     help_name = 'help_'+command.name
-    def help_cmd(cli): # Since this is a method, the first argument will be the CLI instance
-        return command.run_from_cli('-h')
+    # Since this is a method, the first argument will be the CLI instance
+    # Also need to pass the command as default value of argument,
+    # so it does not change when the variable `command` changes.
+    help_cmd = lambda cli, com=command: com.run_from_cli('-h')
     setattr(T2KDmCli, help_name, help_cmd) # Set the `help_X` attribute of the class
 
 def run_cli():
