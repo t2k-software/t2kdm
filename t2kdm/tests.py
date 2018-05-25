@@ -4,6 +4,7 @@ from six import print_
 import t2kdm
 import t2kdm.commands as cmd
 import t2kdm.cli
+import t2kdm.storage
 from contextlib import contextmanager
 import sys, os
 
@@ -31,6 +32,9 @@ def fake_argv(fake_argv):
         sys.sargv = true_argv
 
 def run_read_only_tests(backend = t2kdm.backend):
+    print_("Testing StorageElement...")
+    assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
+
     print_("Testing ls...")
     assert('nd280' in backend.ls('/'))
     assert('nd280' in backend.ls('/', long=True))
