@@ -173,4 +173,6 @@ all_commands.append(ls)
 replicas = Command('replicas', t2kdm.replicas, "List replicas of a remote logical path.")
 replicas.add_argument('remotepath', type=str, nargs='?', default='',
     help="the remote logical path, e.g. '/nd280/file.txt'")
+replicas.add_argument('-l', '--long', action='store_true',
+    help="longer, more detailed output")
 all_commands.append(replicas)
