@@ -40,6 +40,23 @@ class StorageElement(object):
         distance = -common.count('/')
         return distance
 
+class TriumfStorageElement(StorageElement):
+    """Special case of StorageElement for TRIUMF.
+
+    Storage file paths do not translate one-to-one to logical file paths,
+    so we have to catch these differences.
+    """
+
+    def get_storage_path(self, remotepath):
+        """Generate the standard storage path for this SE from a logical file name."""
+
+        # ND280 data is in the sub folder `nd280data`
+        if remotepath.startswith('/nd280/'):
+            return StorageElement.get_storage_path(self, '/nd280data/' + remotepath[7:])
+
+        #Everything else seems to be one-to-one
+        return StorageElement.get_storage_path(self, remotepath)
+
 # Add actual SEs
 SEs = [
     StorageElement('RAL-LCG22-tape',
@@ -52,11 +69,11 @@ SEs = [
         type = 'disk',
         location = '/europe/uk/ral',
         basepath = 'rm://heplnx204.pp.rl.ac.uk/pnfs/pp.rl.ac.uk/data/t2k/t2k.org'),
-    StorageElement('CA-TRIUMF-T2K1-disk',
+    TriumfStorageElement('CA-TRIUMF-T2K1-disk',
         host = 't2ksrm.nd280.org',
         type = 'disk',
         location = '/americas/ca/ubc',
-        basepath = 'srm://'),
+        basepath = 'srm://t2ksrm.nd280.org'),
     StorageElement('JP-KEK-CRC-02-disk',
         host = 'kek2-se01.cc.kek.jp',
         type = 'disk',
