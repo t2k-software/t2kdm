@@ -23,7 +23,9 @@ class StorageElement(object):
 
     def get_storage_path(self, remotepath):
         """Generate the standard storage path for this SE from a logical file name."""
-        return posixpath.join(self.basepath, remotepath)
+        if remotepath[0] != '/':
+            raise ValueError("Remote path needs to be absolute, not relative!")
+        return self.basepath + remotepath
 
     def get_distance(self, other):
         """Return the distance to another StorageElement.

@@ -34,6 +34,7 @@ def fake_argv(fake_argv):
 def run_read_only_tests(backend = t2kdm.backend):
     print_("Testing StorageElement...")
     assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
+    assert('srm-t2k.gridpp.rl.ac.uk' in t2kdm.storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
 
     print_("Testing ls...")
     assert('nd280' in backend.ls('/'))
