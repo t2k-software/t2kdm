@@ -2,9 +2,6 @@
 
 import posixpath
 
-SE_by_name = {}
-SE_by_host = {}
-
 class StorageElement(object):
     """Representation of a grid storage element"""
 
@@ -80,6 +77,13 @@ SEs = [
 #UNIBE-LHEP-disk
 #pic-disk
     ]
+
+SE_by_name = {}
+SE_by_host = {}
+
+for SE in SEs:
+    SE_by_name[SE.name] = SE
+    SE_by_host[SE.host] = SE
 
 def get_SE_by_path(path):
     """Return the StorageElement corresponsing to the given srm-path."""
