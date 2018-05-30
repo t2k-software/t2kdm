@@ -1,6 +1,7 @@
 """Module to organise storage elements."""
 
 import posixpath
+import t2kdm
 
 class StorageElement(object):
     """Representation of a grid storage element"""
@@ -25,7 +26,7 @@ class StorageElement(object):
         """Generate the standard storage path for this SE from a logical file name."""
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return self.basepath + remotepath
+        return (self.basepath + remotepath).strip()
 
     def get_distance(self, other):
         """Return the distance to another StorageElement.
@@ -39,6 +40,50 @@ class StorageElement(object):
         # So we can take the negative number as measure of distance.
         distance = -common.count('/')
         return distance
+
+    def get_replica(self, remotepath):
+        """Return the replica of the file on this SM."""
+        for rep in t2kdm.replicas(remotepath, _iter=True):
+            if self.host in rep:
+                return rep.strip()
+        # Replica not found
+        return None
+
+    def has_replica(self, remotepath):
+        """Check whether the remote path is replicated on this SE."""
+        return self.host in t2kdm.replicas(remotepath)
+
+    def get_closest_SE(self, remotepath, tape=False):
+        """Get the storage element with the closest replica.
+
+        If `tape` is False (default), prefer disk SEs over tape SEs.
+        """
+        closest_SE = None
+        closest_distance = None
+        for rep in t2kdm.replicas(remotepath, _iter=True):
+            SE = get_SE_by_path(rep)
+            if closest_SE is None:
+                # Always accept the first SE
+                closest_SE = SE
+                closest_distance = 0 # Distances are negative, so this is the farthest it can get
+            elif SE.type != 'tape':
+                # We always accept non-tape SEs
+                if self.get_distance(SE) <= closest_distance:
+                    # Also when they are equally close as the current choice
+                    closest_SE = SE
+                    closest_distance = self.get_distance(SE)
+            elif tape or closest_SE.type == 'tape':
+                # We accept the candidate tape SEs
+                # Either bu choice or because the current best candidate is already a tape SE
+                if self.get_distance(SE) < closest_distance:
+                    # But only if it is *better* than the current choice
+                    closest_SE = SE
+                    closest_distance = self.get_distance(SE)
+
+        return closest_SE
+
+    def __str__(self):
+        return "%s (%s)"%(self.name, self.host)
 
 class TriumfStorageElement(StorageElement):
     """Special case of StorageElement for TRIUMF.
@@ -68,7 +113,7 @@ SEs = [
         host = 'heplnx204.pp.rl.ac.uk',
         type = 'disk',
         location = '/europe/uk/ral',
-        basepath = 'rm://heplnx204.pp.rl.ac.uk/pnfs/pp.rl.ac.uk/data/t2k/t2k.org'),
+        basepath = 'srm://heplnx204.pp.rl.ac.uk/pnfs/pp.rl.ac.uk/data/t2k/t2k.org'),
     TriumfStorageElement('CA-TRIUMF-T2K1-disk',
         host = 't2ksrm.nd280.org',
         type = 'disk',
@@ -110,3 +155,11 @@ def get_SE_by_path(path):
         if SE.host in path:
             return SE
     return None
+
+def get_SE(SE):
+    """Get the StorageElement by all means necessary."""
+    if SE in SE_by_name:
+        return SE_by_name[SE]
+    if SE in SE_by_host:
+        return SE_by_host[SE]
+    return get_SE_by_path(SE)

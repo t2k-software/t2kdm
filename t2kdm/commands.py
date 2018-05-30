@@ -176,3 +176,14 @@ replicas.add_argument('remotepath', type=str, nargs='?', default='',
 replicas.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
 all_commands.append(replicas)
+
+replicate = Command('replicate', t2kdm.replicate, "Replicate file to a storage element.")
+replicate.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/file.txt'")
+replicate.add_argument('destination', type=str,
+    help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
+replicate.add_argument('-s', '--source', type=str, default=None,
+    help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
+replicate.add_argument('-t', '--tape', action='store_true',
+    help="accept tape storage elements when choosing the closest one")
+all_commands.append(replicate)

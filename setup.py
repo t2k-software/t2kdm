@@ -47,6 +47,7 @@ setup(name='t2kdm',
         'console_scripts': [
             't2kdm-ls=t2kdm.commands:ls.run_from_console',
             't2kdm-replicas=t2kdm.commands:replicas.run_from_console',
+            't2kdm-replicate=t2kdm.commands:replicate.run_from_console',
             't2kdm-cli=t2kdm.cli:run_cli',
             't2kdm-tests=t2kdm.tests:run_tests',
         ],

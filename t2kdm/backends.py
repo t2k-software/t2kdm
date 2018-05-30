@@ -13,12 +13,12 @@ class GridBackend(object):
 
         Accepts the follwoing keyword arguments:
 
-        basedir: String. Default: ''
+        basedir: String. Default: '/t2k.org'
             Sets the base directory of the backend.
             All paths are specified relative to that position.
         """
 
-        self.basedir = kwargs.pop('basedir', '')
+        self.basedir = kwargs.pop('basedir', '/t2k.org')
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
@@ -54,6 +54,35 @@ class GridBackend(object):
         else:
             return "%-24s %-7s %-7s %s"%('UNKNOWN', 'UNKNOWN', self._replica_state(rep), rep)
 
+    @staticmethod
+    def _iterable_output_from_text(text, **kwargs):
+        """Turn a block of text into an iterable if necessary."""
+        it = kwargs.pop('_iter', False)
+        if it == False:
+            # Nothing to do here
+            return text
+        else:
+            # Split by lines and return iterable
+            lines = text.split('\n')
+            if text[-1] == '\n':
+                # Remove last empty string from split
+                lines = lines[:-1]
+            return (line+'\n' for line in lines)
+
+    @staticmethod
+    def _iterable_output_from_iterable(iterable, **kwargs):
+        """Turn an iterable into a block of text if necessary."""
+        it = kwargs.pop('_iter', False)
+        if it == True:
+            # Nothing to do here
+            return iterable
+        else:
+            # Concatenate all lines
+            text = ""
+            for line in iterable:
+                text += line
+            return text
+
     def replicas(self, remotepath, **kwargs):
         """List replicas of a remote logical path.
 
@@ -68,17 +97,41 @@ class GridBackend(object):
             # Parse each line and add additional information
             it = kwargs.pop('_iter', False)
             kwargs['_iter'] = True
-            # Add stuff to each line
-            if it:
-                # Return a generator to loop over the output lines
-                return (self._add_replica_info(line) for line in self._replicas(_path, **kwargs))
-            else:
-                output = ""
-                for line in self._replicas(_path, **kwargs):
-                    output += self._add_replica_info(line)
-                return output
+            return self._iterable_output_from_iterable(
+                    (self._add_replica_info(line) for line in self._replicas(_path, **kwargs)),
+                    _iter=it)
         else:
             return self._replicas(_path, **kwargs)
+
+    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
+        raise NotImplementedError()
+
+    def replicate(self, remotepath, destination, source=None, tape=False, **kwargs):
+        """Replicate the file to the specified storage element.
+
+        If no source storage elment is provided, the closest replica is chosen.
+        If `tape` is True, tape SEs are considered when choosing the closest one.
+        """
+
+        dst = storage.get_SE(destination)
+        if source is None:
+            src = dst.get_closest_SE(remotepath, tape=tape)
+        else:
+            src = storage.get_SE(source)
+
+        if dst.has_replica(remotepath):
+            # Replica already at destination, nothing to do here
+            return self._iterable_output_from_text(
+                    "Replica already present at destination storage element %s.\n"%(dst.name,), **kwargs)
+
+        if not src.has_replica(remotepath):
+            # Replica not present at source, throw error
+            raise sh.ErrorReturnCode_1(
+                    "No replica present at source storage element %s"%(src.name,))
+
+        source_path = src.get_replica(remotepath)
+        destination_path = dst.get_storage_path(remotepath)
+        return self._replicate(source_path, destination_path, **kwargs)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
@@ -86,12 +139,14 @@ class LCGBackend(GridBackend):
     def __init__(self, **kwargs):
         # LFC paths alway put a '/grid' as highest level directory.
         # Let us not expose that to the user.
-        kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '')
+        kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '/t2k.org')
         GridBackend.__init__(self, **kwargs)
 
+        self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('lfc-ls')
         self._replicas_cmd = sh.Command('lcg-lr')
         self._replica_state_cmd = sh.Command('lcg-ls')
+        self._replicate_cmd = sh.Command('lcg-rep')
 
     def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
@@ -113,3 +168,7 @@ class LCGBackend(GridBackend):
         except sh.ErrorReturnCode:
             listing = '- - - - - UNKNOWN'
         return listing.split()[5]
+
+    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        return(self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs))
