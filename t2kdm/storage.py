@@ -35,7 +35,7 @@ class StorageElement(object):
         the closer the two SE are together.
         """
 
-        common = posixpath.commonprefix([self.location.lower(), other.location.lower()])
+        common = posixpath.commonprefix([self.location.lower()+'/', other.location.lower()+'/'])
         # The more '/' are in the common prefix, the closer the SEs are.
         # So we can take the negative number as measure of distance.
         distance = -common.count('/')
