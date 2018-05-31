@@ -8,6 +8,7 @@ import t2kdm.cli
 import t2kdm.storage
 from contextlib import contextmanager
 import sys, os
+import tempfile
 
 @contextmanager
 def no_output(redirect=True):
@@ -48,6 +49,14 @@ def run_read_only_tests(backend = t2kdm.backend):
 
     print_("Testing TriumfStorageElement...")
     assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
+
+    print_("Testing get...")
+    tempdir = tempfile.mkdtemp()
+    t2kdm.get('/test/test.txt', tempdir)
+    filename = os.path.join(tempdir, 'test.txt')
+    assert(os.path.isfile(os.path.join(tempdir, 'test.txt')))
+    os.remove(filename)
+    os.rmdir(tempdir)
 
     print_("Testing Commands...")
     with open('/dev/null', 'w') as out:

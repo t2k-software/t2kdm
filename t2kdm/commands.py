@@ -126,16 +126,14 @@ class Command(object):
         return self.run(args, **kwargs)
 
     @staticmethod
-    def _condition_argument(name, value, kwargs):
+    def _condition_argument(name, value, localdir=None, remotedir=None):
         """Apply some processing to the aetguments when needed."""
 
         # Make local paths absolute
-        localdir = kwargs.pop('localdir', None)
         if localdir is not None and 'localpath' in name and not path.isabs(value):
             value = path.normpath(path.join(localdir, value))
 
         # Make remote paths absolute
-        remotedir = kwargs.pop('remotedir', None)
         if remotedir is not None and 'remotepath' in name and not posixpath.isabs(value):
             value = posixpath.normpath(posixpath.join(remotedir, value))
 
@@ -147,13 +145,17 @@ class Command(object):
         Takes an parsed arguments object from argparse as input.
         """
 
+        localdir = kwargs.pop('localdir', None)
+        remotedir = kwargs.pop('remotedir', None)
+
         pos_args = []
         for arg in self.positional_arguments:
-            value = self._condition_argument(arg, getattr(parsed_args, arg), kwargs)
+            value = self._condition_argument(arg, getattr(parsed_args, arg), localdir=localdir, remotedir=remotedir)
             pos_args.append(value)
+
         key_args = {}
         for arg in self.keyword_arguments:
-            value = self._condition_argument(arg, getattr(parsed_args, arg), kwargs)
+            value = self._condition_argument(arg, getattr(parsed_args, arg), localdir=localdir, remotedir=remotedir)
             key_args[arg] = value
         key_args.update(kwargs)
 
@@ -187,3 +189,14 @@ replicate.add_argument('-s', '--source', type=str, default=None,
 replicate.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
 all_commands.append(replicate)
+
+get = Command('get', t2kdm.get, "Download file from grid.")
+get.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/file.txt'")
+get.add_argument('localpath', type=str, nargs='?', default='./',
+    help="the local path")
+get.add_argument('-s', '--source', type=str, default=None,
+    help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
+get.add_argument('-t', '--tape', action='store_true',
+    help="accept tape storage elements when choosing the closest one")
+all_commands.append(get)

@@ -21,3 +21,4 @@ else:
     ls = backend.ls
     replicas = backend.replicas
     replicate = backend.replicate
+    get = backend.get

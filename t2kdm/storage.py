@@ -62,6 +62,8 @@ class StorageElement(object):
         closest_distance = None
         for rep in t2kdm.replicas(remotepath, _iter=True):
             SE = get_SE_by_path(rep)
+            if SE is None:
+                continue
             if closest_SE is None:
                 # Always accept the first SE
                 closest_SE = SE

@@ -1,5 +1,6 @@
 import sh
 import posixpath
+from os import path
 from t2kdm import storage
 
 class GridBackend(object):
@@ -22,9 +23,9 @@ class GridBackend(object):
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
-    def full_path(self, path):
+    def full_path(self, relpath):
         """Prepend the base dir to a path."""
-        return posixpath.normpath(self.basedir + path)
+        return posixpath.normpath(self.basedir + relpath)
 
     def _ls(self, remotepath, **kwargs):
         raise NotImplementedError()
@@ -116,8 +117,15 @@ class GridBackend(object):
         dst = storage.get_SE(destination)
         if source is None:
             src = dst.get_closest_SE(remotepath, tape=tape)
+            if src is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find valid storage element with replica of %s.\n"%(remotepath,))
         else:
             src = storage.get_SE(source)
+            if src is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find storage element %s.\n"%(source,))
+
 
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
@@ -126,12 +134,45 @@ class GridBackend(object):
 
         if not src.has_replica(remotepath):
             # Replica not present at source, throw error
-            raise sh.ErrorReturnCode_1(
-                    "No replica present at source storage element %s"%(src.name,))
+            raise sh.ErrorReturnCode_1('', '',
+                    "No replica present at source storage element %s\n"%(src.name,))
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
         return self._replicate(source_path, destination_path, **kwargs)
+
+    def _get(self, storagepath, localpath, **kwargs):
+        raise NotImplementedError()
+
+    def get(self, remotepath, localpath, source=None, tape=False, **kwargs):
+        """Download a file from the grid.
+
+        If no source storage elment is provided, the closest replica is chosen.
+        If `tape` is True, tape SEs are considered when choosing the closest one.
+        """
+
+        if source is None:
+            # Get closest SE
+            SE = storage.get_closest_SE(remotepath, tape=tape)
+            if SE is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find valid storage element with replica of %s.\n"%(remotepath,))
+        else:
+            # Use the provided source
+            SE = storage.get_SE(source, tape=tape)
+            if SE is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find storage element %s.\n"%(source,))
+
+        # Get the source replica
+        replica = SE.get_replica(remotepath)
+
+        # Append the basename to the localpath if it is a directory
+        if path.isdir(localpath):
+            localpath = path.join(localpath, posixpath.basename(remotepath))
+
+        # Do the actual copying
+        return self._get(replica, localpath, **kwargs)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
@@ -147,6 +188,7 @@ class LCGBackend(GridBackend):
         self._replicas_cmd = sh.Command('lcg-lr')
         self._replica_state_cmd = sh.Command('lcg-ls')
         self._replicate_cmd = sh.Command('lcg-rep')
+        self._cp_cmd = sh.Command('lcg-cp')
 
     def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
@@ -161,10 +203,10 @@ class LCGBackend(GridBackend):
         return(self._replicas_cmd('lfn:'+remotepath, **kwargs))
 
     def _replica_state(self, storagepath, **kwargs):
-        path = storagepath.strip()
+        _path = storagepath.strip()
         it = kwargs.pop('_iter', None)
         try:
-            listing = self._replica_state_cmd('-l', path, **kwargs)
+            listing = self._replica_state_cmd('-l', _path, **kwargs)
         except sh.ErrorReturnCode:
             listing = '- - - - - UNKNOWN'
         return listing.split()[5]
@@ -186,6 +228,19 @@ class LCGBackend(GridBackend):
 
         # Get original command output
         iterable = self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
+        # Ignore lines that are identical to the previous
+        iterable = self._ignore_identical_lines(iterable)
+
+        # return requested kind of output
+        return self._iterable_output_from_iterable(iterable, _iter=it)
+
+    def _get(self, storagepath, localpath, **kwargs):
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
+        kwargs['_iter'] = True # Need iterable to ignore identical lines
+
+        # Get original command output
+        iterable = self._cp_cmd('-v', '--checksum', storagepath, localpath, **kwargs)
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
 
