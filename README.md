@@ -9,6 +9,13 @@ Install
 
         $ pip install [--user] -e .
 
+Configuration
+-------------
+
+Simply run:
+
+    $ t2kdm-config
+
 Test
 ----
 
