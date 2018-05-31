@@ -169,6 +169,25 @@ class LCGBackend(GridBackend):
             listing = '- - - - - UNKNOWN'
         return listing.split()[5]
 
+    @staticmethod
+    def _ignore_identical_lines(iterable, **kwargs):
+        last_line = None
+        for line in iterable:
+            if line == last_line:
+                continue
+            else:
+                last_line = line
+                yield line
+
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
-        return(self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs))
+        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
+        kwargs['_iter'] = True # Need iterable to ignore identical lines
+
+        # Get original command output
+        iterable = self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
+        # Ignore lines that are identical to the previous
+        iterable = self._ignore_identical_lines(iterable)
+
+        # return requested kind of output
+        return self._iterable_output_from_iterable(iterable, _iter=it)
