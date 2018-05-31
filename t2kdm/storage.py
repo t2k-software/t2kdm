@@ -163,3 +163,21 @@ def get_SE(SE):
     if SE in SE_by_host:
         return SE_by_host[SE]
     return get_SE_by_path(SE)
+
+def get_closest_SE(remotepath, location=None, tape=False):
+    """Get the closest storage element with a replica of the given file.
+
+    If `tape` is False (default), prefer disk SEs over tape SEs.
+    """
+
+    if location is None:
+        location = t2kdm.config.location
+
+    # Create a psude SE with the correct location
+    SE = StorageElement('local',
+        host = 'localhost',
+        type = 'disk',
+        location = location,
+        basepath = '/')
+
+    return SE.get_closest_SE(remotepath, tape=tape)

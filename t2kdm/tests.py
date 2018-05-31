@@ -33,13 +33,6 @@ def fake_argv(fake_argv):
         sys.sargv = true_argv
 
 def run_read_only_tests(backend = t2kdm.backend):
-    print_("Testing StorageElement...")
-    assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
-    assert('srm-t2k.gridpp.rl.ac.uk' in t2kdm.storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
-
-    print_("Testing TriumfStorageElement...")
-    assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
-
     print_("Testing ls...")
     assert('nd280' in backend.ls('/'))
     assert('nd280' in backend.ls('/', long=True))
@@ -47,6 +40,14 @@ def run_read_only_tests(backend = t2kdm.backend):
     print_("Testing replicas...")
     assert('srm-t2k.gridpp.rl.ac.uk' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'))
     assert('RAL-LCG22-tape' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz', long=True))
+
+    print_("Testing StorageElement...")
+    assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
+    assert('srm-t2k.gridpp.rl.ac.uk' in t2kdm.storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    t2kdm.storage.get_closest_SE('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz')
+
+    print_("Testing TriumfStorageElement...")
+    assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing Commands...")
     with open('/dev/null', 'w') as out:
