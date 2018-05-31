@@ -1,5 +1,6 @@
 """Tests for the T2K data Manager."""
 
+import argparse
 from six import print_
 import t2kdm
 import t2kdm.commands as cmd
@@ -88,7 +89,7 @@ def run_read_write_tests(backend = t2kdm.backend):
     pass
 
 def run_tests():
-    import argparse
+    """Test the functions of the t2kdm."""
 
     parser = argparse.ArgumentParser(description="Run tests for the T2K Data Manaer.")
     parser.add_argument('-w', '--write', action='store_true',
