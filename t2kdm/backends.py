@@ -159,7 +159,7 @@ class GridBackend(object):
                         "Could not find valid storage element with replica of %s.\n"%(remotepath,))
         else:
             # Use the provided source
-            SE = storage.get_SE(source, tape=tape)
+            SE = storage.get_SE(source)
             if SE is None:
                 raise sh.ErrorReturnCode_1('', '',
                         "Could not find storage element %s.\n"%(source,))

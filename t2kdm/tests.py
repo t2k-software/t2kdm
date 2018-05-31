@@ -39,22 +39,37 @@ def run_read_only_tests(backend = t2kdm.backend):
     assert('nd280' in backend.ls('/', long=True))
 
     print_("Testing replicas...")
+    # Test short output
     assert('srm-t2k.gridpp.rl.ac.uk' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'))
+    # Test long output
     assert('RAL-LCG22-tape' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz', long=True))
 
     print_("Testing StorageElement...")
+    # Test distance calculation
     assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
+    # Test getting SE by host
     assert('srm-t2k.gridpp.rl.ac.uk' in t2kdm.storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    # Test getting the closest SE
     t2kdm.storage.get_closest_SE('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz')
 
     print_("Testing TriumfStorageElement...")
+    # Test special case of TRIUMF SE
     assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing get...")
     tempdir = tempfile.mkdtemp()
+
+    # Test choosing source SE automatically
     t2kdm.get('/test/test.txt', tempdir)
     filename = os.path.join(tempdir, 'test.txt')
     assert(os.path.isfile(os.path.join(tempdir, 'test.txt')))
+    os.remove(filename)
+
+    # Test providing the source SE
+    t2kdm.get('/test/test.txt', tempdir, source='UKI-SOUTHGRID-RALPP-disk')
+    filename = os.path.join(tempdir, 'test.txt')
+    assert(os.path.isfile(os.path.join(tempdir, 'test.txt')))
+
     os.remove(filename)
     os.rmdir(tempdir)
 
