@@ -35,7 +35,7 @@ class StorageElement(object):
         the closer the two SE are together.
         """
 
-        common = posixpath.commonprefix([self.location, other.location])
+        common = posixpath.commonprefix([self.location.lower(), other.location.lower()])
         # The more '/' are in the common prefix, the closer the SEs are.
         # So we can take the negative number as measure of distance.
         distance = -common.count('/')
@@ -117,7 +117,7 @@ SEs = [
     TriumfStorageElement('CA-TRIUMF-T2K1-disk',
         host = 't2ksrm.nd280.org',
         type = 'disk',
-        location = '/americas/ca/ubc',
+        location = '/americas/ca/triumf',
         basepath = 'srm://t2ksrm.nd280.org'),
     StorageElement('JP-KEK-CRC-02-disk',
         host = 'kek2-se01.cc.kek.jp',

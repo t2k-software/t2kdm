@@ -191,3 +191,11 @@ class LCGBackend(GridBackend):
 
         # return requested kind of output
         return self._iterable_output_from_iterable(iterable, _iter=it)
+
+def get_backend(config):
+    """Return the backend according to the provided configuration."""
+
+    if config.backend == 'lcg':
+        return LCGBackend(basedir = config.basedir)
+    else:
+        raise config.ConfigError('backend', "Unknown backend!")
