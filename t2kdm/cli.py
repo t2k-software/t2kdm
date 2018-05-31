@@ -115,6 +115,13 @@ Type 'help' or '?' to list commands.
         """Exit the CLI."""
         return True
 
+    def do_quit(self, arg):
+        """Exit the CLI."""
+        return True
+
+    def emptyline(self):
+        print_()
+
     def completedefault(self, text, line, begidx, endidx):
         """Complete with content of current remote or local dir."""
 
