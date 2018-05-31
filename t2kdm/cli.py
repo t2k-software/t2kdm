@@ -3,14 +3,6 @@
 from six import print_
 import cmd
 import sh
-"""T2K Data Manager Command Line Interface (CLI)
-
-The CLI makes it possible to comfortably browse the grid files. All commands
-that are exposed as stand-alone scripts are also available in the CLI. This is
-ensured by registering the Commands in the `all_commands` list in the
-`commands` module.
-"""
-
 import shlex
 import argparse
 import os
@@ -20,6 +12,14 @@ import t2kdm
 from t2kdm.commands import all_commands
 
 class T2KDmCli(cmd.Cmd):
+    """T2K Data Manager Command Line Interface (CLI)
+
+    The CLI makes it possible to comfortably browse the grid files. All commands
+    that are exposed as stand-alone scripts are also available in the CLI. This is
+    ensured by registering the Commands in the `all_commands` list in the
+    `commands` module.
+    """
+
     intro = """Welcome to the T2K Data Manager CLI.
   ____  ___   _  _  ____  __  __       ___  __    ____
  (_  _)(__ \ ( )/ )(  _ \(  \/  )___  / __)(  )  (_  _)
@@ -68,7 +68,7 @@ Type 'help' or '?' to list commands.
     def do_cd(self, arg):
         """usage: cd remotepath
 
-        Change the current remote diretory.
+        Change the current remote directory.
 
         Note: Currently there are no checks done whether the remote directory actually exists.
         """
@@ -181,6 +181,11 @@ for command in all_commands:
     setattr(T2KDmCli, help_name, help_cmd) # Set the `help_X` attribute of the class
 
 def run_cli():
+    """ Start the T2K Data Manager - Command Line Interface."""
+
+    parser = argparse.ArgumentParser(description="Starts the T2K Data Manager - Command Line Interface.")
+    args = parser.parse_args()
+
     try:
         T2KDmCli().cmdloop()
     except KeyboardInterrupt: # Exit gracefully on CTRL-C
