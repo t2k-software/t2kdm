@@ -174,6 +174,11 @@ class GridBackend(object):
         # Do the actual copying
         return self._get(replica, localpath, **kwargs)
 
+    def list_storage_elements(self, **kwargs):
+        """Print all available storage elments on screen."""
+
+        return self._iterable_output_from_iterable( str(SE)+'\n' for SE in storage.SEs )
+
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 

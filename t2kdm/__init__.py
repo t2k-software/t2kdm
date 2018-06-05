@@ -22,3 +22,4 @@ else:
     replicas = backend.replicas
     replicate = backend.replicate
     get = backend.get
+    list_storage_elements = backend.list_storage_elements
