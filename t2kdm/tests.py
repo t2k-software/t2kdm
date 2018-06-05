@@ -116,7 +116,7 @@ def run_read_write_tests(backend = t2kdm.backend):
 def run_tests():
     """Test the functions of the t2kdm."""
 
-    parser = argparse.ArgumentParser(description="Run tests for the T2K Data Manaer.")
+    parser = argparse.ArgumentParser(description="Run tests for the T2K Data Manager.")
     parser.add_argument('-w', '--write', action='store_true',
         help="do write tests. Default: read only")
 
