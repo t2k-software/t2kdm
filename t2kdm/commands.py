@@ -127,7 +127,7 @@ class Command(object):
 
     @staticmethod
     def _condition_argument(name, value, localdir=None, remotedir=None):
-        """Apply some processing to the aetguments when needed."""
+        """Apply some processing to the arguments when needed."""
 
         # Make local paths absolute
         if localdir is not None and 'localpath' in name and not path.isabs(value):
