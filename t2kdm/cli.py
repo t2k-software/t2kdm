@@ -189,7 +189,7 @@ def run_cli():
     try:
         T2KDmCli().cmdloop()
     except KeyboardInterrupt: # Exit gracefully on CTRL-C
-        pass
+        print_('')
 
 if __name__ == '__main__':
     run_cli()
