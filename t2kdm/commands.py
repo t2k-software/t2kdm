@@ -201,5 +201,5 @@ get.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
 all_commands.append(get)
 
-list_storage_elements = Command('list-storage-elements', t2kdm.list_storage_elements, "Print all available storage elements on screen.")
-all_commands.append(list_storage_elements)
+SEs = Command('SEs', t2kdm.list_storage_elements, "Print all available storage elements on screen.")
+all_commands.append(SEs)
