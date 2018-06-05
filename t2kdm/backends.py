@@ -120,7 +120,7 @@ class GridBackend(object):
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         raise NotImplementedError()
 
-    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, regex=None, **kwargs):
+    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, **kwargs):
         """Replicate the file to the specified storage element.
 
         If no source storage elment is provided, the closest replica is chosen.
