@@ -7,8 +7,13 @@ import t2kdm.commands as cmd
 import t2kdm.cli
 import t2kdm.storage
 from contextlib import contextmanager
-import sys, os
+import sys, os, sh
 import tempfile
+import posixpath
+
+testdir = '/test/t2kdm'
+testfiles = ['test1.txt', 'test2.txt']
+testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-NORTHGRID-SHEF-HEP-disk']
 
 @contextmanager
 def no_output(redirect=True):
@@ -33,10 +38,18 @@ def fake_argv(fake_argv):
     finally:
         sys.sargv = true_argv
 
+@contextmanager
+def temp_dir():
+    tempdir = tempfile.mkdtemp()
+    try:
+        yield tempdir
+    finally:
+        sh.rm('-r', tempdir)
+
 def run_read_only_tests(backend = t2kdm.backend):
     print_("Testing ls...")
-    assert('nd280' in backend.ls('/'))
-    assert('nd280' in backend.ls('/', long=True))
+    assert(testfiles[0] in backend.ls(testdir))
+    assert(testfiles[0] in backend.ls(testdir, long=True))
 
     print_("Testing replicas...")
     # Test short output
@@ -57,21 +70,18 @@ def run_read_only_tests(backend = t2kdm.backend):
     assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing get...")
-    tempdir = tempfile.mkdtemp()
+    with temp_dir() as tempdir:
+        path = posixpath.join(testdir, testfiles[0])
+        filename = os.path.join(tempdir, testfiles[0])
 
-    # Test choosing source SE automatically
-    t2kdm.get('/test/test.txt', tempdir)
-    filename = os.path.join(tempdir, 'test.txt')
-    assert(os.path.isfile(os.path.join(tempdir, 'test.txt')))
-    os.remove(filename)
+        # Test choosing source SE automatically
+        t2kdm.get(path, tempdir)
+        assert(os.path.isfile(filename))
+        os.remove(filename)
 
-    # Test providing the source SE
-    t2kdm.get('/test/test.txt', tempdir, source='UKI-SOUTHGRID-RALPP-disk')
-    filename = os.path.join(tempdir, 'test.txt')
-    assert(os.path.isfile(os.path.join(tempdir, 'test.txt')))
-
-    os.remove(filename)
-    os.rmdir(tempdir)
+        # Test providing the source SE
+        t2kdm.get(path, tempdir, source=testSEs[0])
+        assert(os.path.isfile(filename))
 
     print_("Testing Commands...")
     with open('/dev/null', 'w') as out:
