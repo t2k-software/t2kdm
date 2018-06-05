@@ -1,7 +1,9 @@
 import sh
+import itertools
 import posixpath
 from os import path
 from t2kdm import storage
+import re
 
 class GridBackend(object):
     """Class that handles the actual work on the grid.
@@ -118,14 +120,55 @@ class GridBackend(object):
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         raise NotImplementedError()
 
-    def replicate(self, remotepath, destination, source=None, tape=False, **kwargs):
+    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, regex=None, **kwargs):
         """Replicate the file to the specified storage element.
 
         If no source storage elment is provided, the closest replica is chosen.
-        If `tape` is True, tape SEs are considered when choosing the closest one.
+        If `tape` is `True`, tape SEs are considered when choosing the closest one.
+        If `recursive` is `True`, all files and sub-directories of a given path are replicated.
+        if `recursive` is a string, it is treated as regular expression
+        and only matching subfolders or files are replicated.
         """
 
+        # Do thing recursively if requested
+        if isinstance(recursive, str):
+            regex = re.compile(recursive)
+            recursive = True
+        else:
+            regex = None
+        _path = self.full_path(remotepath)
+        if recursive and self._is_dir(_path):
+            # Go through the contents of the directory recursively
+            it = kwargs.pop('_iter', False)
+            newpaths = []
+            for element in self.ls(remotepath, _iter=True):
+                element = element.strip()
+                if regex is None or regex.search(element):
+                    newpaths.append(posixpath.join(remotepath, element))
+            def outputs(paths):
+                for path in paths:
+                    try:
+                        yield self.replicate(path, destination, source, tape, recursive, _iter=True, **kwargs)
+                    except sh.ErrorReturnCode:
+                        # Ignore errors when running recurseively
+                        pass
+                        print "WH"
+                    except GeneratorExit:
+                        print "WHA"
+                        raise
+                    except:
+                        print "WHUT"
+            iterable = itertools.chain.from_iterable(outputs(newpaths))
+            return self._iterable_output_from_iterable(iterable, _iter=it)
+
+        # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
+        if dst.has_replica(remotepath):
+            # Replica already at destination, nothing to do here
+            return self._iterable_output_from_text(
+                    "%s\nReplica already present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
+
+        # Get source SE
         if source is None:
             src = dst.get_closest_SE(remotepath, tape=tape)
             if src is None:
@@ -137,16 +180,10 @@ class GridBackend(object):
                 raise sh.ErrorReturnCode_1('', '',
                         "Could not find storage element %s.\n"%(source,))
 
-
-        if dst.has_replica(remotepath):
-            # Replica already at destination, nothing to do here
-            return self._iterable_output_from_text(
-                    "Replica already present at destination storage element %s.\n"%(dst.name,), **kwargs)
-
-        if not src.has_replica(remotepath):
-            # Replica not present at source, throw error
-            raise sh.ErrorReturnCode_1('', '',
-                    "No replica present at source storage element %s\n"%(src.name,))
+            if not src.has_replica(remotepath):
+                # Replica not present at source, throw error
+                raise sh.ErrorReturnCode_1('', '',
+                        "%s\nNo replica present at source storage element %s\n"%(remotepath, src.name,))
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
@@ -243,6 +280,7 @@ class LCGBackend(GridBackend):
 
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
         it = kwargs.pop('_iter', False) # should the out[put be an iterable?
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 
@@ -256,6 +294,7 @@ class LCGBackend(GridBackend):
 
     def _get(self, storagepath, localpath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
         it = kwargs.pop('_iter', False) # should the out[put be an iterable?
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 

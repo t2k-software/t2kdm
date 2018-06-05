@@ -72,8 +72,9 @@ class Command(object):
         """
 
         kwargs1 = {
-            '_iter': True,
-            '_bg_exc': False,
+            '_iter': True, # Line by line
+            '_err': sys.stderr, # Print error output directly to screen
+            '_bg_exc': False, # Do not print exceptions of bg processes
         }
         kwargs1.update(kwargs)
 
@@ -102,9 +103,9 @@ class Command(object):
             return False
 
         kwargs1 = {
-            '_iter': True,
-            '_err_to_out': True,
-            '_bg_exc': False,
+            '_iter': True, # Line by line
+            '_err_to_out': True, # Redirect error otput to the regular output
+            '_bg_exc': False, # Do not print esxceptions of bg processes
         }
         kwargs1.update(kwargs)
 
@@ -186,6 +187,8 @@ replicate.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 replicate.add_argument('destination', type=str,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
+replicate.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively replicate all contents [that match REGEX] of a directory")
 replicate.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 replicate.add_argument('-t', '--tape', action='store_true',

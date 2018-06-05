@@ -121,7 +121,8 @@ def run_read_only_tests(backend = t2kdm.backend):
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
 def run_read_write_tests(backend = t2kdm.backend):
-    pass
+    print_("Testing replicate...")
+    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[12]\.t.t$')
 
 def run_tests():
     """Test the functions of the t2kdm."""
