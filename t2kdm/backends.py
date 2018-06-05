@@ -7,6 +7,11 @@ class GridBackend(object):
     """Class that handles the actual work on the grid.
 
     This is just a base class that other classes must inherit from.
+
+    The convention for remote paths is that public methods expect "t2k paths",
+    i.e. paths within the t2k grid directory, omitting the common prefix.
+    Internal methods, i.e. the ones beginning with an underscore '_',
+    expect the full path to be passed to them.
     """
 
     def __init__(self, **kwargs):
@@ -37,9 +42,15 @@ class GridBackend(object):
 
         long: Bool. Default: False
             Print a longer, more detailed listing.
+        directory: Bool. Default: False
+            List directory entries instead of contents.
         """
         _path = self.full_path(remotepath)
         return self._ls(_path, **kwargs)
+
+    def _is_dir(self, remotepath):
+        """Is the remote path a directory?"""
+        return str(self._ls(remotepath, long=True, directory=True)).strip()[0] == 'd'
 
     def _replica_state(self, storagepath, **kwargs):
         """Internal method to get the state of a replica, e.g. 'ONLINE'."""
@@ -198,10 +209,14 @@ class LCGBackend(GridBackend):
     def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
         l = kwargs.pop('long', False)
+        d = kwargs.pop('directory', False)
+        args = []
         if l:
-            args = ['-l', remotepath]
-        else:
-            args = [remotepath]
+            args.append('-l')
+        if -d:
+            args.append('-d')
+        args.append(remotepath)
+
         return self._ls_cmd(*args, **kwargs)
 
     def _replicas(self, remotepath, **kwargs):

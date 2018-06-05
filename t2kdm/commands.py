@@ -170,6 +170,8 @@ ls.add_argument('remotepath', type=str, nargs='?', default='',
     help="the remote logical path, e.g. '/nd280'")
 ls.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
+ls.add_argument('-d', '--directory', action='store_true',
+    help="list directory entries instead of contents")
 all_commands.append(ls)
 
 replicas = Command('replicas', t2kdm.replicas, "List replicas of a remote logical path.")
