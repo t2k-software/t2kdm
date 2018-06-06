@@ -58,15 +58,19 @@ class GridBackend(object):
         """Internal method to get the state of a replica, e.g. 'ONLINE'."""
         raise NotImplementedError()
 
+    def _replica_checksum(self, storagepath, **kwargs):
+        """Internal method to get the checksum of a replica."""
+        raise NotImplementedError()
+
     def _replicas(self, remotepath, **kwargs):
         raise NotImplementedError()
 
     def _add_replica_info(self, rep):
         SE = storage.get_SE_by_path(rep)
         if SE is not None:
-            return "%-24s %-7s %-7s %s"%(SE.name, SE.type, self._replica_state(rep), rep)
+            return "%-32s %-4s %-7s %8.8s %s"%(SE.name, SE.type, self._replica_state(rep), self._replica_checksum(rep), rep)
         else:
-            return "%-24s %-7s %-7s %s"%('UNKNOWN', 'UNKNOWN', self._replica_state(rep), rep)
+            return "%-32s %-4s %-7s %8.8s %s"%('UNKNOWN', '?', self._replica_state(rep), self._replica_checksum(rep), rep)
 
     @staticmethod
     def _iterable_output_from_text(text, **kwargs):
@@ -232,6 +236,7 @@ class LCGBackend(GridBackend):
         self._ls_cmd = sh.Command('lfc-ls')
         self._replicas_cmd = sh.Command('lcg-lr')
         self._replica_state_cmd = sh.Command('lcg-ls')
+        self._replica_checksum_cmd = sh.Command('lcg-get-checksum')
         self._replicate_cmd = sh.Command('lcg-rep')
         self._cp_cmd = sh.Command('lcg-cp')
 
@@ -257,8 +262,17 @@ class LCGBackend(GridBackend):
         try:
             listing = self._replica_state_cmd('-l', _path, **kwargs)
         except sh.ErrorReturnCode:
-            listing = '- - - - - UNKNOWN'
+            listing = '- - - - - ?'
         return listing.split()[5]
+
+    def _replica_checksum(self, storagepath, **kwargs):
+        _path = storagepath.strip()
+        it = kwargs.pop('_iter', None)
+        try:
+            listing = self._replica_checksum_cmd(_path, **kwargs)
+        except sh.ErrorReturnCode:
+            listing = '? -'
+        return listing.split()[0]
 
     @staticmethod
     def _ignore_identical_lines(iterable, **kwargs):
