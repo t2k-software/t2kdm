@@ -54,6 +54,10 @@ class GridBackend(object):
         """Is the remote path a directory?"""
         return str(self._ls(remotepath, long=True, directory=True)).strip()[0] == 'd'
 
+    def is_dir(self, remotepath):
+        """Is the remote path a directory?"""
+        return self._is_dir(self.full_path(remotepath))
+
     def _replica_state(self, storagepath, **kwargs):
         """Internal method to get the state of a replica, e.g. 'ONLINE'."""
         raise NotImplementedError()
