@@ -187,3 +187,17 @@ def get_closest_SE(remotepath, location=None, tape=False):
         basepath = '/')
 
     return SE.get_closest_SE(remotepath, tape=tape)
+
+def list_storage_elements(**kwargs):
+    """Print all available storage elments on screen.
+
+    Behaves (kinda) like an `sh` command.
+    """
+
+    ret = ( str(SE)+'\n' for SE in SEs )
+    it = kwargs.pop('_iter', False)
+    if not it:
+        # Glue single lines together
+        ''.join(ret)
+
+    return ret

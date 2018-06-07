@@ -3,8 +3,10 @@
 Helpful tools to manage the T2K data on the grid.
 """
 
-import backends
 import configuration
+import backends
+import storage
+import utils
 import sys
 
 if sys.argv[0].endswith('t2kdm-config'):
@@ -22,4 +24,3 @@ else:
     replicas = backend.replicas
     replicate = backend.replicate
     get = backend.get
-    list_storage_elements = backend.list_storage_elements
