@@ -72,9 +72,9 @@ class GridBackend(object):
     def _add_replica_info(self, rep):
         SE = storage.get_SE_by_path(rep)
         if SE is not None:
-            return "%-32s %-4s %-7s %8.8s %s"%(SE.name, SE.type, self._replica_state(rep), self._replica_checksum(rep), rep)
+            return "%-32s %-4s %-8s %8.8s %s"%(SE.name, SE.type, self._replica_state(rep), self._replica_checksum(rep), rep)
         else:
-            return "%-32s %-4s %-7s %8.8s %s"%('UNKNOWN', '?', self._replica_state(rep), self._replica_checksum(rep), rep)
+            return "%-32s %-4s %-8s %8.8s %s"%('UNKNOWN', '?', self._replica_state(rep), self._replica_checksum(rep), rep)
 
     @staticmethod
     def _iterable_output_from_text(text, **kwargs):
