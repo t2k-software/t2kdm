@@ -271,7 +271,12 @@ class LCGBackend(GridBackend):
             listing = self._replica_checksum_cmd(_path, **kwargs)
         except sh.ErrorReturnCode:
             listing = '? -'
-        return listing.split()[0]
+        try:
+            checksum = listing.split()[0]
+        except IndexError:
+            # Something weird happened
+            checksum = '?'
+        return checksum
 
     @staticmethod
     def _ignore_identical_lines(iterable, **kwargs):
