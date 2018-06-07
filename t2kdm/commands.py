@@ -182,6 +182,15 @@ replicas.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
 all_commands.append(replicas)
 
+check = Command('check', t2kdm.utils.check, "Check the replicas in a given directory.")
+check.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280'")
+check.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively check all subdirectories [that match REGEX] of a directory")
+check.add_argument('-s', '--se', action='append',
+    help="report replication status to the given storage element, can be used multiple times")
+all_commands.append(check)
+
 replicate = Command('replicate', t2kdm.replicate, "Replicate file to a storage element.")
 replicate.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
