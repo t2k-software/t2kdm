@@ -163,6 +163,10 @@ class GridBackend(object):
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
+        if dst is None:
+            raise sh.ErrorReturnCode_1('', '',
+                    "Could not find storage element %s.\n"%(destination,))
+
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
             return self._iterable_output_from_text(
