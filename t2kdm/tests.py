@@ -83,6 +83,13 @@ def run_read_only_tests(backend = t2kdm.backend):
         t2kdm.get(path, tempdir, source=testSEs[0])
         assert(os.path.isfile(filename))
 
+    print_("Testing check...")
+    with temp_dir() as tempdir:
+        filename = os.path.join(tempdir, 'faulty.txt')
+        with no_output():
+            t2kdm.utils.check(testdir, checksum=True, se=testSEs, recursive=True, nolist=True, list=filename)
+        assert os.path.isfile(filename)
+
     print_("Testing Commands...")
     with open('/dev/null', 'w') as out:
         cmd.ls.run_from_cli('-l /', _out=out) # This should work, but return `False`
