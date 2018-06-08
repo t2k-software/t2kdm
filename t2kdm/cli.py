@@ -147,18 +147,30 @@ Type 'help' or '?' to list commands.
         # Special case 'ls'
         if line[0] == 'l' and line[1] != 's':
             # Local path
+            # Look further than just current dir
+            searchdir, searchfile = os.path.split(search_text)
+            abs_searchdir = searchdir
+            if not os.path.isabs(abs_searchdir):
+                abs_searchdir = os.path.join(self.localdir, abs_searchdir)
             # Get contents of dir
-            for l in sh.ls(self.localdir, '-1', _iter=True):
+            for l in sh.ls(abs_searchdir, '-1', _iter=True):
                 l = l.strip()
-                if l.startswith(search_text):
-                    candidates.append(l[text_offset:])
+                if l.startswith(searchfile):
+                    cand = os.path.join(searchdir, l)
+                    candidates.append(cand[text_offset:])
         else:
             # Remote path
+            # Look further than just current dir
+            searchdir, searchfile = posixpath.split(search_text)
+            abs_searchdir = searchdir
+            if not posixpath.isabs(abs_searchdir):
+                abs_searchdir = posixpath.join(self.remotedir, abs_searchdir)
             # Get contents of dir
-            for l in t2kdm.ls(self.remotedir, _iter=True):
+            for l in t2kdm.ls(abs_searchdir, _iter=True):
                 l = l.strip()
-                if l.startswith(search_text):
-                    candidates.append(l[text_offset:])
+                if l.startswith(searchfile):
+                    cand = posixpath.join(searchdir, l)
+                    candidates.append(cand[text_offset:])
 
         return candidates
 
