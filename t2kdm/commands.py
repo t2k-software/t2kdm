@@ -187,6 +187,12 @@ check.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280'")
 check.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively check all subdirectories [that match REGEX] of a directory")
+check.add_argument('-n', '--nolist', action='store_true',
+    help="do not print lists of problematic files to screen")
+check.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of problematic files to FILENAME")
+check.add_argument('-c', '--checksum', action='store_true',
+    help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
 check.add_argument('-s', '--se', action='append',
     help="report replication status to the given storage element, can be used multiple times")
 all_commands.append(check)

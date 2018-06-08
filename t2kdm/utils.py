@@ -25,20 +25,37 @@ class Replica(object):
     def __init__(self, line):
         """Initialise from a line of output of `replicas -l`."""
         x = line.split()
-        self.SE_name = x[0]
-        self.SE_type = x[1]
-        self.status = x[2]
-        self.checksum = x[3]
-        self.path = x[4]
+        if len(x) > 1:
+            # The full information
+            self.SE_name = x[0]
+            self.SE_type = x[1]
+            self.status = x[2]
+            self.checksum = x[3]
+            self.path = x[4]
+        else:
+            # Just the replica url
+            self.path = x[0]
+            SE = t2kdm.storage.get_SE(x[0])
+            if SE is not None:
+                self.SE_name = SE.name
+                self.SE_type = SE.type
+            else:
+                self.SE_name = 'UNKOWN'
+                self.SE_type = '?'
+            self.status = '?'
+            self.checksum = '-' # Not a '?', this would trigger a checksum error
 
 class ReplicaState(object):
     """Deal with the state of a file's replicas."""
 
-    def __init__(self, remotepath):
-        """Get the ReplicaState of a given remotepath."""
+    def __init__(self, remotepath, full=True):
+        """Get the ReplicaState of a given remotepath.
+
+        If `full` is `False`, only check what replicas exist, but no additional information.
+        """
 
         self.replicas = []
-        for line in strip_output(t2kdm.replicas(remotepath, long=True, _iter=True)):
+        for line in strip_output(t2kdm.replicas(remotepath, long=(not full), _iter=True)):
             self.replicas.append(Replica(line))
 
     def get_file_categories(self):
@@ -231,7 +248,15 @@ class CheckResult(object):
 
         return report
 
-def check_replicas(remotepath, recursive=False, progress=False):
+    def list_faulty(self, *args):
+        """Return a list of faulty files, according to the provided checks (see `report`)."""
+        faulty = set()
+        for line in self.report(*args).split('\n'):
+            if line.startswith(' -> '):
+                faulty.add(line[4:])
+        return sorted(list(faulty))
+
+def check_replicas(remotepath, recursive=False, progress=False, quick=False):
     """Check the replicas of a given path.
 
     Returns a CheckResult.
@@ -245,6 +270,8 @@ def check_replicas(remotepath, recursive=False, progress=False):
                Default: `False`
     progress: bool. Print out progress information on screen.
               Default: `False`
+    quick: bool. Do not do the checksum test. Makes things go faster.
+           Default `False`
     """
 
     # Need to differentiate between progress in base calla nd recursive calls
@@ -288,39 +315,58 @@ def check_replicas(remotepath, recursive=False, progress=False):
             print_("\nDone.")
     else:
         # Handle single file
-        rep_state = ReplicaState(remotepath)
+        rep_state = ReplicaState(remotepath, full=not quick)
 
         for category in rep_state.get_file_categories():
             result.add_file_to_set(remotepath, category)
 
     return result
 
-def check(remotepath, se=[], recursive=False, nolist=False, **kwargs):
+def check(remotepath, checksum=False, se=[],
+        recursive=False, nolist=False, list=None, **kwargs):
     """Check a remote path for problems with the replicas.
 
     Arguments
     ---------
 
-    SE: list. List of SE names for which a replication report should be printed.
+    checksum: bool. Check whether the checksums of all replicas are identical.
+              Default `False`
+    se: list. List of SE names for which a replication report should be printed.
         Default []
     recursive: bool. Go through sub directories recursively.
                Default `False`
     nolist: bool. Do not list the faulty files in te report.
             Default `False`
+    list: string. Store a list of problematic files in the given filename.
+          Default `None`
 
     Behaves like (kinda) like an `sh` command.
     """
 
-    reports = ['checksum']
+    tests = []
+    if checksum:
+        tests.append('checksum')
     for s in se:
         SE = t2kdm.storage.get_SE(s)
         if SE is None:
             raise sh.ErrorReturnCode_1('', '',
                     "Not a valid storage element: %s\n"%(s,))
-        reports.append('SE_'+SE.name)
+        tests.append('SE_'+SE.name)
 
-    report = check_replicas(remotepath, recursive=recursive, progress=True).report(*reports)
+    if len(tests) == 0:
+        raise sh.ErrorReturnCode_1('', '',
+                "Nothing to report! You need to specify at least on check to be performed.\n"%(s,))
 
+    # Test the files and get the result
+    result = check_replicas(remotepath, recursive=recursive, progress=True, quick=not checksum)
+
+    if list is not None:
+        # Save the list of faulty files
+        with open(list, 'wt') as f:
+            for fault in result.list_faulty(*tests):
+                f.write('%s\n'%(fault,))
+
+    report = result.report(*tests, list_faulty=not nolist)
     it = kwargs.pop('_iter', False)
     if not it:
         # Just return the check report
