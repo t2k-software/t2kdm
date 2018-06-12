@@ -58,6 +58,7 @@ setup(name='t2kdm',
             't2kdm-cli=t2kdm.cli:run_cli',
             't2kdm-tests=t2kdm.tests:run_tests',
             't2kdm-config=t2kdm.configuration:run_configuration_wizard',
+            't2kdm-maid=t2kdm.maid:run_maid',
         ],
     },
     zip_safe=True)
