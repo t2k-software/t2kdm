@@ -7,6 +7,7 @@ import t2kdm
 from contextlib import contextmanager
 import sys, os
 from datetime import datetime, timedelta, tzinfo
+import posixpath
 
 class UTC(tzinfo):
     """UTC class, because pytz would be overkill"""
@@ -175,10 +176,18 @@ class ReplicationTask(Task):
         kwargs = Task.parse_config(section, option, value)
 
         if option.startswith('replicate(') and option.endswith(')') :
-            # Remove instruction
+            # Remove replicate instruction
             option = option[10:-1]
         else:
             raise RuntimeError("Bad replication task: %s"(option,))
+
+        # Special case: basename == @
+        # Get all entries in the directory and replace the @ with the (lexigraphically) last one
+        dirname, basename = posixpath.split(option)
+        if basename == '@':
+            entries = list(t2kdm.utils.strip_output(t2kdm.ls(dirname, _iter=True)))
+            entries.sort()
+            option = posixpath.join(dirname, entries[-1])
 
         if 'recursive' in arguments:
             kwargs['recursive'] = True
@@ -326,7 +335,7 @@ class Maid(object):
 
             [SOME_OTHER_SE_NAME]
             replicate(/first/folder/to/be/replicated/to/the/SE) = weekly
-            replicate(/second/different/folder/to/be/replicated/to/the/SE) = weekly
+            replicate(/second/different/folder/to/be/replicated/to/the/SE/@) = daily
             replicate(/etc) = monthly
 
             [ETC]
@@ -346,8 +355,13 @@ class Maid(object):
         a subfolder every day:
 
             [EXAMPLE_SE]
-            /some/data/folder = weekly
-            /some/data/folder/very/important = daily
+            replicate(/some/data/folder) = weekly
+            replicate(/some/data/folder/very/important/@) = daily
+
+        If the last level of the path to be replicated is an '@' character,
+        it will be replaced by the *lexigraphically* last element in the directory.
+        This can be used to define a daily replica of the newest data when the
+        folder structure is updated with the run numbers.
 
         """
 
