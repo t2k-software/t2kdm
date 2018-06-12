@@ -23,20 +23,23 @@ descriptions = {
                     "Examples: /europe/uk/ral\n"\
                     "          /americas/ca/triumf\n"\
                     "          /asia/jp/kek",
+    'maid_config':  "Where the configuration file for the `t2kdm-maid` command is stored.\n"\
+                    "If you do not deal with raw data replication, don't worry about it.\n",
 }
 
 class Configuration(object):
     """Class containing the actual configuration information."""
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, defaults=default_values):
         """Initialise the configuration.
 
         Optionally load the configuration from a file.
         """
 
         # Load the default values
-        for key, val in default_values.items():
+        for key, val in defaults.items():
             setattr(self, key, val)
+        self.defaults = defaults
 
         # Load values from the provided file
         if filename is not None:
@@ -46,21 +49,21 @@ class Configuration(object):
         """Load configuration from a file."""
 
         # Create parser for config file
-        parser = configparser.SafeConfigParser(default_values)
+        parser = configparser.SafeConfigParser(self.defaults)
         parser.read(filename)
 
         # Get values from parser
-        for key in default_values:
+        for key in self.defaults:
             setattr(self, key, parser.get('DEFAULT', key))
 
     def save_config(self, filename):
         """Load configuration from a file."""
 
         # Create parser for config file
-        parser = configparser.SafeConfigParser(default_values)
+        parser = configparser.SafeConfigParser(self.defaults)
 
         # Set values from config
-        for key in default_values:
+        for key in self.defaults:
             parser.set('DEFAULT', key, getattr(self, key))
 
         # Save configuration to file
@@ -84,10 +87,10 @@ def load_config():
             path.join(app_dirs.site_config_dir, 't2kdm.conf'), # 2. site_config_dir, on linux: /etc/t2kdm/t2kdm.conf
             ]:
         if path.isfile(testpath):
-            return Configuration(testpath)
+            return Configuration(testpath, defaults=default_values)
 
     # Did not find any file, return default configuration
-    return Configuration()
+    return Configuration(defaults=default_values)
 
 def run_configuration_wizard():
     """Run a configuration wizard to create a valid configuration file."""
