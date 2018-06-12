@@ -35,7 +35,7 @@ class Task(object):
 
     def __init__(self, **kwargs):
         self.frequency = kwargs.pop('frequency', 'weekly')
-        if self.frequency not in ['daily', 'weekly']:
+        if self.frequency not in ['daily', 'weekly', 'monthly']:
             raise ValueError("Illegal frequency!")
         self.logfile = kwargs.pop('logfile', None)
         self.last_done = None
@@ -47,6 +47,8 @@ class Task(object):
             return timedelta(1)
         elif self.frequency  == 'weekly':
             return timedelta(7)
+        elif self.frequency  == 'monthly':
+            return timedelta(30)
         else:
             raise ValueError("Illegal frequency!")
 
@@ -78,6 +80,8 @@ class Task(object):
 
         kwargs = {}
 
+        if 'monthly' in arguments:
+            kwargs['frequency'] = 'monthly'
         if 'weekly' in arguments:
             kwargs['frequency'] = 'weekly'
         if 'daily' in arguments:
@@ -197,7 +201,10 @@ class ReplicationTask(Task):
 
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
+        if not self.recursive:
+            return '%s_nonrecursive_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
+        else:
+            return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
 
 class TaskLog(object):
     """Class to handle the logging of task activity."""
@@ -320,7 +327,7 @@ class Maid(object):
             [SOME_OTHER_SE_NAME]
             replicate(/first/folder/to/be/replicated/to/the/SE) = weekly
             replicate(/second/different/folder/to/be/replicated/to/the/SE) = weekly
-            replicate(/etc) = weekly
+            replicate(/etc) = monthly
 
             [ETC]
             replicate(/etc) = nonrecursive daily
@@ -332,6 +339,7 @@ class Maid(object):
             nonrecursive    - do not replicate subfolders recursively
             daily           - aim to replicate this folder every day
             weekly          - aim to replicate this folder about once per week (default)
+            monthly         - aim to replicate this folder about once per month
 
         Each replication order is handled independently. So it is possible to
         request a weekly transfer of a certain folder, while additionally replicating
