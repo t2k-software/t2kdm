@@ -495,7 +495,7 @@ class Maid(object):
                 return
 
             print_("Starting %s..."%(t))
-            if self.do_task(tasks[0]):
+            if self.do_task(t):
                 print_("Done.")
             else:
                 print_("Failed.")
