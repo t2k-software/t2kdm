@@ -35,10 +35,24 @@ class Task(object):
     """Class to organise what need to be done when."""
 
     def __init__(self, **kwargs):
+        """Initialise a basic task.
+
+        All tasks support these basic keyword arguments:
+
+            frequency = 'daily' | 'weekly' | 'monthly'
+                How often is the task to be done? Default: 'weekly'
+
+            logfile
+                If provided, redirect all output of the task to this file.
+
+        """
+
+        # Handle basic keyword arguments
         self.frequency = kwargs.pop('frequency', 'weekly')
         if self.frequency not in ['daily', 'weekly', 'monthly']:
             raise ValueError("Illegal frequency!")
         self.logfile = kwargs.pop('logfile', None)
+
         self.last_done = None
         self.state = None
 
@@ -100,11 +114,20 @@ class Task(object):
         else:
             self.last_id = id
 
+    def _do(self):
+        """Internal function that does what needs to be done.
+
+        Must be implemented in inheriting classes.
+        """
+        raise NotImplementedError()
+
+
     def do(self, id=None):
         """Actually do the task."""
         self._pre_do(id=id)
 
-        # < Code goes here >
+        with self.redirected_output():
+            self._do()
 
         # We fail here because the base class does not do anything
         # If someone calls this method, something probably went wrong somewhere...
@@ -193,18 +216,11 @@ class ReplicationTask(Task):
 
         return kwargs
 
-    def do(self):
-        self._pre_do(self) # Bookkeeping done in base class
-
-        with self.redirected_output():
-            for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
-                print_(line, end='')
-
-        self._post_do(self) # Bookkeeping done in base class
-
+    def _do(self):
+        for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
+            print_(line, end='')
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
 
 class TaskLog(object):
     """Class to handle the logging of task activity."""
