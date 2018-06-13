@@ -155,9 +155,12 @@ class GridBackend(object):
                     newpaths.append(posixpath.join(remotepath, element))
             def outputs(paths):
                 for path in paths:
-                    # Ignore errors when running recursively
-                    yield self.replicate(path, destination, source, tape, recursive,
-                            _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                    # Ignore errors and segfaults when running recursively
+                    try:
+                        yield self.replicate(path, destination, source, tape, recursive,
+                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                    except sh.SignalException_SIGSEGV:
+                        pass
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
