@@ -432,24 +432,30 @@ class Maid(object):
                     t.last_id =  failed[task][0]
                     t.state = 'FAILED'
 
-    def get_open_tasks(self):
-        """Return a list of open tasks in order of how due they are."""
+    def get_open_tasks(self, return_all=False):
+        """Return a list of open tasks in order of how due they are.
+
+        If `return_all` is `True`, all tasks will be returned, not just the due ones.
+        """
 
         self.update_task_states()
 
         ret = []
         for t in self.tasks:
             task = self.tasks[t]
-            if task.get_due() >= 0:
+            if return_all or task.get_due() >= 0:
                 ret.append(task)
 
         # Sort tasks by dueness
         ret.sort(key=lambda tsk: tsk.get_due(), reverse=True) # Highest due on top
         return ret
 
-    def do_something(self):
-        """Find an open task and do it."""
-        tasks = self.get_open_tasks()
+    def do_something(self, eager=False):
+        """Find an open task and do it.
+
+        If `eager` is `True`, do tasks even before they are due again.
+        """
+        tasks = self.get_open_tasks(return_all=eager)
 
         if len(tasks) > 0:
             print_("Due tasks:")
@@ -458,7 +464,7 @@ class Maid(object):
 
             for t in tasks:
                 if t.state == 'STARTED' and pid_running(int(t.last_id)):
-                    print_("%s is due, but seems to be running already. Skipping..."%(t,))
+                    print_("%s seems to be running already. Skipping..."%(t,))
                     continue
                 else:
                     # Found a task we should do
@@ -482,10 +488,12 @@ def run_maid():
     """
 
     parser = argparse.ArgumentParser(description="Regular housekeeping for the T2K data. Run at least daily!")
+    parser.add_argument('-e', '--eager', action='store_true',
+                        help="do a task, even if it is not due yet")
     args = parser.parse_args()
 
     maid = Maid(t2kdm.config.maid_config)
-    maid.do_something()
+    maid.do_something(eager=args.eager)
 
 if __name__ == '__main__':
     run_maid()
