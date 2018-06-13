@@ -6,8 +6,10 @@ from six import print_
 import t2kdm
 from contextlib import contextmanager
 import sys, os
+import sh
 from datetime import datetime, timedelta, tzinfo
 import posixpath
+import tempfile
 
 class UTC(tzinfo):
     """UTC class, because pytz would be overkill"""
@@ -121,7 +123,6 @@ class Task(object):
         """
         raise NotImplementedError()
 
-
     def do(self, id=None):
         """Actually do the task."""
         self._pre_do(id=id)
@@ -219,8 +220,44 @@ class ReplicationTask(Task):
     def _do(self):
         for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
             print_(line, end='')
+
     def __str__(self):
         """Return a string to identify the task by."""
+        return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
+
+class TrimLogTask(Task):
+    """Task to trim a log file to a certain number of line.
+
+    The lines will be cut off from the *top*. Equivalent to:
+
+        $ tail -n nlines <path >tempfile
+        $ mv tempfile logfile
+
+    """
+
+    def __init__(self, **kwargs):
+        """Initialise TrimLogTask.
+
+        Specify the file to be trimmed with the `path` and the number of lines
+        to be kept with the `nlines` keyword arguments.
+        """
+
+        self.path = kwargs.pop('path')
+        self.nlines = kwargs.pop('nlines')
+        Task.__init__(self, **kwargs)
+
+    def _do(self):
+        with tempfile.TemporaryFile('w+t') as tf:
+            # Write tail of logfile into temporary file
+            sh.tail(self.path, lines=self.nlines, _in=self.path, _out=tf)
+            # Rewind temporary file
+            tf.seek(0)
+            # Overwrite old file
+            sh.cat(_in=tf, _out=self.path)
+
+    def __str__(self):
+        """Return a string to identify the task by."""
+        return '%s_TrimLogTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.nlines)
 
 class TaskLog(object):
     """Class to handle the logging of task activity."""
@@ -333,6 +370,7 @@ class Maid(object):
 
             [DEFAULT]
             tasklog = /path/to/logfile.txt
+            trimlog = monthly
 
             [SOME_SE_NAME]
             replicate(/first/folder/to/be/replicated/to/the/SE) = daily
@@ -373,10 +411,20 @@ class Maid(object):
         parser.optionxform = str # Need to make options case sensitive
         parser.read(configfile)
 
-        self.tasklog = TaskLog(parser.get('DEFAULT', 'tasklog'))
-
+        # Store tasks
         self.tasks = {}
+
+        tasklog_path = parser.get('DEFAULT', 'tasklog')
+        self.tasklog = TaskLog(tasklog_path)
+
+        # Create TrimLogTask
+        trim_freq = parser.get('DEFAULT', 'trimlog')
+        new_task = TrimLogTask(path=tasklog_path, nlines=1000, frequency=trim_freq)
+        new_id = new_task.get_id()
+        self.tasks[new_id] = new_task
+
         for sec in parser.sections():
+            # Create Replication tasks for storage elements
             if sec in t2kdm.storage.SE_by_name:
                 print_("Reading tasks for %s..."%(sec,))
                 for opt in parser.options(sec):
