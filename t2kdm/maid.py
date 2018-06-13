@@ -402,9 +402,15 @@ class Maid(object):
         self.tasklog.log('STARTED', task.get_id())
         try:
             task.do()
-        except:
+        except KeyboardInterrupt:
+            # Catch keyboard interrupts and exit gracefully
             self.tasklog.log('FAILED', task.get_id())
             success = False
+        except:
+            # No idea what happened
+            # Just fail
+            self.tasklog.log('FAILED', task.get_id())
+            raise
         else:
             self.tasklog.log('DONE', task.get_id())
             success = True
