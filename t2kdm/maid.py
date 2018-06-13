@@ -295,7 +295,6 @@ class TaskLog(object):
                     # Ignore comments
                     continue
 
-                ret = self._parse_line(line)
                 try: # to parse the line for task run information
                     ret = self._parse_line(line)
                 except TaskLog.ParseError:
