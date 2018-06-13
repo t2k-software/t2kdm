@@ -161,7 +161,6 @@ class ReplicationTask(Task):
     def __init__(self, **kwargs):
         self.path = kwargs.pop('path')
         self.destination = kwargs.pop('destination')
-        self.recursive = kwargs.pop('recursive', True)
         Task.__init__(self, **kwargs)
 
     @staticmethod
@@ -189,11 +188,6 @@ class ReplicationTask(Task):
             entries.sort()
             option = posixpath.join(dirname, entries[-1])
 
-        if 'recursive' in arguments:
-            kwargs['recursive'] = True
-        if 'nonrecursive' in arguments:
-            kwargs['recursive'] = False
-
         kwargs['destination'] = section
         kwargs['path'] = option
 
@@ -203,17 +197,14 @@ class ReplicationTask(Task):
         self._pre_do(self) # Bookkeeping done in base class
 
         with self.redirected_output():
-            for line in t2kdm.replicate(self.path, self.destination, recursive=self.recursive, _iter=True):
+            for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
                 print_(line, end='')
 
         self._post_do(self) # Bookkeeping done in base class
 
     def __str__(self):
         """Return a string to identify the task by."""
-        if not self.recursive:
-            return '%s_nonrecursive_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
-        else:
-            return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
+        return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
 
 class TaskLog(object):
     """Class to handle the logging of task activity."""
@@ -331,7 +322,7 @@ class Maid(object):
             [SOME_SE_NAME]
             replicate(/first/folder/to/be/replicated/to/the/SE) = daily
             replicate(/second/folder/to/be/replicated/to/the/SE) = daily
-            replicate(/etc/) = weekly
+            replicate(/etc/)
 
             [SOME_OTHER_SE_NAME]
             replicate(/first/folder/to/be/replicated/to/the/SE) = weekly
@@ -339,16 +330,14 @@ class Maid(object):
             replicate(/etc) = monthly
 
             [ETC]
-            replicate(/etc) = nonrecursive daily
+            replicate(/etc) = recursive daily
 
-        Optionally, arguments can be assigned to the folders.
+        Optionally, arguments can be assigned to the paths.
         Available arguments:
 
-            recursive       - replicate subfolders recursively (default)
-            nonrecursive    - do not replicate subfolders recursively
-            daily           - aim to replicate this folder every day
-            weekly          - aim to replicate this folder about once per week (default)
-            monthly         - aim to replicate this folder about once per month
+            daily           - aim to replicate this path every day
+            weekly          - aim to replicate this path about once per week (default)
+            monthly         - aim to replicate this path about once per month
 
         Each replication order is handled independently. So it is possible to
         request a weekly transfer of a certain folder, while additionally replicating
