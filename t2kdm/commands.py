@@ -224,7 +224,7 @@ all_commands.append(get)
 SEs = Command('SEs', t2kdm.storage.list_storage_elements, "Print all available storage elements on screen.")
 all_commands.append(SEs)
 
-remove = Command('remove', t2kdm.remove, "Remove file replica from a storage element.")
+remove = Command('remove', t2kdm.remove, "Remove file replica from a storage element, if it is not the last one.")
 remove.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 remove.add_argument('destination', type=str,
