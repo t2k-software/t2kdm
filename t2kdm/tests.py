@@ -13,7 +13,7 @@ import posixpath
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
-testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-NORTHGRID-SHEF-HEP-disk']
+testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-NORTHGRID-SHEF-HEP-disk', 'RAL-LCG22-tape']
 
 @contextmanager
 def no_output(redirect=True):
@@ -79,9 +79,10 @@ def run_read_only_tests(backend = t2kdm.backend):
         assert(os.path.isfile(filename))
         os.remove(filename)
 
-        # Test providing the source SE
-        t2kdm.get(path, tempdir, source=testSEs[0])
+        # Test providing the source SE (RAL tape!)
+        t2kdm.get(path, tempdir, source=testSEs[2])
         assert(os.path.isfile(filename))
+        os.remove(filename)
 
     print_("Testing check...")
     with temp_dir() as tempdir:
@@ -129,7 +130,8 @@ def run_read_only_tests(backend = t2kdm.backend):
 
 def run_read_write_tests(backend = t2kdm.backend):
     print_("Testing replicate...")
-    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[12]\.t.t$')
+    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$')
+    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2])
 
 def run_tests():
     """Test the functions of the t2kdm."""

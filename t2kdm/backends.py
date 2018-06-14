@@ -154,6 +154,35 @@ class GridBackend(object):
         else:
             return self._replicas(_path, **kwargs)
 
+    def _bringonline(self, storagepath, timeout, **kwargs):
+        raise NotImplementedError()
+
+    def bringonline(self, replica, **kwargs):
+        """Make sure the given replica is online"""
+
+        # We need to do multiple tries with short timeouts,
+        # because it seems like the bringonline commands do not notice when they succeed.
+        timeout = 10
+        tries = 720
+        for i in range(tries):
+            try:
+                self._bringonline(replica, timeout)
+            except sh.ErrorReturnCode:
+                # Did not work
+                # Try again
+                continue
+            else:
+                # It worked
+                # exit loop
+                break
+        else:
+            # Never reached a break
+            # It did not work so we raise an error
+            raise sh.ErrorReturnCode('', '',
+                "Could not bring replica online.\n")
+
+        return self._iterable_output_from_text("Replica is online.\n", **kwargs)
+
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         raise NotImplementedError()
 
@@ -223,7 +252,16 @@ class GridBackend(object):
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
-        return self._replicate(source_path, destination_path, **kwargs)
+
+        # Chain commands for bringing the file online and replicating it
+        it = kwargs.pop('_iter', False)
+        kwargs['_iter'] = True # Need to iterate to make command chaining possible
+        chain = CommandChain()
+        if src.type == 'tape':
+            chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
+            chain.add(self.bringonline, source_path, **kwargs)
+        chain.add(self._replicate, source_path, destination_path, **kwargs)
+        return self._iterable_output_from_iterable(chain(), _iter=it)
 
     def _get(self, storagepath, localpath, **kwargs):
         raise NotImplementedError()
@@ -255,8 +293,15 @@ class GridBackend(object):
         if path.isdir(localpath):
             localpath = path.join(localpath, posixpath.basename(remotepath))
 
-        # Do the actual copying
-        return self._get(replica, localpath, **kwargs)
+        # Chain commands for bringing the file online and replicating it
+        it = kwargs.pop('_iter', False)
+        kwargs['_iter'] = True # Need to iterate to make command chaining possible
+        chain = CommandChain()
+        if SE.type == 'tape':
+            chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
+            chain.add(self.bringonline, replica, **kwargs)
+        chain.add(self._get, replica, localpath, **kwargs)
+        return self._iterable_output_from_iterable(chain(), _iter=it)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
@@ -272,6 +317,7 @@ class LCGBackend(GridBackend):
         self._replicas_cmd = sh.Command('lcg-lr')
         self._replica_state_cmd = sh.Command('lcg-ls')
         self._replica_checksum_cmd = sh.Command('lcg-get-checksum')
+        self._bringonline_cmd = sh.Command('lcg-bringonline')
         self._replicate_cmd = sh.Command('lcg-rep')
         self._cp_cmd = sh.Command('lcg-cp')
 
@@ -324,6 +370,13 @@ class LCGBackend(GridBackend):
                 last_line = line
                 yield line
 
+    def _bringonline(self, storagepath, timeout, **kwargs):
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+
+        # Get original command output
+        return self._bringonline_cmd('-v', '--bdii-timeout', timeout, '--srm-timeout', timeout, '--sendreceive-timeout', timeout, '--connect-timeout', timeout, storagepath, **kwargs)
+
     def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
         kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
@@ -332,6 +385,7 @@ class LCGBackend(GridBackend):
 
         # Get original command output
         iterable = self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
+
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
 
@@ -346,6 +400,7 @@ class LCGBackend(GridBackend):
 
         # Get original command output
         iterable = self._cp_cmd('-v', '--checksum', storagepath, localpath, **kwargs)
+
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
 
