@@ -133,6 +133,9 @@ def run_read_write_tests(backend = t2kdm.backend):
     t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$')
     t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2])
 
+    print_("Testing remove...")
+    t2kdm.remove(testdir, testSEs[1], recursive=True)
+
 def run_tests():
     """Test the functions of the t2kdm."""
 

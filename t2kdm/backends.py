@@ -303,6 +303,67 @@ class GridBackend(object):
         chain.add(self._get, replica, localpath, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
+    def _remove(self, storagepath, **kwargs):
+        raise NotImplementedError()
+
+    def remove(self, remotepath, destination, recursive=False, **kwargs):
+        """Remove the replica of a file from a storage element.
+
+        If `recursive` is `True`, all files and sub-directories of a given path are removed.
+        if `recursive` is a string, it is treated as regular expression
+        and only matching subfolders or files are replicated.
+
+        This command will refuse to remove the last replica of a file!
+        """
+
+        # Do thing recursively if requested
+        if isinstance(recursive, str):
+            regex = re.compile(recursive)
+            recursive = True
+        else:
+            regex = None
+        _path = self.full_path(remotepath)
+        if recursive and self._is_dir(_path):
+            # Go through the contents of the directory recursively
+            it = kwargs.pop('_iter', False)
+            newpaths = []
+            for element in self.ls(remotepath, _iter=True):
+                element = element.strip()
+                if regex is None or regex.search(element):
+                    newpaths.append(posixpath.join(remotepath, element))
+            def outputs(paths):
+                for path in paths:
+                    # Ignore errors and segfaults when running recursively
+                    try:
+                        yield self.remove(path, destination, recursive=recursive,
+                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                    except sh.SignalException_SIGSEGV:
+                        pass
+            iterable = itertools.chain.from_iterable(outputs(newpaths))
+            return self._iterable_output_from_iterable(iterable, _iter=it)
+
+        # Get destination SE and check if file is already not present
+        dst = storage.get_SE(destination)
+        if dst is None:
+            raise sh.ErrorReturnCode_1('', '',
+                    "Could not find storage element %s.\n"%(destination,))
+
+        if not dst.has_replica(remotepath):
+            # Replica already not present at destination, nothing to do here
+            return self._iterable_output_from_text(
+                    "%s\nReplica not present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
+
+        # Check how many replicas there are
+        # If it is only one, refuse to delete it
+        nrep = self.replicas(remotepath).count('\n') # count lines
+        if nrep <= 1:
+            raise sh.ErrorReturnCode_1('', '',
+                    "Only one replica of file left! Aborting.\n")
+
+        destination_path = dst.get_replica(remotepath)
+
+        return self._remove(destination_path, **kwargs)
+
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
@@ -320,6 +381,7 @@ class LCGBackend(GridBackend):
         self._bringonline_cmd = sh.Command('lcg-bringonline')
         self._replicate_cmd = sh.Command('lcg-rep')
         self._cp_cmd = sh.Command('lcg-cp')
+        self._del_cmd = sh.Command('lcg-del')
 
     def _ls(self, remotepath, **kwargs):
         # Translate keyword arguments
@@ -406,6 +468,9 @@ class LCGBackend(GridBackend):
 
         # return requested kind of output
         return self._iterable_output_from_iterable(iterable, _iter=it)
+
+    def _remove(self, storagepath, **kwargs):
+        return self._del_cmd(storagepath, **kwargs)
 
 def get_backend(config):
     """Return the backend according to the provided configuration."""
