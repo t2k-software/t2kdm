@@ -5,6 +5,35 @@ from os import path
 from t2kdm import storage
 import re
 
+class CommandChain(object):
+    """Class that executes function calls in sequence.
+
+    It expects the functions to return iterables and will return an iterable when called.
+    """
+
+    def __init__(self):
+        """Initialise CommandChain.
+
+        Actual commands have to be added with `add`.
+        """
+
+        self.commands = []
+        self.args = []
+        self.kwargs = []
+
+    def add(self, cmd, *args, **kwargs):
+        """Add a command o the chain."""
+
+        self.commands.append(cmd)
+        self.args.append(args)
+        self.kwargs.append(kwargs)
+
+    def __call__(self):
+        """Yield from all commands in turn."""
+        for c, a, k in zip(self.commands, self.args, self.kwargs):
+            for line in c(*a, **k):
+                yield line
+
 class GridBackend(object):
     """Class that handles the actual work on the grid.
 
