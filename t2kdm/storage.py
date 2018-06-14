@@ -67,7 +67,7 @@ class StorageElement(object):
             if closest_SE is None:
                 # Always accept the first SE
                 closest_SE = SE
-                closest_distance = 0 # Distances are negative, so this is the farthest it can get
+                closest_distance = self.get_distance(SE)
             elif SE.type != 'tape':
                 # We always accept non-tape SEs
                 if self.get_distance(SE) <= closest_distance:
