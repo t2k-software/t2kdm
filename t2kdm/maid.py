@@ -1,7 +1,8 @@
 """Module to deal with regular replication, checking and general housekeeping tasks."""
 
 import argparse
-from six.moves import configparser
+from six.moves import configparser, html_entities
+import base64
 from six import print_
 import t2kdm
 from contextlib import contextmanager
@@ -170,6 +171,10 @@ class Task(object):
             return week / sec(T)
         else:
             return sec(now - (self.last_done + T)) / sec(T)
+
+    def get_logname(self):
+        """Get a valid filename that can be used to log the output of the task."""
+        return base64.b64encode(self.get_id(), altchars='+_')+'.txt'
 
     def get_id(self):
         """Return a string that identifies the task."""
@@ -363,7 +368,7 @@ class Maid(object):
     It takes care of replication, checksum checks, and regular reports of the state of things.
     """
 
-    def __init__(self, configfile):
+    def __init__(self, configfile, report=None):
         """Initialise the Maid with the given configuration file.
 
         The file must look like this:
@@ -405,7 +410,12 @@ class Maid(object):
         This can be used to define a daily replica of the newest data when the
         folder structure is updated with the run numbers.
 
+        If a `report` folder is specified, the output of the tasks will be redirected
+        and a browsable webpage generated in that folder.
+
         """
+
+        self.report = report
 
         parser = configparser.SafeConfigParser(allow_no_value=True)
         parser.optionxform = str # Need to make options case sensitive
@@ -421,6 +431,10 @@ class Maid(object):
         trim_freq = parser.get('DEFAULT', 'trimlog')
         new_task = TrimLogTask(path=tasklog_path, nlines=1000, frequency=trim_freq)
         new_id = new_task.get_id()
+        # If an html report is requested, redirect the output to the appropriate file
+        if self.report is not None:
+            new_task.logfile = os.path.join(self.report, new_task.get_logname())
+
         self.tasks[new_id] = new_task
 
         for sec in parser.sections():
@@ -438,15 +452,72 @@ class Maid(object):
                         new_id = new_task.get_id()
                         if new_id in self.tasks: # Make sure the task does not already exist
                             raise RuntimeError("Duplicate task: %s"%(new_id,))
+                        # If an html report is requested, redirect the output to the appropriate file
+                        if self.report is not None:
+                            new_task.logfile = os.path.join(self.report, new_task.get_logname())
 
                         # Store task in dict of tasks
                         self.tasks[new_id] = new_task
+
+    @staticmethod
+    def _quote_html(s):
+        trans = html_entities.codepoint2name
+        ret = ''.join(trans[x] if x in trans else x for x in s)
+        return ret
+
+    def generate_index(self):
+        """Generate the index.html page for the reports."""
+
+        if self.report is None:
+            # Nothing to do
+            return
+        else:
+            indexfile = os.path.join(self.report, 'index.html')
+
+        # Build the html rows for the tasks
+        taskrows = ''
+        for name in sorted(self.tasks):
+            t = self.tasks[name]
+            taskrows += """
+                <tr>
+                    <td>{lastrun}</td>
+                    <td><a href="{logfile}">{name}</a></td>
+                </tr>
+            """.format(lastrun = t.last_done.strftime(self.tasklog.timeformat),
+                        logfile = t.get_logname(),
+                        name = self._quote_html(t.get_id()))
+
+        context = {
+            'timestamp': self.tasklog.timestamp(),
+            'taskrows': taskrows,
+        }
+        with open(indexfile, 'wt') as f:
+            f.write("""<!DOCTYPE html>
+                <html lang="en">
+                  <head>
+                    <meta charset="utf-8">
+                    <title>T2K Data Manager - Maid Report</title>
+                  </head>
+                  <body>
+                    <h1>T2K Data Manager - Maid Report</h1>
+                    <h2>{timestamp}</h2>
+                    <table>
+                      {taskrows}
+                    </table>
+                  </body>
+                </html>
+            """.format(**context))
 
     def do_task(self, task):
         """Do a specific task and log it in the tasklog.
 
         Return `True` if succesfull.
         """
+
+        # Report if necessary
+        self.generate_index()
+
+        # Do the task and log it
         self.tasklog.log('STARTED', task.get_id())
         try:
             task.do()
@@ -462,6 +533,9 @@ class Maid(object):
         else:
             self.tasklog.log('DONE', task.get_id())
             success = True
+
+        # Report if necessary
+        self.generate_index()
 
         return success
 
@@ -559,9 +633,11 @@ def run_maid():
     parser = argparse.ArgumentParser(description="Regular housekeeping for the T2K data. Run at least daily!")
     parser.add_argument('-e', '--eager', action='store_true',
                         help="do a task, even if it is not due yet")
+    parser.add_argument('-r', '--report', metavar='FOLDER', default=None,
+                        help="generate an html report in the given folder")
     args = parser.parse_args()
 
-    maid = Maid(t2kdm.config.maid_config)
+    maid = Maid(t2kdm.config.maid_config, report=args.report)
     maid.do_something(eager=args.eager)
 
 if __name__ == '__main__':
