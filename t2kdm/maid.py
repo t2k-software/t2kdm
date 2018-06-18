@@ -160,6 +160,7 @@ class Task(object):
         now = datetime.now(utc)
         day = 24*3600 # seconds per day
         week = 7*day # seconds per week
+        month = 30*day # seconds per month
         T = self.get_period()
 
         # Everything sucks on python 2.6...
@@ -167,8 +168,8 @@ class Task(object):
         sec = lambda td: float(td.seconds + (td.days * day))
 
         if self.last_done is None:
-            # If no last execution is known, assume the task needs to be done since a week ago
-            return week / sec(T)
+            # If no last execution is known, assume the task needs to be done since a month ago
+            return month / sec(T)
         else:
             return sec(now - (self.last_done + T)) / sec(T)
 
