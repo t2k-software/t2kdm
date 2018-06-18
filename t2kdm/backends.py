@@ -214,11 +214,19 @@ class GridBackend(object):
             def outputs(paths):
                 for path in paths:
                     # Ignore errors and segfaults when running recursively
+                    ok = kwargs.pop('_ok_code', None)
+                    ex = kwargs.pop('_bg_exc', None)
                     try:
                         yield self.replicate(path, destination, source, tape, recursive,
                                 _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                    except sh.ErrorReturnCode:
+                        pass
                     except sh.SignalException_SIGSEGV:
                         pass
+                    if ok is not None:
+                        kwargs['_ok_code'] = ok
+                    if ex is not None:
+                        kwargs['_bg_exc'] = ok
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
@@ -334,11 +342,19 @@ class GridBackend(object):
             def outputs(paths):
                 for path in paths:
                     # Ignore errors and segfaults when running recursively
+                    ok = kwargs.pop('_ok_code', None)
+                    ex = kwargs.pop('_bg_exc', None)
                     try:
                         yield self.remove(path, destination, recursive=recursive,
-                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
+                    except sh.ErrorReturnCode:
+                        pass
                     except sh.SignalException_SIGSEGV:
                         pass
+                    if ok is not None:
+                        kwargs['_ok_code'] = ok
+                    if ex is not None:
+                        kwargs['_bg_exc'] = ok
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
