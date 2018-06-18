@@ -76,7 +76,8 @@ class Task(object):
             # Redirect output to logfile
             stdout = sys.stdout
             stderr = sys.stderr
-            with open(self.logfile, 'at')as f:
+            # Open the file in line buffered mode, so we can read along
+            with open(self.logfile, 'at', 1) as f:
                 sys.stdout = f
                 sys.stderr = f
                 try:
