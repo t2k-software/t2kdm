@@ -479,12 +479,17 @@ class Maid(object):
         taskrows = ''
         for name in sorted(self.tasks):
             t = self.tasks[name]
+            # Task might never have been run
+            if t.last_done is None:
+                lastrun = "NEVER"
+            else:
+                lastrun = t.last_done.strftime(self.tasklog.timeformat)
             taskrows += """
                 <tr>
                     <td>{lastrun}</td>
                     <td><a href="{logfile}">{name}</a></td>
                 </tr>
-            """.format(lastrun = t.last_done.strftime(self.tasklog.timeformat),
+            """.format(lastrun = lastrun,
                         logfile = t.get_logname(),
                         name = self._quote_html(t.get_id()))
 
