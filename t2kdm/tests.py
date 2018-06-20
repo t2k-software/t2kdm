@@ -133,8 +133,33 @@ def run_read_write_tests(backend = t2kdm.backend):
     t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$')
     t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2])
 
+    print_("Testing put...")
+    with temp_dir() as tempdir:
+        tempf = 'thisfileshouldnotbehereforlong.txt'
+        filename = os.path.join(tempdir, tempf)
+        remotename = posixpath.join(testdir, tempf)
+        # Make sure the file does not exist
+        try:
+            t2kdm.remove(remotename, testSEs[0], final=True)
+        except sh.ErrorReturnCode:
+            pass
+        # Prepare something to upload
+        with open(filename, 'wt') as f:
+            f.write("This is testfile #3.\n")
+        with no_output():
+            t2kdm.put(filename, testdir+'/', destination=testSEs[0])
+
     print_("Testing remove...")
-    t2kdm.remove(testdir, testSEs[1], recursive=True)
+    t2kdm.remove(testdir, testSEs[1], recursive=True) # Remove everything from SE1
+    try:
+        # This should fail!
+        t2kdm.remove(remotename, testSEs[0])
+    except sh.ErrorReturnCode_1:
+        pass
+    else:
+        raise Exception("The last copy should not have been removed!")
+    # With the `final` argument it should work
+    t2kdm.remove(remotename, testSEs[0], final=True) # Remove uploaded file from previous test
 
 def run_tests():
     """Test the functions of the t2kdm."""

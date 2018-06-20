@@ -221,6 +221,17 @@ get.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
 all_commands.append(get)
 
+put = Command('put', t2kdm.put, "Upload file to the grid.")
+put.add_argument('localpath', type=str, nargs='?', default='./',
+    help="the file to be uploaded")
+put.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/file.txt'")
+put.add_argument('-d', '--destination', type=str, default=None,
+    help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no destination is provided, the closest one is chosen")
+put.add_argument('-t', '--tape', action='store_true',
+    help="accept tape storage elements when choosing the closest one")
+all_commands.append(put)
+
 SEs = Command('SEs', t2kdm.storage.list_storage_elements, "Print all available storage elements on screen.")
 all_commands.append(SEs)
 

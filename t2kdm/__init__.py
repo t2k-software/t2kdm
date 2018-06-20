@@ -25,3 +25,4 @@ else:
     replicate = backend.replicate
     remove = backend.remove
     get = backend.get
+    put = backend.put

@@ -316,6 +316,43 @@ class GridBackend(object):
         chain.add(self._get, replica, localpath, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
+    def _put(self, localpath, remotepath, storagepath, **kwargs):
+        raise NotImplementedError()
+
+    def put(self, localpath, remotepath, destination=None, tape=False, **kwargs):
+        """Upload and register a file.
+
+        If no destination storage element is provided, the closest one will be chosen.
+        """
+
+        # Split the local path in dir and file
+        path, base = posixpath.split(localpath)
+
+        # If the remotepath ends with '/', append the filename to it
+        if remotepath.endswith('/'):
+            remotepath += base
+
+        # Get the destination
+        if destination is None:
+            # Get closest SE
+            SE = storage.get_closest_SE(tape=tape)
+            if SE is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find valid storage element\n")
+        else:
+            # Use the provided destination
+            SE = storage.get_SE(destination)
+            if SE is None:
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find storage element %s.\n"%(destination,))
+
+        # Get the storage path
+        surl = SE.get_storage_path(remotepath)
+
+        # Upload and register the file
+        _path = self.full_path(remotepath)
+        return self._put(localpath, _path, surl, **kwargs)
+
     def _remove(self, storagepath, **kwargs):
         raise NotImplementedError()
 
@@ -403,6 +440,7 @@ class LCGBackend(GridBackend):
         self._bringonline_cmd = sh.Command('lcg-bringonline')
         self._replicate_cmd = sh.Command('lcg-rep')
         self._cp_cmd = sh.Command('lcg-cp')
+        self._cr_cmd = sh.Command('lcg-cr')
         self._del_cmd = sh.Command('lcg-del')
 
     def _ls(self, remotepath, **kwargs):
@@ -484,6 +522,21 @@ class LCGBackend(GridBackend):
 
         # Get original command output
         iterable = self._cp_cmd('-v', '--checksum', storagepath, localpath, **kwargs)
+
+        # Ignore lines that are identical to the previous
+        iterable = self._ignore_identical_lines(iterable)
+
+        # return requested kind of output
+        return self._iterable_output_from_iterable(iterable, _iter=it)
+
+    def _put(self, localpath, remotepath, storagepath, **kwargs):
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
+        kwargs['_iter'] = True # Need iterable to ignore identical lines
+
+        # Get original command output
+        iterable = self._cr_cmd('-v', '--checksum', '-d', storagepath, '-l', remotepath, localpath, **kwargs)
 
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
