@@ -71,13 +71,17 @@ class Task(object):
             raise ValueError("Illegal frequency!")
 
     @contextmanager
-    def redirected_output(self):
+    def redirected_output(self, append=False):
         if self.logfile is not None:
             # Redirect output to logfile
             stdout = sys.stdout
             stderr = sys.stderr
             # Open the file in line buffered mode, so we can read along
-            with open(self.logfile, 'at', 1) as f:
+            if append:
+                mode = 'at'
+            else:
+                mode= 'wt'
+            with open(self.logfile, mode, 1) as f:
                 sys.stdout = f
                 sys.stderr = f
                 try:
@@ -122,19 +126,36 @@ class Task(object):
         """Internal function that does what needs to be done.
 
         Must be implemented in inheriting classes.
+        Retrns `True` on success or `False` when it failed.
         """
         raise NotImplementedError()
 
     def do(self, id=None):
         """Actually do the task."""
-        self._pre_do(id=id)
 
-        with self.redirected_output():
-            self._do()
+        with self.redirected_output(append=False):
+            self._pre_do(id=id)
+            print_("TASK STARTED")
+            # Add a timestamp to the beginning of the output
+            sh.date(_out=sys.stdout)
 
-        # We fail here because the base class does not do anything
-        # If someone calls this method, something probably went wrong somewhere...
-        self._post_do(state='FAILED', id=id)
+            try:
+                success = self._do()
+            except:
+                # Something went wrong
+                self._post_do(state='FAILED', id=id)
+                raise
+
+            if success:
+                self._post_do(state='DONE', id=id)
+                print_("TASK DONE")
+            else:
+                self._post_do(state='FAILED', id=id)
+                print_("TASK FAILED")
+            # Add a timestamp to the end of the output
+            sh.date(_out=sys.stdout)
+
+        return success
 
     def _post_do(self, state='DONE', id=None):
         """Bookkeeping when finishing a task."""
@@ -227,6 +248,7 @@ class ReplicationTask(Task):
     def _do(self):
         for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
             print_(line, end='')
+        return True
 
     def __str__(self):
         """Return a string to identify the task by."""
@@ -261,6 +283,7 @@ class TrimLogTask(Task):
             tf.seek(0)
             # Overwrite old file
             sh.cat(_in=tf, _out=self.path)
+        return True
 
     def __str__(self):
         """Return a string to identify the task by."""
@@ -483,15 +506,24 @@ class Maid(object):
             # Task might never have been run
             if t.last_done is None:
                 lastrun = "NEVER"
+                state = ""
             else:
                 lastrun = t.last_done.strftime(self.tasklog.timeformat)
+                state = t.state
+                if state == 'STARTED':
+                    # Check if the PID is actually still there
+                    if not pid_running(int(t.last_id)):
+                        state = 'STARTED - PID NOT FOUND'
+
             taskrows += """
                 <tr>
                     <td>{lastrun}</td>
                     <td><a href="{logfile}">{name}</a></td>
+                    <td>{state}</td>
                 </tr>
             """.format(lastrun = lastrun,
                         logfile = t.get_logname(),
+                        state = state,
                         name = self._quote_html(t.get_id()))
 
         context = {
@@ -522,12 +554,13 @@ class Maid(object):
         """
 
         # Report if necessary
+        task._pre_do()
         self.generate_index()
 
         # Do the task and log it
         self.tasklog.log('STARTED', task.get_id())
         try:
-            task.do()
+            success = task.do()
         except KeyboardInterrupt:
             # Catch keyboard interrupts and exit gracefully
             self.tasklog.log('FAILED', task.get_id())
@@ -538,8 +571,11 @@ class Maid(object):
             self.tasklog.log('FAILED', task.get_id())
             raise
         else:
-            self.tasklog.log('DONE', task.get_id())
-            success = True
+            # No exceptions, so go by the return value
+            if success:
+                self.tasklog.log('DONE', task.get_id())
+            else:
+                self.tasklog.log('FAILED', task.get_id())
 
         # Report if necessary
         self.generate_index()
@@ -565,8 +601,8 @@ class Maid(object):
                     t.last_done = done[task][1] # tuple of (pid, time)
                     t.last_id =  done[task][0]
                     t.state = 'DONE'
-                elif task in started and started[task][1] < done[task][1]:
-                    # Do not overwrite the last time the task was started
+                elif task in started and started[task][1] <= done[task][1]:
+                    # Do not overwrite if task was started after last DONE
                     t.last_id =  done[task][0]
                     t.state = 'DONE'
 
@@ -577,8 +613,8 @@ class Maid(object):
                     t.last_done = failed[task][1] # tuple of (pid, time)
                     t.last_id =  failed[task][0]
                     t.state = 'FAILED'
-                elif task in started and started[task][1] < failed[task][1]:
-                    # Do not overwrite the last time the task was started
+                elif task in started and started[task][1] <= failed[task][1]:
+                    # Do not overwrite if task was started after last FAILED
                     t.last_id =  failed[task][0]
                     t.state = 'FAILED'
 
