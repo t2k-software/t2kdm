@@ -53,15 +53,23 @@ class StorageElement(object):
         """Check whether the remote path is replicated on this SE."""
         return self.host in t2kdm.replicas(remotepath)
 
-    def get_closest_SE(self, remotepath, tape=False):
+    def get_closest_SE(self, remotepath=None, tape=False):
         """Get the storage element with the closest replica.
 
         If `tape` is False (default), prefer disk SEs over tape SEs.
+        If no `rempotepath` is provided, just return the closest SE over all.
         """
         closest_SE = None
         closest_distance = None
-        for rep in t2kdm.replicas(remotepath, _iter=True):
-            SE = get_SE_by_path(rep)
+
+        if remotepath is None:
+            candidates = SEs
+        else:
+            candidates = []
+            for rep in t2kdm.replicas(remotepath, _iter=True):
+                candidates.append(get_SE_by_path(rep))
+
+        for SE in candidates:
             if SE is None:
                 continue
             if closest_SE is None:
@@ -170,10 +178,11 @@ def get_SE(SE):
         return SE_by_host[SE]
     return get_SE_by_path(SE)
 
-def get_closest_SE(remotepath, location=None, tape=False):
+def get_closest_SE(remotepath=None, location=None, tape=False):
     """Get the closest storage element with a replica of the given file.
 
     If `tape` is False (default), prefer disk SEs over tape SEs.
+    If no `rempotepath` is provided, just return the closest SE over all.
     """
 
     if location is None:
