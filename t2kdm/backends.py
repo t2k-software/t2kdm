@@ -319,14 +319,15 @@ class GridBackend(object):
     def _remove(self, storagepath, **kwargs):
         raise NotImplementedError()
 
-    def remove(self, remotepath, destination, recursive=False, **kwargs):
+    def remove(self, remotepath, destination, recursive=False, final=False, **kwargs):
         """Remove the replica of a file from a storage element.
 
         If `recursive` is `True`, all files and sub-directories of a given path are removed.
         if `recursive` is a string, it is treated as regular expression
         and only matching subfolders or files are replicated.
 
-        This command will refuse to remove the last replica of a file!
+        This command will refuse to remove the last replica of a file
+        unless the `final` argument is `True`!
         """
 
         # Do thing recursively if requested
@@ -377,7 +378,7 @@ class GridBackend(object):
         # Check how many replicas there are
         # If it is only one, refuse to delete it
         nrep = self.replicas(remotepath).count('\n') # count lines
-        if nrep <= 1:
+        if not final and nrep <= 1:
             raise sh.ErrorReturnCode_1('', '',
                     "Only one replica of file left! Aborting.\n")
 

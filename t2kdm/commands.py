@@ -229,6 +229,8 @@ remove.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 remove.add_argument('destination', type=str,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
+remove.add_argument('-f', '--final', action='store_true',
+    help="do not refuse to remove the last replica of the file, USE WITH CARE!")
 remove.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively replicate all contents [that match REGEX] of a directory")
 all_commands.append(remove)
