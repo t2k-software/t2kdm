@@ -294,6 +294,11 @@ class GridBackend(object):
                 raise sh.ErrorReturnCode_1('', '',
                         "Could not find storage element %s.\n"%(source,))
 
+            if not SE.has_replica(remotepath):
+                # Replica not present at source, throw error
+                raise sh.ErrorReturnCode_1('', '',
+                        "%s\nNo replica present at source storage element %s\n"%(remotepath, SE.name,))
+
         # Get the source replica
         replica = SE.get_replica(remotepath)
 
