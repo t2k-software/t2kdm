@@ -129,6 +129,11 @@ SEs = [
         type = 'disk',
         location = '/europe/uk/shef',
         basepath = 'srm://lcgse0.shef.ac.uk/dpm/shef.ac.uk/home/t2k.org'),
+    StorageElement('UKI-NORTHGRID-LANCS-HEP-disk',
+        host = 'fal-pygrid-30.lancs.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/lancs',
+        basepath = 'srm://fal-pygrid-30.lancs.ac.uk/dpm/lancs.ac.uk/home/t2k.org'),
     TriumfStorageElement('CA-TRIUMF-T2K1-disk',
         host = 't2ksrm.nd280.org',
         type = 'disk',
@@ -148,7 +153,6 @@ SEs = [
 #Nebraska1-disk
 #UKI-LT2-IC-HEP-disk
 #UKI-LT2-QMUL2-disk
-#UKI-NORTHGRID-LANCS-HEP-disk
 #UKI-NORTHGRID-LIV-HEP-disk
 #UKI-NORTHGRID-MAN-HEP-disk
 #UKI-SOUTHGRID-OX-HEP-disk
