@@ -93,7 +93,7 @@ class StorageElement(object):
         return closest_SE
 
     def __str__(self):
-        return "%s (%s)"%(self.name, self.host)
+        return "%s (%s) [%s]"%(self.name, self.host, self.location)
 
 class TriumfStorageElement(StorageElement):
     """Special case of StorageElement for TRIUMF.

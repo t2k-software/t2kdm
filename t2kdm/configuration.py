@@ -23,7 +23,8 @@ descriptions = {
                     "Must follow the general pattern of '/continent/country/site'.\n"\
                     "Examples: /europe/uk/ral\n"\
                     "          /americas/ca/triumf\n"\
-                    "          /asia/jp/kek",
+                    "          /asia/jp/kek\n"\
+                    "You can see the locations of all available SEs by running `t2kdm-SEs`.",
     'maid_config':  "Where the configuration file for the `t2kdm-maid` command is stored.\n"\
                     "If you do not deal with raw data replication, don't worry about it.\n",
 }
