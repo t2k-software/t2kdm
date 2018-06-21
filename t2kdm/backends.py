@@ -545,7 +545,19 @@ class LCGBackend(GridBackend):
         return self._iterable_output_from_iterable(iterable, _iter=it)
 
     def _remove(self, storagepath, **kwargs):
-        return self._del_cmd(storagepath, **kwargs)
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
+        kwargs['_iter'] = True # Need iterable to ignore identical lines
+
+        # Get original command output
+        iterable = self._del_cmd('-v', storagepath, **kwargs)
+
+        # Ignore lines that are identical to the previous
+        iterable = self._ignore_identical_lines(iterable)
+
+        # return requested kind of output
+        return self._iterable_output_from_iterable(iterable, _iter=it)
 
 def get_backend(config):
     """Return the backend according to the provided configuration."""
