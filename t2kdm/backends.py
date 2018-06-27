@@ -163,7 +163,7 @@ class GridBackend(object):
         # We need to do multiple tries with short timeouts,
         # because it seems like the bringonline commands do not notice when they succeed.
         timeout = 10
-        tries = 720
+        tries = 1440
         for i in range(tries):
             try:
                 self._bringonline(replica, timeout)
@@ -557,7 +557,7 @@ class LCGBackend(GridBackend):
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 
         # Get original command output
-        iterable = self._replicate_cmd('-v', '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
+        iterable = self._replicate_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
 
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
@@ -572,7 +572,7 @@ class LCGBackend(GridBackend):
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 
         # Get original command output
-        iterable = self._cp_cmd('-v', '--checksum', storagepath, localpath, **kwargs)
+        iterable = self._cp_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', storagepath, localpath, **kwargs)
 
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
@@ -587,7 +587,7 @@ class LCGBackend(GridBackend):
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 
         # Get original command output
-        iterable = self._cr_cmd('-v', '--checksum', '-d', storagepath, '-l', remotepath, localpath, **kwargs)
+        iterable = self._cr_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', storagepath, '-l', remotepath, localpath, **kwargs)
 
         # Ignore lines that are identical to the previous
         iterable = self._ignore_identical_lines(iterable)
