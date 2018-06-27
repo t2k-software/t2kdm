@@ -1,7 +1,7 @@
 import sh
 import itertools
 import posixpath
-from os import path
+import os
 from t2kdm import storage
 import re
 
@@ -303,8 +303,8 @@ class GridBackend(object):
         replica = SE.get_replica(remotepath)
 
         # Append the basename to the localpath if it is a directory
-        if path.isdir(localpath):
-            localpath = path.join(localpath, posixpath.basename(remotepath))
+        if os.path.isdir(localpath):
+            localpath = os.path.join(localpath, posixpath.basename(remotepath))
 
         # Chain commands for bringing the file online and replicating it
         it = kwargs.pop('_iter', False)
