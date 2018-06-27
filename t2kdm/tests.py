@@ -84,6 +84,10 @@ def run_read_only_tests(backend = t2kdm.backend):
         assert(os.path.isfile(filename))
         os.remove(filename)
 
+        # Test recursive get
+        t2kdm.get(testdir, tempdir, recursive=True)
+        assert(os.path.isfile(filename))
+
     print_("Testing check...")
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')

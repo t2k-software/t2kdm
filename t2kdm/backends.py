@@ -274,12 +274,63 @@ class GridBackend(object):
     def _get(self, storagepath, localpath, **kwargs):
         raise NotImplementedError()
 
-    def get(self, remotepath, localpath, source=None, tape=False, **kwargs):
+    def get(self, remotepath, localpath, source=None, tape=False, recursive=False, force=False, **kwargs):
         """Download a file from the grid.
 
         If no source storage elment is provided, the closest replica is chosen.
         If `tape` is True, tape SEs are considered when choosing the closest one.
+        If `recursive` is `True`, all files and sub-directories of a given path are replicated.
+        If `recursive` is a string, it is treated as regular expression
+        and only matching subfolders or files are replicated.
+        If `force` is `True`, local files will be overwritten.
         """
+
+        # Do thing recursively if requested
+        if isinstance(recursive, str):
+            regex = re.compile(recursive)
+            recursive = True
+        else:
+            regex = None
+        _path = self.full_path(remotepath)
+        if recursive and self._is_dir(_path):
+            # Go through the contents of the directory recursively
+            it = kwargs.pop('_iter', False)
+            newpaths = []
+            for element in self.ls(remotepath, _iter=True):
+                element = element.strip()
+                if regex is None or regex.search(element):
+                    _remote = posixpath.join(remotepath, element)
+                    _local = os.path.join(localpath, element)
+                    newpaths.append( (_remote, _local) )
+            def outputs(paths):
+                for rpath, lpath in paths:
+                    # Ignore errors and segfaults when running recursively
+                    ok = kwargs.pop('_ok_code', None)
+                    ex = kwargs.pop('_bg_exc', None)
+                    try:
+                        yield self.get(rpath, lpath, source, tape, recursive, force,
+                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                    except sh.ErrorReturnCode:
+                        pass
+                    except sh.SignalException_SIGSEGV:
+                        pass
+                    if ok is not None:
+                        kwargs['_ok_code'] = ok
+                    if ex is not None:
+                        kwargs['_bg_exc'] = ok
+            iterable = itertools.chain.from_iterable(outputs(newpaths))
+            return self._iterable_output_from_iterable(iterable, _iter=it)
+
+        # Do not overwrite files unless explicitly told to
+        if os.path.isfile(localpath) and not force:
+            if recursive == False:
+                # Raise for a single file
+                raise sh.ErrorReturnCode_1('', '',
+                        "File does already exist: %s.\n"%(localpath,))
+            else:
+                # Print status for recursive
+                return self._iterable_output_from_text(
+                        "File does already exist: %s.\n"%(localpath,))
 
         if source is None:
             # Get closest SE

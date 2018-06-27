@@ -215,6 +215,10 @@ get.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 get.add_argument('localpath', type=str, nargs='?', default='./',
     help="the local path")
+get.add_argument('-f', '--force', action='store_true',
+    help="overwrite local files if necessary")
+get.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively get all contents [that match REGEX] of a directory")
 get.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 get.add_argument('-t', '--tape', action='store_true',
