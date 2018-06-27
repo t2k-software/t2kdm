@@ -124,6 +124,11 @@ SEs = [
         type = 'disk',
         location = '/europe/uk/ral',
         basepath = 'srm://heplnx204.pp.rl.ac.uk/pnfs/pp.rl.ac.uk/data/t2k/t2k.org'),
+    StorageElement('UKI-SOUTHGRID-OX-HEP-disk',
+        host = 't2se01.physics.ox.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/ox',
+        basepath = 'srm://t2se01.physics.ox.ac.uk/dpm/physics.ox.ac.uk/home/t2k.org'),
     StorageElement('UKI-NORTHGRID-SHEF-HEP-disk',
         host = 'lcgse0.shef.ac.uk',
         type = 'disk',
@@ -134,6 +139,46 @@ SEs = [
         type = 'disk',
         location = '/europe/uk/lancs',
         basepath = 'srm://fal-pygrid-30.lancs.ac.uk/dpm/lancs.ac.uk/home/t2k.org'),
+    StorageElement('UKI-NORTHGRID-MAN-HEP-disk',
+        host = 'bohr3226.tier2.hep.manchester.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/man',
+        basepath = 'srm://bohr3226.tier2.hep.manchester.ac.uk/dpm/tier2.hep.manchester.ac.uk/home/t2k.org'),
+    StorageElement('UKI-NORTHGRID-LIV-HEP-disk',
+        host = 'hepgrid11.ph.liv.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/liv',
+        basepath = 'srm://hepgrid11.ph.liv.ac.uk/dpm/ph.liv.ac.uk/home/t2k.org'),
+    StorageElement('UKI-LT2-IC-HEP-disk',
+        host = 'gfe02.grid.hep.ph.ic.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/london/ic',
+        basepath = 'srm://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/t2k'),
+    StorageElement('UKI-LT2-QMUL2-disk',
+        host = 'se03.esc.qmul.ac.uk',
+        type = 'disk',
+        location = '/europe/uk/london/qmul',
+        basepath = 'srm://se03.esc.qmul.ac.uk/t2k.org'),
+    StorageElement('IN2P3-CC-disk',
+        host = 'polgrid4.in2p3.fr',
+        type = 'disk',
+        location = '/europe/fr/in2p3',
+        basepath = 'srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org'),
+    StorageElement('PIC-disk',
+        host = 'srm.pic.es',
+        type = 'disk',
+        location = '/europe/es/pic',
+        basepath = 'srm://srm.pic.es/pnfs/pic.es/data/t2k.org'),
+    #StorageElement('IFIC-LCG2-disk',
+    #    host = 'srmv2.ific.uv.es',
+    #    type = 'disk',
+    #    location = '/europe/es/ific',
+    #    basepath = ''), # Need to know base path
+    #StorageElement('INFN-BARI1-disk',
+    #    host = 'storm-se-01.ba.infn.it',
+    #    type = 'disk',
+    #    location = '/europe/',
+    #    basepath = ''), # Need to know base path
     TriumfStorageElement('CA-TRIUMF-T2K1-disk',
         host = 't2ksrm.nd280.org',
         type = 'disk',
@@ -143,21 +188,12 @@ SEs = [
         host = 'kek2-se01.cc.kek.jp',
         type = 'disk',
         location = '/asia/jp/kek',
-        basepath = 'srm://'),
-# TODO:
+        basepath = 'srm://kek2-se01.cc.kek.jp/t2k.org'),
+# TODO (Possibly Dirac SEs that are not available to T2K in general):
 #GRIF-disk
 #GridPPSandboxSE
-#IFIC-LCG2-disk
-#IN2P3-CC-disk
-#INFN-BARI1-disk
 #Nebraska1-disk
-#UKI-LT2-IC-HEP-disk
-#UKI-LT2-QMUL2-disk
-#UKI-NORTHGRID-LIV-HEP-disk
-#UKI-NORTHGRID-MAN-HEP-disk
-#UKI-SOUTHGRID-OX-HEP-disk
 #UNIBE-LHEP-disk
-#pic-disk
     ]
 
 SE_by_name = {}

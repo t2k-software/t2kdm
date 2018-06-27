@@ -140,7 +140,8 @@ def run_read_write_tests(backend = t2kdm.backend):
         remotename = posixpath.join(testdir, tempf)
         # Make sure the file does not exist
         try:
-            t2kdm.remove(remotename, testSEs[0], final=True)
+            for SE in t2kdm.storage.SEs:
+                t2kdm.remove(remotename, SE.name, final=True)
         except sh.ErrorReturnCode:
             pass
         # Prepare something to upload
@@ -149,17 +150,32 @@ def run_read_write_tests(backend = t2kdm.backend):
         with no_output():
             t2kdm.put(filename, testdir+'/', destination=testSEs[0])
 
+    print_("Testing disk SEs...")
+    # Replicate test file to all SEs, to see if they all work
+    for SE in t2kdm.storage.SEs:
+        if SE.type == 'tape' or 'TRIUMF' in SE.name or 'KEK' in SE.name or 'QMUL' in SE.name:
+            # These SEs do not seem to cooperate
+            continue
+        t2kdm.replicate(remotename, SE.name)
+
     print_("Testing remove...")
     t2kdm.remove(testdir, testSEs[1], recursive=True) # Remove everything from SE1
+    # Remove uploaded file from previous test
     try:
         # This should fail!
-        t2kdm.remove(remotename, testSEs[0])
+        for SE in t2kdm.storage.SEs:
+            t2kdm.remove(remotename, SE.name)
     except sh.ErrorReturnCode_1:
         pass
     else:
         raise Exception("The last copy should not have been removed!")
     # With the `final` argument it should work
-    t2kdm.remove(remotename, testSEs[0], final=True) # Remove uploaded file from previous test
+    try:
+        for SE in t2kdm.storage.SEs:
+            t2kdm.remove(remotename, SE.name, final=True)
+    except sh.ErrorReturnCode_1 as e:
+        # The command will fail when the file no longer exists
+        assert("No such file or directory" in e.stderr)
 
 def run_tests():
     """Test the functions of the t2kdm."""
