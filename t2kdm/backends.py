@@ -218,7 +218,7 @@ class GridBackend(object):
                     ex = kwargs.pop('_bg_exc', None)
                     try:
                         yield self.replicate(path, destination, source, tape, recursive,
-                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
                     except sh.ErrorReturnCode:
                         pass
                     except sh.SignalException_SIGSEGV:
@@ -226,7 +226,7 @@ class GridBackend(object):
                     if ok is not None:
                         kwargs['_ok_code'] = ok
                     if ex is not None:
-                        kwargs['_bg_exc'] = ok
+                        kwargs['_bg_exc'] = ex
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
@@ -309,7 +309,7 @@ class GridBackend(object):
                     ex = kwargs.pop('_bg_exc', None)
                     try:
                         yield self.get(rpath, lpath, source, tape, recursive, force,
-                                _iter=True, _ok_code=list(range(-255,256)), **kwargs)
+                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
                     except sh.ErrorReturnCode:
                         pass
                     except sh.SignalException_SIGSEGV:
@@ -317,7 +317,7 @@ class GridBackend(object):
                     if ok is not None:
                         kwargs['_ok_code'] = ok
                     if ex is not None:
-                        kwargs['_bg_exc'] = ok
+                        kwargs['_bg_exc'] = ex
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
@@ -448,7 +448,7 @@ class GridBackend(object):
                     if ok is not None:
                         kwargs['_ok_code'] = ok
                     if ex is not None:
-                        kwargs['_bg_exc'] = ok
+                        kwargs['_bg_exc'] = ex
             iterable = itertools.chain.from_iterable(outputs(newpaths))
             return self._iterable_output_from_iterable(iterable, _iter=it)
 
