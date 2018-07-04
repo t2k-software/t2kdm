@@ -13,7 +13,7 @@ import posixpath
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
-testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-NORTHGRID-SHEF-HEP-disk', 'RAL-LCG22-tape']
+testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-SOUTHGRID-OX-HEP-disk', 'RAL-LCG22-tape']
 
 @contextmanager
 def no_output(redirect=True):
