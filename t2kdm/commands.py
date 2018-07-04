@@ -85,6 +85,13 @@ class Command(object):
         except sh.ErrorReturnCode as e:
             print_(e.stderr, file=sys.stderr, end='')
             return e.exit_code
+        except IOError as e:
+            if e.errno == 32:
+                # A broken pipe, e.g. from using a command with `head`.
+                # Throwing an exception for this looks untidy, so we just return an error code.
+                return 1
+            else:
+                raise
 
         return 0
 
