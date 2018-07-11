@@ -141,12 +141,13 @@ class Task(object):
 
             try:
                 success = self._do()
-            except:
+            except Exception as e:
                 # Something went wrong
                 self._post_do(state='FAILED', id=id)
                 print_("TASK FAILED")
                 # Add a timestamp to the end of the output
                 sh.date(_out=sys.stdout)
+                print_(e)
                 raise
 
             if success:
