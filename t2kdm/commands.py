@@ -85,6 +85,9 @@ class Command(object):
         except sh.ErrorReturnCode as e:
             print_(e.stderr, file=sys.stderr, end='')
             return e.exit_code
+        except sh.SignalException_SIGSEGV as e:
+            print_(e.stderr, file=sys.stderr, end='')
+            return e.exit_code
         except IOError as e:
             if e.errno == 32:
                 # A broken pipe, e.g. from using a command with `head`.
@@ -121,6 +124,9 @@ class Command(object):
             for line in self.run_from_arglist(args, **kwargs1):
                 print_(line, file=out, end='')
         except sh.ErrorReturnCode as e:
+            print_(e.stderr, file=out, end='')
+            return False
+        except sh.SignalException_SIGSEGV as e:
             print_(e.stderr, file=out, end='')
             return False
         except SystemExit:

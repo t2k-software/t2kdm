@@ -171,6 +171,10 @@ class GridBackend(object):
                 # Did not work
                 # Try again
                 continue
+            except sh.SignalException_SIGSEGV:
+                # Did not work
+                # Try again
+                continue
             else:
                 # It worked
                 # exit loop
@@ -517,6 +521,8 @@ class LCGBackend(GridBackend):
             listing = self._replica_state_cmd('-l', _path, **kwargs)
         except sh.ErrorReturnCode:
             listing = '- - - - - ?'
+        except sh.SignalException_SIGSEGV:
+            listing = '- - - - - ?'
         return listing.split()[5]
 
     def _replica_checksum(self, storagepath, **kwargs):
@@ -525,6 +531,8 @@ class LCGBackend(GridBackend):
         try:
             listing = self._replica_checksum_cmd(_path, **kwargs)
         except sh.ErrorReturnCode:
+            listing = '? -'
+        except sh.SignalException_SIGSEGV:
             listing = '? -'
         try:
             checksum = listing.split()[0]
