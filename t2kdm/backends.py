@@ -182,7 +182,7 @@ class GridBackend(object):
         else:
             # Never reached a break
             # It did not work so we raise an error
-            raise sh.ErrorReturnCode('', '',
+            raise sh.ErrorReturnCode_1('', '',
                 "Could not bring replica online.\n")
 
         return self._iterable_output_from_text("Replica is online.\n", **kwargs)
