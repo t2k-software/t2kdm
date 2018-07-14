@@ -59,6 +59,15 @@ class GridBackend(object):
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
+    def should_raise(self, **kwargs):
+        """Analyse kwargs and decide whether an exception should be raised."""
+
+        ok = kwargs.pop('_ok_code', [])
+        if 1 in ok:
+            return False
+        else:
+            return True
+
     def full_path(self, relpath):
         """Prepend the base dir to a path."""
         return posixpath.normpath(self.basedir + relpath)
@@ -237,8 +246,12 @@ class GridBackend(object):
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
         if dst is None:
-            raise sh.ErrorReturnCode_1('', '',
-                    "Could not find storage element %s.\n"%(destination,))
+            if self.should_raise(**kwargs):
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find storage element %s.\n"%(destination,))
+            else:
+                return self._iterable_output_from_text(
+                        "Could not find storage element %s.\n", **kwargs)
 
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
@@ -249,18 +262,30 @@ class GridBackend(object):
         if source is None:
             src = dst.get_closest_SE(remotepath, tape=tape)
             if src is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find valid storage element with replica of %s.\n"%(remotepath,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find valid storage element with replica of %s.\n"%(remotepath,))
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find valid storage element with replica of %s.\n"%(remotepath,), **kwargs)
         else:
             src = storage.get_SE(source)
             if src is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find storage element %s.\n"%(source,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find storage element %s.\n"%(source,))
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find storage element %s.\n"%(source,), **kwargs)
 
             if not src.has_replica(remotepath):
                 # Replica not present at source, throw error
-                raise sh.ErrorReturnCode_1('', '',
-                        "%s\nNo replica present at source storage element %s\n"%(remotepath, src.name,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "%s\nNo replica present at source storage element %s\n"%(remotepath, src.name,))
+                else:
+                    return self._iterable_output_from_text(
+                            "%s\nNo replica present at source storage element %s\n"%(remotepath, src.name,), **kwargs)
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
@@ -327,32 +352,44 @@ class GridBackend(object):
 
         # Do not overwrite files unless explicitly told to
         if os.path.isfile(localpath) and not force:
-            if recursive == False:
+            if recursive == False and self.should_raise(**kwargs):
                 # Raise for a single file
                 raise sh.ErrorReturnCode_1('', '',
                         "File does already exist: %s.\n"%(localpath,))
             else:
                 # Print status for recursive
                 return self._iterable_output_from_text(
-                        "File does already exist: %s.\n"%(localpath,))
+                        "File does already exist: %s.\n"%(localpath,), **kwargs)
 
         if source is None:
             # Get closest SE
             SE = storage.get_closest_SE(remotepath, tape=tape)
             if SE is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find valid storage element with replica of %s.\n"%(remotepath,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find valid storage element with replica of %s.\n"%(remotepath,))
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find valid storage element with replica of %s.\n"%(remotepath,), **kwargs)
         else:
             # Use the provided source
             SE = storage.get_SE(source)
             if SE is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find storage element %s.\n"%(source,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find storage element %s.\n"%(source,))
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find storage element %s.\n"%(source,), **kwargs)
 
             if not SE.has_replica(remotepath):
                 # Replica not present at source, throw error
-                raise sh.ErrorReturnCode_1('', '',
-                        "%s\nNo replica present at source storage element %s\n"%(remotepath, SE.name,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "%s\nNo replica present at source storage element %s\n"%(remotepath, SE.name,), **kwargs)
+                else:
+                    return self._iterable_output_from_text(
+                            "%s\nNo replica present at source storage element %s\n"%(remotepath, SE.name,), **kwargs)
 
         # Get the source replica
         replica = SE.get_replica(remotepath)
@@ -392,14 +429,22 @@ class GridBackend(object):
             # Get closest SE
             SE = storage.get_closest_SE(tape=tape)
             if SE is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find valid storage element\n")
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find valid storage element\n")
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find valid storage element\n", **kwargs)
         else:
             # Use the provided destination
             SE = storage.get_SE(destination)
             if SE is None:
-                raise sh.ErrorReturnCode_1('', '',
-                        "Could not find storage element %s.\n"%(destination,))
+                if self.should_raise(**kwargs):
+                    raise sh.ErrorReturnCode_1('', '',
+                            "Could not find storage element %s.\n"%(destination,))
+                else:
+                    return self._iterable_output_from_text(
+                            "Could not find storage element %s.\n"%(destination,), **kwargs)
 
         # Get the storage path
         surl = SE.get_storage_path(remotepath)
@@ -459,8 +504,12 @@ class GridBackend(object):
         # Get destination SE and check if file is already not present
         dst = storage.get_SE(destination)
         if dst is None:
-            raise sh.ErrorReturnCode_1('', '',
-                    "Could not find storage element %s.\n"%(destination,))
+            if self.should_raise(**kwargs):
+                raise sh.ErrorReturnCode_1('', '',
+                        "Could not find storage element %s.\n"%(destination,))
+            else:
+                return self._iterable_output_from_text(
+                        "Could not find storage element %s.\n"%(destination,), **kwargs)
 
         if not dst.has_replica(remotepath):
             # Replica already not present at destination, nothing to do here
@@ -471,8 +520,12 @@ class GridBackend(object):
         # If it is only one, refuse to delete it
         nrep = self.replicas(remotepath).count('\n') # count lines
         if not final and nrep <= 1:
-            raise sh.ErrorReturnCode_1('', '',
-                    "Only one replica of file left! Aborting.\n")
+            if self.should_raise(**kwargs):
+                raise sh.ErrorReturnCode_1('', '',
+                        "Only one replica of file left! Aborting.\n")
+            else:
+                return self._iterable_output_from_text(
+                        "Only one replica of file left! Aborting.\n", **kwargs)
 
         destination_path = dst.get_replica(remotepath)
 
