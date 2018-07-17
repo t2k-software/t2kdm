@@ -115,7 +115,7 @@ class Command(object):
         kwargs1 = {
             '_iter': True, # Line by line
             '_err_to_out': True, # Redirect error otput to the regular output
-            '_bg_exc': False, # Do not print esxceptions of bg processes
+            '_bg_exc': False, # Do not print exceptions of bg processes
         }
         kwargs1.update(kwargs)
 

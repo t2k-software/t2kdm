@@ -250,7 +250,7 @@ class ReplicationTask(Task):
         return kwargs
 
     def _do(self):
-        for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True):
+        for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True, _err_to_out=True):
             print_(line, end='')
         return True
 

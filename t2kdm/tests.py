@@ -108,7 +108,7 @@ def run_read_only_tests(backend = t2kdm.backend):
         with fake_argv(['t2kdm-cli']):
             assert(cmd.ls.run_from_console() == 0) # This should work
         with fake_argv(['t2kdm-ls', '/abcxyz']):
-            assert(cmd.ls.run_from_console() == 1) # This should not work, hence the 1 return value
+            assert(cmd.ls.run_from_console() != 0) # This should not work, hence the not 0 return value
 
         # None of the Commands should return True in the CLI
         for com in cmd.all_commands:

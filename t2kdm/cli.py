@@ -75,8 +75,11 @@ Type 'help' or '?' to list commands.
         pwd = self.get_abs_remote_path(arg)
         try: # Let us see whether the path is a directory
             t2kdm.ls(pwd)
-        except sh.ErrorReturnCode_1 as e:
-            print_("ERROR, no such remote directory: %s"%(pwd,))
+        except sh.ErrorReturnCode as e:
+            if "such file or directory" in e.stderr:
+                print_("ERROR, no such remote directory: %s"%(pwd,))
+            else:
+                print_(e.stderr)
         else:
             self.remotedir = pwd
 

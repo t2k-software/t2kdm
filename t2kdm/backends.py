@@ -491,7 +491,7 @@ class LCGBackend(GridBackend):
         kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '/t2k.org')
         GridBackend.__init__(self, **kwargs)
 
-        self._proxy_init_cmd = sh.Command('voms-proxy-init')
+        #self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('lfc-ls')
         self._replicas_cmd = sh.Command('lcg-lr')
         self._replica_state_cmd = sh.Command('lcg-ls')
@@ -622,10 +622,87 @@ class LCGBackend(GridBackend):
         # return requested kind of output
         return self._iterable_output_from_iterable(iterable, _iter=it)
 
+class GFALBackend(GridBackend):
+    """Grid backend using the GFAL command line tools `gfal-*`."""
+
+    def __init__(self, **kwargs):
+        # lfn paths alway need a '/grid' as highest level directory.
+        # Let us not expose that to the user.
+        kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '/t2k.org')
+        GridBackend.__init__(self, **kwargs)
+
+        #self._proxy_init_cmd = sh.Command('voms-proxy-init')
+        self._ls_cmd = sh.Command('gfal-ls').bake(color='never')
+        self._replicas_cmd = sh.Command('gfal-xattr')
+        self._replica_checksum_cmd = sh.Command('gfal-sum')
+        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
+        self._cp_cmd = sh.Command('gfal-copy')
+        self._del_cmd = sh.Command('gfal-rm')
+
+    def _ls(self, remotepath, **kwargs):
+        # Translate keyword arguments
+        l = kwargs.pop('long', False)
+        d = kwargs.pop('directory', False)
+        args = []
+        if l:
+            args.append('-l')
+        if -d:
+            args.append('-d')
+        args.append('lfn:'+remotepath)
+
+        return self._ls_cmd(*args, **kwargs)
+
+    def _replicas(self, remotepath, **kwargs):
+        return(self._replicas_cmd('lfn:'+remotepath, 'user.replicas', **kwargs))
+
+    def _replica_state(self, storagepath, **kwargs):
+        _path = storagepath.strip()
+        try:
+            state = self._replicas_cmd(_path, 'user.status', **kwargs).strip()
+        except sh.ErrorReturnCode:
+            state = '?'
+        except sh.SignalException_SIGSEGV:
+            state = '?'
+        return state
+
+    def _replica_checksum(self, storagepath, **kwargs):
+        _path = storagepath.strip()
+        try:
+            checksum = self._replica_checksum_cmd(_path, 'ADLER32', **kwargs).split()[1]
+        except sh.ErrorReturnCode:
+            checksum = '?'
+        except sh.SignalException_SIGSEGV:
+            checksum = '?'
+        except IndexError:
+            checksum = '?'
+        return checksum
+
+    def _bringonline(self, storagepath, timeout, **kwargs):
+        # Get original command output
+        return self._bringonline_cmd('-t', timeout, storagepath, **kwargs)
+
+    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
+        # Get original command output
+        return self._cp_cmd('-v', '--checksum', 'ADLER32', source_storagepath, destination_storagepath, **kwargs)
+
+    def _get(self, storagepath, localpath, **kwargs):
+        # Get original command output
+        return self._cp_cmd('-v', '--checksum', 'ADLER32', storagepath, localpath, **kwargs)
+
+    def _put(self, localpath, remotepath, storagepath, **kwargs):
+        # Get original command output
+        return self._cp_cmd('-v', '--checksum', 'ADLER32', localpath, storagepath, 'lfn:'+remotepath, **kwargs)
+
+    def _remove(self, storagepath, **kwargs):
+        # Get original command output
+        return self._del_cmd('-v', storagepath, **kwargs)
+
 def get_backend(config):
     """Return the backend according to the provided configuration."""
 
     if config.backend == 'lcg':
         return LCGBackend(basedir = config.basedir)
+    if config.backend == 'gfal':
+        return GFALBackend(basedir = config.basedir)
     else:
         raise config.ConfigError('backend', "Unknown backend!")
