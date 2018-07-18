@@ -206,7 +206,7 @@ check.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of problematic files to FILENAME")
 check.add_argument('-c', '--checksum', action='store_true',
     help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
-check.add_argument('-s', '--se', action='append',
+check.add_argument('-s', '--se', action='append', default=[],
     help="report replication status to the given storage element, can be used multiple times")
 all_commands.append(check)
 
