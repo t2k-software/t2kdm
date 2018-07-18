@@ -177,7 +177,7 @@ def run_read_write_tests(backend = t2kdm.backend):
     try:
         for SE in t2kdm.storage.SEs:
             t2kdm.remove(remotename, SE.name, final=True)
-    except sh.ErrorReturnCode_1 as e:
+    except sh.ErrorReturnCode as e:
         # The command will fail when the file no longer exists
         assert("No such file or directory" in e.stderr)
 

@@ -203,7 +203,7 @@ class GridBackend(object):
 
         return self._iterable_output_from_text("Replica is online.\n", **kwargs)
 
-    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
+    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
         raise NotImplementedError()
 
     def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, **kwargs):
@@ -253,7 +253,7 @@ class GridBackend(object):
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
         if dst is None:
-            return self.error("Could not find storage element %s.\n", **kwargs)
+            return self.error("Could not find storage element %s.\n"%(destination,), **kwargs)
 
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
@@ -284,7 +284,7 @@ class GridBackend(object):
         if src.type == 'tape':
             chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
             chain.add(self.bringonline, source_path, **kwargs)
-        chain.add(self._replicate, source_path, destination_path, **kwargs)
+        chain.add(self._replicate, source_path, destination_path, _path, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
     def _get(self, storagepath, localpath, **kwargs):
@@ -379,7 +379,7 @@ class GridBackend(object):
         chain.add(self._get, replica, localpath, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
-    def _put(self, localpath, remotepath, storagepath, **kwargs):
+    def _put(self, localpath, storagepath, remotepath, **kwargs):
         raise NotImplementedError()
 
     def put(self, localpath, remotepath, destination=None, tape=False, **kwargs):
@@ -412,9 +412,14 @@ class GridBackend(object):
 
         # Upload and register the file
         _path = self.full_path(remotepath)
-        return self._put(localpath, _path, surl, **kwargs)
+        return self._put(localpath, surl, _path, **kwargs)
 
-    def _remove(self, storagepath, **kwargs):
+    def _remove(self, storagepath, remotepath, last=False, **kwargs):
+        """Remove the given replica and unregister it from the remotepath.
+
+        If `last` is `True`, this replica is the last and the
+        lfc entry should be removed as well.
+        """
         raise NotImplementedError()
 
     def remove(self, remotepath, destination, recursive=False, final=False, **kwargs):
@@ -480,7 +485,7 @@ class GridBackend(object):
 
         destination_path = dst.get_replica(remotepath)
 
-        return self._remove(destination_path, **kwargs)
+        return self._remove(destination_path, _path, last=(nrep<=1), **kwargs)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
@@ -562,7 +567,7 @@ class LCGBackend(GridBackend):
         # Get original command output
         return self._bringonline_cmd('-v', '--bdii-timeout', timeout, '--srm-timeout', timeout, '--sendreceive-timeout', timeout, '--connect-timeout', timeout, storagepath, **kwargs)
 
-    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
+    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
         kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
         it = kwargs.pop('_iter', False) # should the out[put be an iterable?
@@ -592,7 +597,7 @@ class LCGBackend(GridBackend):
         # return requested kind of output
         return self._iterable_output_from_iterable(iterable, _iter=it)
 
-    def _put(self, localpath, remotepath, storagepath, **kwargs):
+    def _put(self, localpath, storagepath, remotepath, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
         kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
         it = kwargs.pop('_iter', False) # should the out[put be an iterable?
@@ -607,10 +612,10 @@ class LCGBackend(GridBackend):
         # return requested kind of output
         return self._iterable_output_from_iterable(iterable, _iter=it)
 
-    def _remove(self, storagepath, **kwargs):
+    def _remove(self, storagepath, remotepath, last=False, **kwargs):
         kwargs['_err_to_out'] = True # Verbose output is on stderr
         kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
-        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
+        it = kwargs.pop('_iter', False) # should the output be an iterable?
         kwargs['_iter'] = True # Need iterable to ignore identical lines
 
         # Get original command output
@@ -637,6 +642,8 @@ class GFALBackend(GridBackend):
         self._replica_checksum_cmd = sh.Command('gfal-sum')
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
+        self._register_cmd = sh.Command('gfal-legacy-register')
+        self._unregister_cmd = sh.Command('gfal-legacy-unregister')
         self._del_cmd = sh.Command('gfal-rm')
 
     def _ls(self, remotepath, **kwargs):
@@ -681,21 +688,35 @@ class GFALBackend(GridBackend):
         # Get original command output
         return self._bringonline_cmd('-t', timeout, storagepath, **kwargs)
 
-    def _replicate(self, source_storagepath, destination_storagepath, **kwargs):
-        # Get original command output
-        return self._cp_cmd('-v', '--checksum', 'ADLER32', source_storagepath, destination_storagepath, **kwargs)
+    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
+        chain = CommandChain()
+        it = kwargs.pop('_iter', False)
+        kwargs['_iter'] = True
+        chain.add(self._cp_cmd, '-v', '-p', '--checksum', 'ADLER32', source_storagepath, destination_storagepath, **kwargs)
+        chain.add(self._register_cmd, '-v', 'lfn:'+remotepath, destination_storagepath, **kwargs)
+        return self._iterable_output_from_iterable(chain(), _iter=it)
 
     def _get(self, storagepath, localpath, **kwargs):
         # Get original command output
         return self._cp_cmd('-v', '--checksum', 'ADLER32', storagepath, localpath, **kwargs)
 
-    def _put(self, localpath, remotepath, storagepath, **kwargs):
+    def _put(self, localpath, storagepath, remotepath, **kwargs):
         # Get original command output
-        return self._cp_cmd('-v', '--checksum', 'ADLER32', localpath, storagepath, 'lfn:'+remotepath, **kwargs)
+        return self._cp_cmd('-v', '-p', '--checksum', 'ADLER32', localpath, storagepath, 'lfn:'+remotepath, **kwargs)
 
-    def _remove(self, storagepath, **kwargs):
+    def _remove(self, storagepath, remotepath, last=False, **kwargs):
         # Get original command output
-        return self._del_cmd('-v', storagepath, **kwargs)
+        chain = CommandChain()
+        it = kwargs.pop('_iter', False)
+        kwargs['_iter'] = True
+        # Delete file
+        chain.add(self._del_cmd, '-v', storagepath, **kwargs)
+        # Unregister in lfc
+        chain.add(self._unregister_cmd, '-v', 'lfn:'+remotepath, storagepath, **kwargs)
+        if last:
+            # Delete lfn
+            chain.add(self._del_cmd, '-v', 'lfn:'+remotepath, **kwargs)
+        return self._iterable_output_from_iterable(chain(), _iter=it)
 
 def get_backend(config):
     """Return the backend according to the provided configuration."""
