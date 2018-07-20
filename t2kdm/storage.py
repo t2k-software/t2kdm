@@ -2,6 +2,7 @@
 
 import posixpath
 import t2kdm
+from six import print_
 
 class StorageElement(object):
     """Representation of a grid storage element"""
@@ -227,6 +228,8 @@ def get_closest_SE(remotepath=None, location=None, tape=False):
 
     if location is None:
         location = t2kdm.config.location
+        if location == '/':
+            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `t2kdm-config`?\nWARNING:")
 
     # Create a psude SE with the correct location
     SE = StorageElement('local',
