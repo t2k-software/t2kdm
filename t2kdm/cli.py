@@ -159,6 +159,8 @@ Type 'help' or '?' to list commands.
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = os.path.join(searchdir, l)
+                    if os.path.isdir(posixpath.join(abs_searchdir, l)):
+                        cand += os.path.sep
                     candidates.append(cand[text_offset:])
         else:
             # Remote path
@@ -172,6 +174,8 @@ Type 'help' or '?' to list commands.
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = posixpath.join(searchdir, l)
+                    if t2kdm.backend.is_dir(posixpath.join(abs_searchdir, l)):
+                        cand += posixpath.sep
                     candidates.append(cand[text_offset:])
 
         return candidates
