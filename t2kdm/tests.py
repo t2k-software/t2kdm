@@ -128,8 +128,8 @@ def run_read_only_tests(backend = t2kdm.backend):
         cli.onecmd('lcd /abcxyz')
         cli.onecmd('lls .')
         cli.onecmd('lls ".')
-        assert(cli.completedefault('28', 'ls nd28', 0, 0) == ['280'])
-        assert(cli.completedefault('s', 'lls us', 0, 0) == ['sr'])
+        assert(cli.completedefault('28', 'ls nd28', 0, 0) == ['280/'])
+        assert(cli.completedefault('s', 'lls us', 0, 0) == ['sr/'])
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
 def run_read_write_tests(backend = t2kdm.backend):
