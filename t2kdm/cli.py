@@ -6,7 +6,6 @@ import sh
 import shlex
 import argparse
 import os
-from os import path
 import posixpath
 import t2kdm
 from t2kdm.commands import all_commands
@@ -35,7 +34,7 @@ Type 'help' or '?' to list commands.
 
         # Current directories for relative paths
         self.remotedir = posixpath.abspath('/')
-        self.localdir = path.abspath(os.getcwd())
+        self.localdir = os.path.abspath(os.getcwd())
 
     def do_pwd(self, arg):
         """usage: pwd
@@ -60,10 +59,10 @@ Type 'help' or '?' to list commands.
 
     def get_abs_local_path(self, arg):
         """Return absolute local path."""
-        if path.isabs(arg):
+        if os.path.isabs(arg):
             return arg
         else:
-            return path.normpath(path.join(self.localdir, arg))
+            return os.path.normpath(os.path.join(self.localdir, arg))
 
     def do_cd(self, arg):
         """usage: cd remotepath
@@ -89,12 +88,12 @@ Type 'help' or '?' to list commands.
         Change the current local diretory.
         """
         pwd = self.get_abs_local_path(arg)
-        if path.isdir(pwd):
+        if os.path.isdir(pwd):
             try:
                 os.chdir(pwd)
             except OSError as e: # Catch permission errors
                 print_(e)
-            self.localdir = path.abspath(os.getcwd())
+            self.localdir = os.path.abspath(os.getcwd())
         else:
             print_("ERROR, no such local directory: %s"%(pwd,))
 
