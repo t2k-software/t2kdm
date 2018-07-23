@@ -222,10 +222,18 @@ class GridBackend(object):
             recursive = True
         else:
             regex = None
+
+        # Chain commands so everything is returned like a single sh Command
+        it = kwargs.pop('_iter', False)
+        kwargs['_iter'] = True # Need to iterate to make command chaining possible
+        chain = CommandChain()
+        # Print out what we are about to do, if running recursively
+        if recursive:
+            chain.add(self._iterable_output_from_text, "Replicating %s\n"%(remotepath,), **kwargs)
+
         _path = self.full_path(remotepath)
         if recursive and self._is_dir(_path):
             # Go through the contents of the directory recursively
-            it = kwargs.pop('_iter', False)
             newpaths = []
             for element in self.ls(remotepath, _iter=True):
                 element = element.strip()
@@ -238,7 +246,7 @@ class GridBackend(object):
                     ex = kwargs.pop('_bg_exc', None)
                     try:
                         yield self.replicate(path, destination, source, tape, recursive,
-                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
+                                _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
                     except sh.ErrorReturnCode:
                         pass
                     except sh.SignalException_SIGSEGV:
@@ -248,7 +256,8 @@ class GridBackend(object):
                     if ex is not None:
                         kwargs['_bg_exc'] = ex
             iterable = itertools.chain.from_iterable(outputs(newpaths))
-            return self._iterable_output_from_iterable(iterable, _iter=it)
+            chain.add(self._iterable_output_from_iterable, iterable, _iter=it)
+            return self._iterable_output_from_iterable(chain(), _iter=it)
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
@@ -258,7 +267,7 @@ class GridBackend(object):
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
             return self._iterable_output_from_text(
-                    "%s\nReplica already present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
+                    "Replica of %s already present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
 
         # Get source SE
         if source is None:
@@ -276,11 +285,8 @@ class GridBackend(object):
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
+        chain.add(self._iterable_output_from_text, "Copying %s to %s\n"%(source_path, destination_path), **kwargs)
 
-        # Chain commands for bringing the file online and replicating it
-        it = kwargs.pop('_iter', False)
-        kwargs['_iter'] = True # Need to iterate to make command chaining possible
-        chain = CommandChain()
         if src.type == 'tape':
             chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
             chain.add(self.bringonline, source_path, **kwargs)
