@@ -2,7 +2,14 @@
 
 import posixpath
 import t2kdm
+from t2kdm.cache import Cache
 from six import print_
+
+# Short time cache to save the output of `replicas`
+short_cache = Cache(cache_time=60)
+@short_cache.cached
+def replicas(*args, **kwargs):
+    return list(t2kdm.utils.strip_output(t2kdm.replicas(*args, _iter=True, **kwargs)))
 
 class StorageElement(object):
     """Representation of a grid storage element"""
@@ -44,7 +51,7 @@ class StorageElement(object):
 
     def get_replica(self, remotepath):
         """Return the replica of the file on this SM."""
-        for rep in t2kdm.replicas(remotepath, _iter=True):
+        for rep in replicas(remotepath):
             if self.host in rep:
                 return rep.strip()
         # Replica not found
@@ -52,7 +59,7 @@ class StorageElement(object):
 
     def has_replica(self, remotepath):
         """Check whether the remote path is replicated on this SE."""
-        return self.host in t2kdm.replicas(remotepath)
+        return any(self.host in replica for replica in replicas(remotepath))
 
     def get_closest_SE(self, remotepath=None, tape=False):
         """Get the storage element with the closest replica.
@@ -67,7 +74,7 @@ class StorageElement(object):
             candidates = SEs
         else:
             candidates = []
-            for rep in t2kdm.replicas(remotepath, _iter=True):
+            for rep in replicas(remotepath):
                 candidates.append(get_SE_by_path(rep))
 
         for SE in candidates:

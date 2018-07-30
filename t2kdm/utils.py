@@ -7,6 +7,13 @@ from six import print_
 import sys, sh
 from contextlib import contextmanager
 import re
+from t2kdm.cache import Cache
+
+# Long time cache to save the output of `is_dir`
+long_cache = Cache(cache_time=600)
+@long_cache.cached
+def is_dir(*args, **kwargs):
+    return t2kdm.backend.is_dir(*args, **kwargs)
 
 def strip_output(output):
     """Turn the output of a command into an iterable.
@@ -292,7 +299,7 @@ def check_replicas(remotepath, recursive=False, progress=False, quick=False):
         regex = None
         recur = recursive
 
-    if t2kdm.backend.is_dir(remotepath):
+    if is_dir(remotepath):
         # Go through the contents of the directory
         if progress == 2:
             print_("Checking files. This might take a while...")
@@ -300,7 +307,7 @@ def check_replicas(remotepath, recursive=False, progress=False, quick=False):
             if regex is not None and not regex.search(f):
                 continue # Skip files/directories that do not match the regex
             newpath = posixpath.join(remotepath, f)
-            if t2kdm.backend.is_dir(newpath):
+            if is_dir(newpath):
                 # This is a directory
                 if recur:
                     # Add subresult of checking subdirectory recursively
