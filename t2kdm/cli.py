@@ -81,11 +81,10 @@ Type 'help' or '?' to list commands.
         """usage: cd remotepath
 
         Change the current remote directory.
-
-        Note: Currently there are no checks done whether the remote directory actually exists.
         """
         pwd = self.get_abs_remote_path(arg)
-        try: # Let us see whether the path is a directory
+        # Let us see whether the path exists
+        try:
             ls(pwd)
         except sh.ErrorReturnCode as e:
             if "such file or directory" in e.stderr:
@@ -93,7 +92,11 @@ Type 'help' or '?' to list commands.
             else:
                 print_(e.stderr)
         else:
-            self.remotedir = pwd
+            # And whether it is a directory
+            if is_dir(pwd):
+                self.remotedir = pwd
+            else:
+                print_("ERROR, not a directory: %s"%(pwd,))
 
     def do_lcd(self, arg):
         """usage: cd localpath
