@@ -19,7 +19,7 @@ class Cache(object):
     """A simple cache for function calls."""
 
     def __init__(self, cache_time=60):
-        """`cache_time` determines how long an entrz will be cached."""
+        """`cache_time` determines how long an entry will be cached."""
         self.cache_time = cache_time
         self.cache = {}
 
