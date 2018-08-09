@@ -62,7 +62,7 @@ class ReplicaState(object):
         """
 
         self.replicas = []
-        for line in strip_output(t2kdm.replicas(remotepath, long=(not full), _iter=True)):
+        for line in strip_output(t2kdm.replicas(remotepath, long=full, _iter=True)):
             self.replicas.append(Replica(line))
 
     def get_file_categories(self):
