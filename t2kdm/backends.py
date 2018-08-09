@@ -31,8 +31,13 @@ class CommandChain(object):
     def __call__(self):
         """Yield from all commands in turn."""
         for c, a, k in zip(self.commands, self.args, self.kwargs):
-            for line in c(*a, **k):
-                yield line
+            try:
+                for line in c(*a, **k):
+                    yield line
+            except sh.ErrorReturnCode as e:
+                print_(e.stderr, file=sys.stderr, end='')
+            except sh.SignalException_SIGSEGV as e:
+                print_(e.stderr, file=sys.stderr, end='')
 
 class GridBackend(object):
     """Class that handles the actual work on the grid.
