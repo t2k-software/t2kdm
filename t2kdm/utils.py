@@ -311,13 +311,13 @@ def check_replicas(remotepath, recursive=False, progress=False, quick=False):
                 # This is a directory
                 if recur:
                     # Add subresult of checking subdirectory recursively
-                    result.add_subresult(check_replicas(newpath, recursive=recursive, progress=progress))
+                    result.add_subresult(check_replicas(newpath, recursive=recursive, progress=progress, quick=quick))
             else:
                 # Check file replicas and add to current result
                 if progress > 0:
                     print_('.', end='')
                     sys.stdout.flush() # Make sure every dot is printed directly to screen
-                result.add(check_replicas(newpath))
+                result.add(check_replicas(newpath, quick=quick))
         if progress == 2:
             print_("\nDone.")
     else:
