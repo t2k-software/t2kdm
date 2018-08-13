@@ -6,10 +6,10 @@ from t2kdm.cache import Cache
 from six import print_
 
 # Short time cache to save the output of `replicas`
-short_cache = Cache(cache_time=60)
-@short_cache.cached
+replica_cache = Cache(cache_time=60)
+@replica_cache.cached
 def replicas(*args, **kwargs):
-    return list(t2kdm.utils.strip_output(t2kdm.replicas(*args, _iter=True, **kwargs)))
+    return list(t2kdm.utils.strip_output(t2kdm.replicas(*args, _iter=True, _bg_exc=False, **kwargs)))
 
 class StorageElement(object):
     """Representation of a grid storage element"""

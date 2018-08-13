@@ -484,6 +484,8 @@ class GridBackend(object):
         if dst is None:
             return self.error("Could not find storage element %s.\n"%(destination,), **kwargs)
 
+        # Flush replicas cache so we do not do anything stupid:
+        storage.replica_cache.flush()
         if not dst.has_replica(remotepath):
             # Replica already not present at destination, nothing to do here
             return self._iterable_output_from_text(

@@ -23,11 +23,16 @@ class Cache(object):
         self.cache_time = cache_time
         self.cache = {}
 
-    def clean_cache(self):
+    def clean(self):
         """Remove old entries from the cache."""
         for key in self.cache.keys():
             if not self.cache[key].is_valid():
                 del self.cache[key]
+
+    def flush(self):
+        """Remove all entries from the cache."""
+        for key in self.cache.keys():
+            del self.cache[key]
 
     def hash(self, *args, **kwargs):
         """Turn function parameters into a hash."""
