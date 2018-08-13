@@ -508,7 +508,11 @@ class GridBackend(object):
 
         # Check how many replicas there are
         # If it is only one, refuse to delete it
-        nrep = self.replicas(remotepath).count('\n') # count lines
+        try:
+            nrep = self.replicas(remotepath, _bg_exc=False).count('\n') # count lines
+        except sh.ErrorReturnCode as e:
+            return self.error(e.stderr, **kwargs)
+
         if not final and nrep <= 1:
             return self.error("Only one replica of file left! Aborting.\n", **kwargs)
 
