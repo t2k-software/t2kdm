@@ -151,8 +151,7 @@ def run_read_write_tests(backend = t2kdm.backend):
         # Prepare something to upload
         with open(filename, 'wt') as f:
             f.write("This is testfile #3.\n")
-        with no_output():
-            t2kdm.put(filename, testdir+'/', destination=testSEs[0])
+        t2kdm.put(filename, testdir+'/', destination=testSEs[0])
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
@@ -160,6 +159,7 @@ def run_read_write_tests(backend = t2kdm.backend):
         if SE.type == 'tape' or 'TRIUMF' in SE.name or 'KEK' in SE.name or 'QMUL' in SE.name:
             # These SEs do not seem to cooperate
             continue
+        print_(SE.name)
         t2kdm.replicate(remotename, SE.name)
 
     print_("Testing remove...")
@@ -169,12 +169,14 @@ def run_read_write_tests(backend = t2kdm.backend):
         # This should fail!
         for SE in t2kdm.storage.SEs:
             t2kdm.remove(remotename, SE.name)
-    except sh.ErrorReturnCode_1:
-        pass
+    except sh.ErrorReturnCode as e:
+        assert("Only one" in e.stderr)
     else:
         raise Exception("The last copy should not have been removed!")
     # With the `final` argument it should work
     try:
+        for SE in t2kdm.storage.SEs:
+            t2kdm.remove(remotename, SE.name, final=True)
         for SE in t2kdm.storage.SEs:
             t2kdm.remove(remotename, SE.name, final=True)
     except sh.ErrorReturnCode as e:
