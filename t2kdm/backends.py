@@ -1,9 +1,10 @@
 import sh
 import itertools
 import posixpath
-import os
+import os, sys
 from t2kdm import storage
 import re
+from six import print_
 
 class CommandChain(object):
     """Class that executes function calls in sequence.
