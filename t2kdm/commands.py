@@ -221,6 +221,8 @@ replicate.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 replicate.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
+replicate.add_argument('-x', '--bringonline', action='store_true',
+    help=argparse.SUPPRESS)
 all_commands.append(replicate)
 
 get = Command('get', t2kdm.get, "Download file from grid.")
@@ -236,6 +238,8 @@ get.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 get.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
+get.add_argument('-x', '--bringonline', action='store_true',
+    help=argparse.SUPPRESS)
 all_commands.append(get)
 
 put = Command('put', t2kdm.put, "Upload file to the grid.")

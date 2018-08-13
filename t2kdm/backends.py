@@ -180,13 +180,12 @@ class GridBackend(object):
     def _bringonline(self, storagepath, timeout, **kwargs):
         raise NotImplementedError()
 
-    def bringonline(self, replica, **kwargs):
+    def bringonline(self, replica, tries=1440, **kwargs):
         """Make sure the given replica is online"""
 
         # We need to do multiple tries with short timeouts,
         # because it seems like the bringonline commands do not notice when they succeed.
         timeout = 10
-        tries = 1440
         for i in range(tries):
             try:
                 self._bringonline(replica, timeout)
@@ -212,14 +211,15 @@ class GridBackend(object):
     def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
         raise NotImplementedError()
 
-    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, **kwargs):
+    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, bringonline=False, **kwargs):
         """Replicate the file to the specified storage element.
 
         If no source storage elment is provided, the closest replica is chosen.
         If `tape` is `True`, tape SEs are considered when choosing the closest one.
         If `recursive` is `True`, all files and sub-directories of a given path are replicated.
-        if `recursive` is a string, it is treated as regular expression
+        If `recursive` is a string, it is treated as regular expression
         and only matching subfolders or files are replicated.
+        If `bringonline` is `True`, the file will not be copied, only requested to be brought online.
         """
 
         # Do thing recursively if requested
@@ -251,7 +251,7 @@ class GridBackend(object):
                     ok = kwargs.pop('_ok_code', None)
                     ex = kwargs.pop('_bg_exc', None)
                     try:
-                        yield self.replicate(path, destination, source, tape, recursive,
+                        yield self.replicate(path, destination, source, tape, recursive, bringonline,
                                 _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
                     except sh.ErrorReturnCode:
                         pass
@@ -291,18 +291,25 @@ class GridBackend(object):
 
         source_path = src.get_replica(remotepath)
         destination_path = dst.get_storage_path(remotepath)
-        chain.add(self._iterable_output_from_text, "Copying %s to %s\n"%(source_path, destination_path), **kwargs)
+        if bringonline:
+            if src.type == 'tape':
+                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
+                chain.add(self.bringonline, source_path, tries=1, **kwargs)
+            else:
+                chain.add(self._iterable_output_from_text, "Not a tape copy: %s\n"%(source_path,), **kwargs)
+        else:
+            chain.add(self._iterable_output_from_text, "Copying %s to %s\n"%(source_path, destination_path), **kwargs)
 
-        if src.type == 'tape':
-            chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
-            chain.add(self.bringonline, source_path, **kwargs)
-        chain.add(self._replicate, source_path, destination_path, _path, **kwargs)
+            if src.type == 'tape':
+                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
+                chain.add(self.bringonline, source_path, **kwargs)
+            chain.add(self._replicate, source_path, destination_path, _path, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
     def _get(self, storagepath, localpath, **kwargs):
         raise NotImplementedError()
 
-    def get(self, remotepath, localpath, source=None, tape=False, recursive=False, force=False, **kwargs):
+    def get(self, remotepath, localpath, source=None, tape=False, recursive=False, force=False, bringonline=False, **kwargs):
         """Download a file from the grid.
 
         If no source storage elment is provided, the closest replica is chosen.
@@ -311,6 +318,7 @@ class GridBackend(object):
         If `recursive` is a string, it is treated as regular expression
         and only matching subfolders or files are replicated.
         If `force` is `True`, local files will be overwritten.
+        If `bringonline` is `True`, the file will not be copied, only requested to be brought online.
         """
 
         # Do thing recursively if requested
@@ -336,7 +344,7 @@ class GridBackend(object):
                     ok = kwargs.pop('_ok_code', None)
                     ex = kwargs.pop('_bg_exc', None)
                     try:
-                        yield self.get(rpath, lpath, source, tape, recursive, force,
+                        yield self.get(rpath, lpath, source, tape, recursive, force, bringonline,
                                 _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
                     except sh.ErrorReturnCode:
                         pass
@@ -385,10 +393,17 @@ class GridBackend(object):
         it = kwargs.pop('_iter', False)
         kwargs['_iter'] = True # Need to iterate to make command chaining possible
         chain = CommandChain()
-        if SE.type == 'tape':
-            chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
-            chain.add(self.bringonline, replica, **kwargs)
-        chain.add(self._get, replica, localpath, **kwargs)
+        if bringonline:
+            if src.type == 'tape':
+                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
+                chain.add(self.bringonline, replica, tries=1, **kwargs)
+            else:
+                chain.add(self._iterable_output_from_text, "Not a tape copy: %s\n"%(replica,), **kwargs)
+        else:
+            if SE.type == 'tape':
+                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
+                chain.add(self.bringonline, replica, **kwargs)
+            chain.add(self._get, replica, localpath, **kwargs)
         return self._iterable_output_from_iterable(chain(), _iter=it)
 
     def _put(self, localpath, storagepath, remotepath, **kwargs):
