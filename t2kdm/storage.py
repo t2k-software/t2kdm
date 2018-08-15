@@ -5,11 +5,8 @@ import t2kdm
 from t2kdm.cache import Cache
 from six import print_
 
-# Short time cache to save the output of `replicas`
-replica_cache = Cache(cache_time=60)
-@replica_cache.cached
 def replicas(*args, **kwargs):
-    return list(t2kdm.utils.strip_output(t2kdm.replicas(*args, _iter=True, _bg_exc=False, **kwargs)))
+    return t2kdm.replicas(*args, **kwargs)
 
 class StorageElement(object):
     """Representation of a grid storage element"""
@@ -246,17 +243,3 @@ def get_closest_SE(remotepath=None, location=None, tape=False):
         basepath = '/')
 
     return SE.get_closest_SE(remotepath, tape=tape)
-
-def list_storage_elements(**kwargs):
-    """Print all available storage elments on screen.
-
-    Behaves (kinda) like an `sh` command.
-    """
-
-    ret = ( str(SE)+'\n' for SE in SEs )
-    it = kwargs.pop('_iter', False)
-    if not it:
-        # Glue single lines together
-        ''.join(ret)
-
-    return ret

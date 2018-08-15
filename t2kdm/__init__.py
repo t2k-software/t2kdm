@@ -21,8 +21,15 @@ else:
 
     # Get functions from backend
     ls = backend.ls
+    is_dir = backend.is_dir
     replicas = backend.replicas
+    checksum = backend.checksum
+    state = backend.state
     replicate = backend.replicate
     remove = backend.remove
     get = backend.get
     put = backend.put
+
+    # And from utils
+    check_checksums = utils.check_checksums
+    check_replicas = utils.check_replicas

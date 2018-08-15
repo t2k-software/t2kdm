@@ -1,11 +1,14 @@
 """Tests for the T2K data Manager."""
 
-import argparse
-from six import print_
 import t2kdm
 import t2kdm.commands as cmd
-import t2kdm.cli
-import t2kdm.storage
+import t2kdm.cli as cli
+from  t2kdm import backends
+from  t2kdm import storage
+from  t2kdm import utils
+
+import argparse
+from six import print_
 from contextlib import contextmanager
 import sys, os, sh
 import tempfile
@@ -48,26 +51,38 @@ def temp_dir():
 
 def run_read_only_tests(backend = t2kdm.backend):
     print_("Testing ls...")
-    assert(testfiles[0] in backend.ls(testdir))
-    assert(testfiles[0] in backend.ls(testdir, long=True))
+
+    entries = backend.ls(testdir)
+    for e in entries:
+        if e.name == testfiles[0]:
+            break
+    else:
+        raise Exception("Test file not in listing.")
 
     print_("Testing replicas...")
-    # Test short output
-    assert('srm-t2k.gridpp.rl.ac.uk' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'))
-    # Test long output
-    assert('RAL-LCG22-tape' in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz', long=True))
+    for rep in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'):
+        if 'srm-t2k.gridpp.rl.ac.uk' in rep:
+            break
+    else:
+        raise Exception("Did not find expected replica.")
+
+    print_("Testing checksum...")
+    assert(t2kdm.backend.checksum(rep) == '78e47c34')
+
+    print_("Testing state...")
+    assert('NEARLINE' in t2kdm.backend.state(rep))
 
     print_("Testing StorageElement...")
     # Test distance calculation
-    assert(t2kdm.storage.SEs[0].get_distance(t2kdm.storage.SEs[1]) < 0)
+    assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)
     # Test getting SE by host
-    assert('srm-t2k.gridpp.rl.ac.uk' in t2kdm.storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
     # Test getting the closest SE
-    t2kdm.storage.get_closest_SE('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz')
+    assert(storage.get_closest_SE('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz') is not None)
 
     print_("Testing TriumfStorageElement...")
     # Test special case of TRIUMF SE
-    assert('t2ksrm.nd280.org/nd280data/' in t2kdm.storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
+    assert('t2ksrm.nd280.org/nd280data/' in storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing get...")
     with temp_dir() as tempdir:
@@ -75,32 +90,34 @@ def run_read_only_tests(backend = t2kdm.backend):
         filename = os.path.join(tempdir, testfiles[0])
 
         # Test choosing source SE automatically
-        t2kdm.get(path, tempdir)
+        assert(t2kdm.get(path, tempdir) == True)
         assert(os.path.isfile(filename))
-        os.remove(filename)
 
         # Test providing the source SE (RAL tape!)
-        t2kdm.get(path, tempdir, source=testSEs[2])
+        try:
+            t2kdm.backend.get(path, tempdir, source=testSEs[2], force=False)
+        except backends.BackendException as e:
+            assert("already exist" in e.args[0])
+        assert(t2kdm.backend.get(path, tempdir, source=testSEs[2], force=True) == True)
         assert(os.path.isfile(filename))
         os.remove(filename)
 
         # Test recursive get
-        t2kdm.get(testdir, tempdir, recursive=True)
+        assert(t2kdm.interactive.get(testdir, tempdir, recursive=True) == 0)
         assert(os.path.isfile(filename))
 
     print_("Testing check...")
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')
-        with no_output():
-            t2kdm.utils.check(testdir, checksum=True, se=testSEs, recursive=True, nolist=True, list=filename)
-        assert os.path.isfile(filename)
+        with no_output(True):
+            assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # Not all files are on the tape
+        #assert os.path.isfile(filename)
 
     print_("Testing Commands...")
-    with open('/dev/null', 'w') as out:
-        cmd.ls.run_from_cli('-l /', _out=out) # This should work, but return `False`
-        cmd.ls.run_from_cli('.', _out=out) # This should work
-
     with no_output(True):
+        assert(cmd.ls.run_from_cli('-l /') == False)
+        assert(cmd.ls.run_from_cli('.') == False)
+
         cmd.ls.run_from_cli('abc') # This should not work, but not throw exception
         cmd.ls.run_from_cli('"abc') # This should not work, but not throw exception
         with fake_argv(['t2kdm-ls']):
@@ -134,8 +151,9 @@ def run_read_only_tests(backend = t2kdm.backend):
 
 def run_read_write_tests(backend = t2kdm.backend):
     print_("Testing replicate...")
-    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$')
-    t2kdm.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2])
+    with no_output():
+        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
+        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2], verbose=True) == 0)
 
     print_("Testing put...")
     with temp_dir() as tempdir:
@@ -144,9 +162,9 @@ def run_read_write_tests(backend = t2kdm.backend):
         remotename = posixpath.join(testdir, tempf)
         # Make sure the file does not exist
         try:
-            for SE in t2kdm.storage.SEs:
+            for SE in storage.SEs:
                 t2kdm.remove(remotename, SE.name, final=True)
-        except sh.ErrorReturnCode:
+        except backends.DoesNotExistException:
             pass
         # Prepare something to upload
         with open(filename, 'wt') as f:
@@ -155,33 +173,37 @@ def run_read_write_tests(backend = t2kdm.backend):
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
-    for SE in t2kdm.storage.SEs:
+    for SE in storage.SEs:
         if SE.type == 'tape' or 'TRIUMF' in SE.name:
             # These SEs do not seem to cooperate
             continue
         print_(SE.name)
-        t2kdm.replicate(remotename, SE.name)
+        assert(t2kdm.replicate(remotename, SE.name) == True)
+        assert(SE.has_replica(remotename) == True)
 
     print_("Testing remove...")
     t2kdm.remove(testdir, testSEs[1], recursive=True) # Remove everything from SE1
     # Remove uploaded file from previous test
     try:
         # This should fail!
-        for SE in t2kdm.storage.SEs:
+        for SE in storage.SEs:
             t2kdm.remove(remotename, SE.name)
-    except sh.ErrorReturnCode as e:
-        assert("Only one" in e.stderr)
+    except backends.BackendException as e:
+        assert("Only one" in e.args[0])
     else:
         raise Exception("The last copy should not have been removed!")
     # With the `final` argument it should work
     try:
-        for SE in t2kdm.storage.SEs:
+        for SE in storage.SEs:
             t2kdm.remove(remotename, SE.name, final=True)
-        for SE in t2kdm.storage.SEs:
+            assert(SE.has_replica(remotename) == False)
+        for SE in storage.SEs:
             t2kdm.remove(remotename, SE.name, final=True)
-    except sh.ErrorReturnCode as e:
+    except backends.DoesNotExistException:
         # The command will fail when the file no longer exists
-        assert("No such file or directory" in e.stderr)
+        pass
+    else:
+        raise Exception("This should have raised a DoesNotExistException at some point.")
 
 def run_tests():
     """Test the functions of the t2kdm."""

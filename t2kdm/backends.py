@@ -1,54 +1,59 @@
+"""Backends to be used by the t2kdm.
+
+Backends do the actual work on the grid and provide the API to do stuff more conveniently.
+User output for itneractive commands is handled in the 'interactive' module.
+
+Files can be identified by a couple of different paths/urls.
+To avoid confusion, the following convention is used for function arguments:
+
+remotepath
+    The logical path of a grid file, as presented to the user.
+    Sarts with a '/'.
+
+lurl:
+    The logical url of the file, as used by the file catalogue.
+    Starts with 'lfn:/'.
+
+surl
+    The storage location of a replica.
+    Starts with 'srm://' or something similar.
+
+localpath
+    The actual path to a file on the local file system.
+
+"""
+
 import sh
 import itertools
 import posixpath
 import os, sys
 from t2kdm import storage
-import re
 from six import print_
 
-class CommandChain(object):
-    """Class that executes function calls in sequence.
+class BackendException(Exception):
+    """Exception that is thrown if something goes (horribly) wrong."""
+    pass
 
-    It expects the functions to return iterables and will return an iterable when called.
-    """
+class DoesNotExistException(BackendException):
+    """Thrown when a file/directory does not exist."""
+    pass
 
-    def __init__(self):
-        """Initialise CommandChain.
+class DirEntry(object):
+    """Class representing a directory entry."""
 
-        Actual commands have to be added with `add`.
-        """
-
-        self.commands = []
-        self.args = []
-        self.kwargs = []
-
-    def add(self, cmd, *args, **kwargs):
-        """Add a command o the chain."""
-
-        self.commands.append(cmd)
-        self.args.append(args)
-        self.kwargs.append(kwargs)
-
-    def __call__(self):
-        """Yield from all commands in turn."""
-        for c, a, k in zip(self.commands, self.args, self.kwargs):
-            try:
-                for line in c(*a, **k):
-                    yield line
-            except sh.ErrorReturnCode as e:
-                print_(e.stderr, file=sys.stderr, end='')
-            except sh.SignalException_SIGSEGV as e:
-                print_(e.stderr, file=sys.stderr, end='')
+    def __init__(self, name, mode='?', links=-1, uid=-1, gid=-1, size=-1, modified='?'):
+        self.name = name
+        self.mode = mode
+        self.links = links
+        self.uid = uid
+        self.gid = gid
+        self.size = size
+        self.modified = modified
 
 class GridBackend(object):
     """Class that handles the actual work on the grid.
 
     This is just a base class that other classes must inherit from.
-
-    The convention for remote paths is that public methods expect "t2k paths",
-    i.e. paths within the t2k grid directory, omitting the common prefix.
-    Internal methods, i.e. the ones beginning with an underscore '_',
-    expect the full path to be passed to them.
     """
 
     def __init__(self, **kwargs):
@@ -61,355 +66,170 @@ class GridBackend(object):
             All paths are specified relative to that position.
         """
 
-        self.basedir = kwargs.pop('basedir', '/t2k.org')
+        # LFC paths alway put a '/grid' as highest level directory.
+        # Let us not expose that to the user.
+        self.baseurl = 'lfn:/grid' + kwargs.pop('basedir', '/t2k.org')
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
-    def should_raise(self, code=1, **kwargs):
-        """Analyse kwargs and decide whether an exception should be raised in case of an error."""
-
-        ok = kwargs.pop('_ok_code', [])
-        if code in ok:
-            return False
-        else:
-            return True
-
-    def error(self, message, **kwargs):
-        """Handle errors by either raising an Exception or just printing the error message."""
-
-        if self.should_raise(code=1, **kwargs):
-            raise sh.ErrorReturnCode_1('', '', message)
-        else:
-            return self._iterable_output_from_text(message, **kwargs)
-
-    def full_path(self, relpath):
+    def get_lurl(self, remotepath):
         """Prepend the base dir to a path."""
-        return posixpath.normpath(self.basedir + relpath)
+        return posixpath.normpath(self.baseurl + remotepath)
 
-    def _ls(self, remotepath, **kwargs):
+    def _ls(self, lurl, **kwargs):
         raise NotImplementedError()
 
     def ls(self, remotepath, **kwargs):
         """List contents of a remote logical path.
 
+        Returns a list of directory entries.
+
         Supported keyword arguments:
 
-        long: Bool. Default: False
-            Print a longer, more detailed listing.
         directory: Bool. Default: False
             List directory entries instead of contents.
         """
-        _path = self.full_path(remotepath)
-        return self._ls(_path, **kwargs)
 
-    def _is_dir(self, remotepath):
-        """Is the remote path a directory?"""
-        return str(self._ls(remotepath, long=True, directory=True)).strip()[0] == 'd'
+        lurl = self.get_lurl(remotepath)
+        return self._ls(lurl, **kwargs)
+
+    def _is_dir(self, lurl):
+        entry = self._ls(lurl, directory=True)[0]
+        return entry.mode[0] == 'd'
 
     def is_dir(self, remotepath):
         """Is the remote path a directory?"""
-        return self._is_dir(self.full_path(remotepath))
+        return self._is_dir(self.get_lurl(remotepath))
 
-    def _replica_state(self, storagepath, **kwargs):
-        """Internal method to get the state of a replica, e.g. 'ONLINE'."""
+    def _state(self, surl, **kwargs):
         raise NotImplementedError()
 
-    def _replica_checksum(self, storagepath, **kwargs):
-        """Internal method to get the checksum of a replica."""
+    def state(self, surl, **kwargs):
+        """Return the state of a replica, e.g. 'ONLINE'."""
+        return self._state(surl, **kwargs)
+
+    def _checksum(self, surl, **kwargs):
         raise NotImplementedError()
 
-    def _replicas(self, remotepath, **kwargs):
+    def checksum(self, surl, **kwargs):
+        """Return the checksum of a replica."""
+        return self._checksum(surl)
+
+    def _replicas(self, lurl, **kwargs):
         raise NotImplementedError()
-
-    def _add_replica_info(self, rep):
-        SE = storage.get_SE_by_path(rep)
-        if SE is not None:
-            return "%-32s %-4s %-8s %8.8s %s"%(SE.name, SE.type, self._replica_state(rep), self._replica_checksum(rep), rep)
-        else:
-            return "%-32s %-4s %-8s %8.8s %s"%('UNKNOWN', '?', self._replica_state(rep), self._replica_checksum(rep), rep)
-
-    @staticmethod
-    def _iterable_output_from_text(text, **kwargs):
-        """Turn a block of text into an iterable if necessary."""
-        it = kwargs.pop('_iter', False)
-        if it == False:
-            # Nothing to do here
-            return text
-        else:
-            # Split by lines and return iterable
-            lines = text.split('\n')
-            if text[-1] == '\n':
-                # Remove last empty string from split
-                lines = lines[:-1]
-            return (line+'\n' for line in lines)
-
-    @staticmethod
-    def _iterable_output_from_iterable(iterable, **kwargs):
-        """Turn an iterable into a block of text if necessary."""
-        it = kwargs.pop('_iter', False)
-        if it == True:
-            # Nothing to do here
-            return iterable
-        else:
-            # Concatenate all lines
-            text = ""
-            for line in iterable:
-                text += line
-            return text
 
     def replicas(self, remotepath, **kwargs):
-        """List replicas of a remote logical path.
+        """Return a list of replica surls of a remote logical path."""
 
-        Supported keyword arguments:
+        lurl = self.get_lurl(remotepath)
+        return self._replicas(lurl, **kwargs)
 
-        long: Bool. Default: False
-            Print a longer, more detailed listing.
+    def _bringonline(self, surl, timeout, verbose=False, **kwargs):
+        raise NotImplementedError()
+
+    def bringonline(self, surl, timeout=60*60*6, verbose=False, **kwargs):
+        """Try to bring `surl` online within `timeout` seconds.
+
+        Returns `True` when file is online, `False` if not.
         """
-        _path = self.full_path(remotepath)
-        l = kwargs.pop('long', False)
-        if l:
-            # Parse each line and add additional information
-            it = kwargs.pop('_iter', False)
-            kwargs['_iter'] = True
-            return self._iterable_output_from_iterable(
-                    (self._add_replica_info(line) for line in self._replicas(_path, **kwargs)),
-                    _iter=it)
-        else:
-            return self._replicas(_path, **kwargs)
+        return self._bringonline(surl, timeout, verbose=verbose, **kwargs)
 
-    def _bringonline(self, storagepath, timeout, **kwargs):
-        raise NotImplementedError()
+    def get_file_source(self, remotepath, source=None, destination=None, tape=False):
+        """Return the closest replica and corresponding SE of the given file."""
 
-    def bringonline(self, replica, tries=1440, **kwargs):
-        """Make sure the given replica is online"""
-
-        # We need to do multiple tries with short timeouts,
-        # because it seems like the bringonline commands do not notice when they succeed.
-        timeout = 10
-        for i in range(tries):
-            try:
-                self._bringonline(replica, timeout)
-            except sh.ErrorReturnCode:
-                # Did not work
-                # Try again
-                continue
-            except sh.SignalException_SIGSEGV:
-                # Did not work
-                # Try again
-                continue
+        # Get source SE
+        if source is None:
+            if destination is None:
+                src = storage.get_closest_SE(remotepath, tape=tape)
             else:
-                # It worked
-                # exit loop
-                break
+                dst = storage.get_SE(destination)
+                if dst is None:
+                    raise BackendException("Could not find storage element %s."%(destination,))
+                src = dst.get_closest_SE(remotepath, tape=tape)
+            if src is None:
+                raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
         else:
-            # Never reached a break
-            # It did not work so we raise an error
-            return self.error("Could not bring replica online.\n", **kwargs)
+            src = storage.get_SE(source)
+            if src is None:
+                raise BackendException("Could not find storage element %s."%(source,))
 
-        return self._iterable_output_from_text("Replica is online.\n", **kwargs)
+            if not src.has_replica(remotepath):
+                # Replica not present at source, throw error
+                raise BackendException("%s\nNo replica present at source storage element %s"%(remotepath, src.name,))
+        return src.get_replica(remotepath), src
 
-    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
+    def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def replicate(self, remotepath, destination, source=None, tape=False, recursive=False, bringonline=False, **kwargs):
+    def replicate(self, remotepath, destination, source=None, tape=False, verbose=False, bringonline_timeout=60*60*6, **kwargs):
         """Replicate the file to the specified storage element.
 
         If no source storage elment is provided, the closest replica is chosen.
         If `tape` is `True`, tape SEs are considered when choosing the closest one.
-        If `recursive` is `True`, all files and sub-directories of a given path are replicated.
-        If `recursive` is a string, it is treated as regular expression
-        and only matching subfolders or files are replicated.
-        If `bringonline` is `True`, the file will not be copied, only requested to be brought online.
+        If `verbose` is True, status messages will be printed to the screen.
+
+        Returns `True` if the replication was succesful, `False` if not.
         """
 
-        # Do thing recursively if requested
-        if isinstance(recursive, str):
-            regex = re.compile(recursive)
-            recursive = True
-        else:
-            regex = None
-
-        # Chain commands so everything is returned like a single sh Command
-        it = kwargs.pop('_iter', False)
-        kwargs['_iter'] = True # Need to iterate to make command chaining possible
-        chain = CommandChain()
-        # Print out what we are about to do, if running recursively
-        if recursive:
-            chain.add(self._iterable_output_from_text, "Replicating %s\n"%(remotepath,), **kwargs)
-
-        _path = self.full_path(remotepath)
-        if recursive and self._is_dir(_path):
-            # Go through the contents of the directory recursively
-            newpaths = []
-            for element in self.ls(remotepath, _iter=True):
-                element = element.strip()
-                if regex is None or regex.search(element):
-                    newpaths.append(posixpath.join(remotepath, element))
-            def outputs(paths):
-                for path in paths:
-                    # Ignore errors and segfaults when running recursively
-                    ok = kwargs.pop('_ok_code', None)
-                    ex = kwargs.pop('_bg_exc', None)
-                    try:
-                        yield self.replicate(path, destination, source, tape, recursive, bringonline,
-                                _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
-                    except sh.ErrorReturnCode:
-                        pass
-                    except sh.SignalException_SIGSEGV:
-                        pass
-                    if ok is not None:
-                        kwargs['_ok_code'] = ok
-                    if ex is not None:
-                        kwargs['_bg_exc'] = ex
-            iterable = itertools.chain.from_iterable(outputs(newpaths))
-            chain.add(self._iterable_output_from_iterable, iterable, _iter=it)
-            return self._iterable_output_from_iterable(chain(), _iter=it)
+        lurl = self.get_lurl(remotepath)
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
         if dst is None:
-            return self.error("Could not find storage element %s.\n"%(destination,), **kwargs)
+            raise BackendException("Could not find storage element %s."%(destination,))
 
         if dst.has_replica(remotepath):
             # Replica already at destination, nothing to do here
-            return self._iterable_output_from_text(
-                    "Replica of %s already present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
+            if verbose:
+                print_("Replica of %s already present at destination storage element %s."%(remotepath, dst.name,))
+            return True
 
-        # Get source SE
-        if source is None:
-            src = dst.get_closest_SE(remotepath, tape=tape)
-            if src is None:
-                return self.error("Could not find valid storage element with replica of %s.\n"%(remotepath,), **kwargs)
-        else:
-            src = storage.get_SE(source)
-            if src is None:
-                return self.error("Could not find storage element %s.\n"%(source,), **kwargs)
-
-            if not src.has_replica(remotepath):
-                # Replica not present at source, throw error
-                return self.error("%s\nNo replica present at source storage element %s\n"%(remotepath, src.name,), **kwargs)
-
-        source_path = src.get_replica(remotepath)
+        source_path, src = self.get_file_source(remotepath, source, destination, tape)
         destination_path = dst.get_storage_path(remotepath)
-        if bringonline:
-            if src.type == 'tape':
-                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
-                chain.add(self.bringonline, source_path, tries=1, **kwargs)
-            else:
-                chain.add(self._iterable_output_from_text, "Not a tape copy: %s\n"%(source_path,), **kwargs)
+        if verbose:
+            print_("Copying %s to %s"%(source_path, destination_path))
+
+        if src.type == 'tape':
+            if verbose:
+                print_("Bringing online %s"%(source_path,))
+            return self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose) and self._replicate(source_path, destination_path, lurl, verbose=verbose)
         else:
-            chain.add(self._iterable_output_from_text, "Copying %s to %s\n"%(source_path, destination_path), **kwargs)
+            return self._replicate(source_path, destination_path, lurl, verbose=verbose)
 
-            if src.type == 'tape':
-                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(source_path,), **kwargs)
-                chain.add(self.bringonline, source_path, **kwargs)
-            chain.add(self._replicate, source_path, destination_path, _path, **kwargs)
-        return self._iterable_output_from_iterable(chain(), _iter=it)
-
-    def _get(self, storagepath, localpath, **kwargs):
+    def _get(self, surl, localpath, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def get(self, remotepath, localpath, source=None, tape=False, recursive=False, force=False, bringonline=False, **kwargs):
+    def get(self, remotepath, localpath, source=None, tape=False, force=False, verbose=False, bringonline_timeout=60*60*6, **kwargs):
         """Download a file from the grid.
 
         If no source storage elment is provided, the closest replica is chosen.
         If `tape` is True, tape SEs are considered when choosing the closest one.
-        If `recursive` is `True`, all files and sub-directories of a given path are replicated.
-        If `recursive` is a string, it is treated as regular expression
-        and only matching subfolders or files are replicated.
         If `force` is `True`, local files will be overwritten.
-        If `bringonline` is `True`, the file will not be copied, only requested to be brought online.
+        If `verbose` is True, status messages will be printed to the screen.
         """
-
-        # Do thing recursively if requested
-        if isinstance(recursive, str):
-            regex = re.compile(recursive)
-            recursive = True
-        else:
-            regex = None
-        _path = self.full_path(remotepath)
-        if recursive and self._is_dir(_path):
-            # Go through the contents of the directory recursively
-            it = kwargs.pop('_iter', False)
-            newpaths = []
-            for element in self.ls(remotepath, _iter=True):
-                element = element.strip()
-                if regex is None or regex.search(element):
-                    _remote = posixpath.join(remotepath, element)
-                    _local = os.path.join(localpath, element)
-                    newpaths.append( (_remote, _local) )
-            def outputs(paths):
-                for rpath, lpath in paths:
-                    # Ignore errors and segfaults when running recursively
-                    ok = kwargs.pop('_ok_code', None)
-                    ex = kwargs.pop('_bg_exc', None)
-                    try:
-                        yield self.get(rpath, lpath, source, tape, recursive, force, bringonline,
-                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
-                    except sh.ErrorReturnCode:
-                        pass
-                    except sh.SignalException_SIGSEGV:
-                        pass
-                    if ok is not None:
-                        kwargs['_ok_code'] = ok
-                    if ex is not None:
-                        kwargs['_bg_exc'] = ex
-            iterable = itertools.chain.from_iterable(outputs(newpaths))
-            return self._iterable_output_from_iterable(iterable, _iter=it)
-
-        # Do not overwrite files unless explicitly told to
-        if os.path.isfile(localpath) and not force:
-            if recursive == False:
-                # Raise for a single file
-                return self.error("File does already exist: %s.\n"%(localpath,))
-            else:
-                # Print status for recursive
-                return self._iterable_output_from_text(
-                        "File does already exist: %s.\n"%(localpath,), **kwargs)
-
-        if source is None:
-            # Get closest SE
-            SE = storage.get_closest_SE(remotepath, tape=tape)
-            if SE is None:
-                return self.error("Could not find valid storage element with replica of %s.\n"%(remotepath,), **kwargs)
-        else:
-            # Use the provided source
-            SE = storage.get_SE(source)
-            if SE is None:
-                return self.error("Could not find storage element %s.\n"%(source,), **kwargs)
-
-            if not SE.has_replica(remotepath):
-                # Replica not present at source, throw error
-                return self.error("%s\nNo replica present at source storage element %s\n"%(remotepath, SE.name,), **kwargs)
-
-        # Get the source replica
-        replica = SE.get_replica(remotepath)
 
         # Append the basename to the localpath if it is a directory
         if os.path.isdir(localpath):
             localpath = os.path.join(localpath, posixpath.basename(remotepath))
 
-        # Chain commands for bringing the file online and replicating it
-        it = kwargs.pop('_iter', False)
-        kwargs['_iter'] = True # Need to iterate to make command chaining possible
-        chain = CommandChain()
-        if bringonline:
-            if src.type == 'tape':
-                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
-                chain.add(self.bringonline, replica, tries=1, **kwargs)
-            else:
-                chain.add(self._iterable_output_from_text, "Not a tape copy: %s\n"%(replica,), **kwargs)
-        else:
-            if SE.type == 'tape':
-                chain.add(self._iterable_output_from_text, "Bringing online %s\n"%(replica,), **kwargs)
-                chain.add(self.bringonline, replica, **kwargs)
-            chain.add(self._get, replica, localpath, **kwargs)
-        return self._iterable_output_from_iterable(chain(), _iter=it)
+        # Do not overwrite files unless explicitly told to
+        if os.path.isfile(localpath) and not force:
+            raise BackendException("File does already exist: %s."%(localpath,))
 
-    def _put(self, localpath, storagepath, remotepath, **kwargs):
+        # Get the source replica
+        replica, src = self.get_file_source(remotepath, source, tape=tape)
+
+        if src.type == 'tape':
+            if verbose:
+                print_("Bringing online %s"%(replica,))
+            return self.bringonline(replica, timeout=bringonline_timeout, verbose=verbose) and self._get(replica, localpath, verbose=verbose, **kwargs)
+        else:
+            return self._get(replica, localpath, verbose=verbose, **kwargs)
+
+    def _put(self, localpath, surl, remotepath, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def put(self, localpath, remotepath, destination=None, tape=False, **kwargs):
+    def put(self, localpath, remotepath, destination=None, tape=False, verbose=False, **kwargs):
         """Upload and register a file.
 
         If no destination storage element is provided, the closest one will be chosen.
@@ -427,21 +247,21 @@ class GridBackend(object):
             # Get closest SE
             SE = storage.get_closest_SE(tape=tape)
             if SE is None:
-                return self.error("Could not find valid storage element\n", **kwargs)
+                raise BackendException("Could not find valid storage element")
         else:
             # Use the provided destination
             SE = storage.get_SE(destination)
             if SE is None:
-                return self.error("Could not find storage element %s.\n"%(destination,), **kwargs)
+                raise BackendException("Could not find storage element %s."%(destination,))
 
         # Get the storage path
         surl = SE.get_storage_path(remotepath)
 
         # Upload and register the file
-        _path = self.full_path(remotepath)
-        return self._put(localpath, surl, _path, **kwargs)
+        lurl = self.get_lurl(remotepath)
+        return self._put(localpath, surl, lurl, verbose=verbose, **kwargs)
 
-    def _remove(self, storagepath, remotepath, last=False, **kwargs):
+    def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
         """Remove the given replica and unregister it from the remotepath.
 
         If `last` is `True`, this replica is the last and the
@@ -449,84 +269,39 @@ class GridBackend(object):
         """
         raise NotImplementedError()
 
-    def remove(self, remotepath, destination, recursive=False, final=False, **kwargs):
+    def remove(self, remotepath, destination, final=False, verbose=False, **kwargs):
         """Remove the replica of a file from a storage element.
-
-        If `recursive` is `True`, all files and sub-directories of a given path are removed.
-        if `recursive` is a string, it is treated as regular expression
-        and only matching subfolders or files are replicated.
 
         This command will refuse to remove the last replica of a file
         unless the `final` argument is `True`!
         """
 
-        # Do thing recursively if requested
-        if isinstance(recursive, str):
-            regex = re.compile(recursive)
-            recursive = True
-        else:
-            regex = None
-        _path = self.full_path(remotepath)
-        if recursive and self._is_dir(_path):
-            # Go through the contents of the directory recursively
-            it = kwargs.pop('_iter', False)
-            newpaths = []
-            for element in self.ls(remotepath, _iter=True):
-                element = element.strip()
-                if regex is None or regex.search(element):
-                    newpaths.append(posixpath.join(remotepath, element))
-            def outputs(paths):
-                for path in paths:
-                    # Ignore errors and segfaults when running recursively
-                    ok = kwargs.pop('_ok_code', None)
-                    ex = kwargs.pop('_bg_exc', None)
-                    try:
-                        yield self.remove(path, destination, recursive=recursive,
-                                _iter=True, _ok_code=list(range(-255,256)), _bg_exc=False, **kwargs)
-                    except sh.ErrorReturnCode:
-                        pass
-                    except sh.SignalException_SIGSEGV:
-                        pass
-                    if ok is not None:
-                        kwargs['_ok_code'] = ok
-                    if ex is not None:
-                        kwargs['_bg_exc'] = ex
-            iterable = itertools.chain.from_iterable(outputs(newpaths))
-            return self._iterable_output_from_iterable(iterable, _iter=it)
-
         # Get destination SE and check if file is already not present
         dst = storage.get_SE(destination)
         if dst is None:
-            return self.error("Could not find storage element %s.\n"%(destination,), **kwargs)
+            raise BackendException("Could not find storage element %s.\n"%(destination,))
 
-        # Flush replicas cache so we do not do anything stupid:
-        storage.replica_cache.flush()
         if not dst.has_replica(remotepath):
             # Replica already not present at destination, nothing to do here
-            return self._iterable_output_from_text(
-                    "%s\nReplica not present at destination storage element %s.\n"%(remotepath, dst.name,), **kwargs)
+            if verbose:
+                print_("%s\nReplica not present at destination storage element %s."%(remotepath, dst.name,))
+            return True
 
         # Check how many replicas there are
         # If it is only one, refuse to delete it
-        try:
-            nrep = self.replicas(remotepath, _bg_exc=False).count('\n') # count lines
-        except sh.ErrorReturnCode as e:
-            return self.error(e.stderr, **kwargs)
-
+        nrep = len(self.replicas(remotepath))
         if not final and nrep <= 1:
-            return self.error("Only one replica of file left! Aborting.\n", **kwargs)
+            raise BackendException("Only one replica of file left! Aborting.")
 
         destination_path = dst.get_replica(remotepath)
+        lurl = self.get_lurl(remotepath)
 
-        return self._remove(destination_path, _path, last=(nrep<=1), **kwargs)
+        return self._remove(destination_path, lurl, last=(nrep<=1), verbose=verbose, **kwargs)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
     def __init__(self, **kwargs):
-        # LFC paths alway put a '/grid' as highest level directory.
-        # Let us not expose that to the user.
-        kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '/t2k.org')
         GridBackend.__init__(self, **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
@@ -540,38 +315,57 @@ class LCGBackend(GridBackend):
         self._cr_cmd = sh.Command('lcg-cr')
         self._del_cmd = sh.Command('lcg-del')
 
-    def _ls(self, remotepath, **kwargs):
+    def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
-        l = kwargs.pop('long', False)
         d = kwargs.pop('directory', False)
         args = []
-        if l:
-            args.append('-l')
         if -d:
             args.append('-d')
-        args.append(remotepath)
+        args.append('-l')
+        args.append(lurl[4:])
+        try:
+            output = self._ls_cmd(*args, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise
+        ret = []
+        for line in output:
+            fields = line.split()
+            mode, links, uid, gid, size = fields[:5]
+            name = fields[-1]
+            modified = ' '.join(fields[5:-1])
+            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
+        return ret
 
-        return self._ls_cmd(*args, **kwargs)
+    def _replicas(self, lurl, **kwargs):
+        ret = []
+        try:
+            output = self._replicas_cmd(lurl, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+        for line in output:
+            line = line.strip()
+            if len(line) > 0:
+                ret.append(line.strip())
+        return ret
 
-    def _replicas(self, remotepath, **kwargs):
-        return(self._replicas_cmd('lfn:'+remotepath, **kwargs))
-
-    def _replica_state(self, storagepath, **kwargs):
-        _path = storagepath.strip()
+    def _state(self, surl, **kwargs):
         it = kwargs.pop('_iter', None)
         try:
-            listing = self._replica_state_cmd('-l', _path, **kwargs)
+            listing = self._replica_state_cmd('-l', surl, **kwargs)
         except sh.ErrorReturnCode:
             listing = '- - - - - ?'
         except sh.SignalException_SIGSEGV:
             listing = '- - - - - ?'
         return listing.split()[5]
 
-    def _replica_checksum(self, storagepath, **kwargs):
-        _path = storagepath.strip()
+    def _checksum(self, surl, **kwargs):
         it = kwargs.pop('_iter', None)
         try:
-            listing = self._replica_checksum_cmd(_path, **kwargs)
+            listing = self._replica_checksum_cmd(surl, **kwargs)
         except sh.ErrorReturnCode:
             listing = '? -'
         except sh.SignalException_SIGSEGV:
@@ -583,90 +377,74 @@ class LCGBackend(GridBackend):
             checksum = '?'
         return checksum
 
-    @staticmethod
-    def _ignore_identical_lines(iterable, **kwargs):
-        last_line = None
-        for line in iterable:
-            if line == last_line:
-                continue
+    def _bringonline(self, surl, timeout, **kwargs):
+        kwargs['_err_to_out'] = True # Verbose output is on stderr
+        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+
+        # Get original command output
+        return self._bringonline_cmd('-v', '--bdii-timeout', timeout, '--srm-timeout', timeout, '--sendreceive-timeout', timeout, '--connect-timeout', timeout, surl, **kwargs)
+
+    def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._replicate_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', destination_surl, source_surl, _out=out, _err_to_out=True, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
             else:
-                last_line = line
-                yield line
+                raise BackendException(e.stderr)
+        return True
 
-    def _bringonline(self, storagepath, timeout, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+    def _get(self, surl, localpath, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cp_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', surl, localpath, _out=out, _err_to_out=True, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return os.path.isfile(localpath)
 
-        # Get original command output
-        return self._bringonline_cmd('-v', '--bdii-timeout', timeout, '--srm-timeout', timeout, '--sendreceive-timeout', timeout, '--connect-timeout', timeout, storagepath, **kwargs)
 
-    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
-        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
-        kwargs['_iter'] = True # Need iterable to ignore identical lines
+    def _put(self, localpath, surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cr_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', surl, '-l', lurl, localpath, _out=out, _err_to_out=True, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
 
-        # Get original command output
-        iterable = self._replicate_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', destination_storagepath, source_storagepath, **kwargs)
-
-        # Ignore lines that are identical to the previous
-        iterable = self._ignore_identical_lines(iterable)
-
-        # return requested kind of output
-        return self._iterable_output_from_iterable(iterable, _iter=it)
-
-    def _get(self, storagepath, localpath, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
-        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
-        kwargs['_iter'] = True # Need iterable to ignore identical lines
-
-        # Get original command output
-        iterable = self._cp_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', storagepath, localpath, **kwargs)
-
-        # Ignore lines that are identical to the previous
-        iterable = self._ignore_identical_lines(iterable)
-
-        # return requested kind of output
-        return self._iterable_output_from_iterable(iterable, _iter=it)
-
-    def _put(self, localpath, storagepath, remotepath, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
-        it = kwargs.pop('_iter', False) # should the out[put be an iterable?
-        kwargs['_iter'] = True # Need iterable to ignore identical lines
-
-        # Get original command output
-        iterable = self._cr_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', storagepath, '-l', remotepath, localpath, **kwargs)
-
-        # Ignore lines that are identical to the previous
-        iterable = self._ignore_identical_lines(iterable)
-
-        # return requested kind of output
-        return self._iterable_output_from_iterable(iterable, _iter=it)
-
-    def _remove(self, storagepath, remotepath, last=False, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
-        it = kwargs.pop('_iter', False) # should the output be an iterable?
-        kwargs['_iter'] = True # Need iterable to ignore identical lines
-
-        # Get original command output
-        iterable = self._del_cmd('-v', storagepath, **kwargs)
-
-        # Ignore lines that are identical to the previous
-        iterable = self._ignore_identical_lines(iterable)
-
-        # return requested kind of output
-        return self._iterable_output_from_iterable(iterable, _iter=it)
+    def _remove(self, surl, lurl, last=False, verbose=True, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._del_cmd('-v', surl, _out=out, _err_to_out=True, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
 
 class GFALBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        # lfn paths alway need a '/grid' as highest level directory.
-        # Let us not expose that to the user.
-        kwargs['basedir'] = '/grid'+kwargs.pop('basedir', '/t2k.org')
         GridBackend.__init__(self, **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
@@ -679,36 +457,57 @@ class GFALBackend(GridBackend):
         self._unregister_cmd = sh.Command('gfal-legacy-unregister')
         self._del_cmd = sh.Command('gfal-rm')
 
-    def _ls(self, remotepath, **kwargs):
+    def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
-        l = kwargs.pop('long', False)
         d = kwargs.pop('directory', False)
         args = []
-        if l:
-            args.append('-l')
         if -d:
             args.append('-d')
-        args.append('lfn:'+remotepath)
-
-        return self._ls_cmd(*args, **kwargs)
-
-    def _replicas(self, remotepath, **kwargs):
-        return(self._replicas_cmd('lfn:'+remotepath, 'user.replicas', **kwargs))
-
-    def _replica_state(self, storagepath, **kwargs):
-        _path = storagepath.strip()
+        args.append('-l')
+        args.append(lurl)
         try:
-            state = self._replicas_cmd(_path, 'user.status', **kwargs).strip()
+            output = self._ls_cmd(*args, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        ret = []
+        for line in output:
+            fields = line.split()
+            mode, links, gid, uid, size = fields[:5]
+            name = fields[-1]
+            modified = ' '.join(fields[5:-1])
+            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
+        return ret
+
+    def _replicas(self, lurl, **kwargs):
+        ret = []
+        try:
+            output = self._replicas_cmd(lurl, 'user.replicas', **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        for line in output:
+            line = line.strip()
+            if len(line) > 0:
+                ret.append(line.strip())
+        return ret
+
+    def _state(self, surl, **kwargs):
+        try:
+            state = self._replicas_cmd(surl, 'user.status', **kwargs).strip()
         except sh.ErrorReturnCode:
             state = '?'
         except sh.SignalException_SIGSEGV:
             state = '?'
         return state
 
-    def _replica_checksum(self, storagepath, **kwargs):
-        _path = storagepath.strip()
+    def _checksum(self, surl, **kwargs):
         try:
-            checksum = self._replica_checksum_cmd(_path, 'ADLER32', **kwargs).split()[1]
+            checksum = self._replica_checksum_cmd(surl, 'ADLER32', **kwargs).split()[1]
         except sh.ErrorReturnCode:
             checksum = '?'
         except sh.SignalException_SIGSEGV:
@@ -717,39 +516,96 @@ class GFALBackend(GridBackend):
             checksum = '?'
         return checksum
 
-    def _bringonline(self, storagepath, timeout, **kwargs):
-        # Get original command output
-        return self._bringonline_cmd('-t', timeout, storagepath, **kwargs)
+    def _bringonline(self, surl, timeout, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        # gfal does not notice when files come online, it seems
+        # split task into many requests with short timeouts
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        time_left = timeout
+        while(True):
+            if time_left > 10:
+                timeout = 10
+            else:
+                timeout = time_left
+            time_left -= 10
+            try:
+                self._bringonline_cmd('-t', timeout, surl, _out=out, **kwargs)
+            except sh.ErrorReturnCode:
+                # Not online yet.
+                if time_left > 0:
+                    continue
+                else:
+                    return False
+            else:
+                # File is online.
+                return True
 
-    def _replicate(self, source_storagepath, destination_storagepath, remotepath, **kwargs):
-        chain = CommandChain()
-        it = kwargs.pop('_iter', False)
-        kwargs['_iter'] = True
-        chain.add(self._cp_cmd, '-v', '-p', '--checksum', 'ADLER32', source_storagepath, destination_storagepath, **kwargs)
-        chain.add(self._register_cmd, '-v', 'lfn:'+remotepath, destination_storagepath, **kwargs)
-        return self._iterable_output_from_iterable(chain(), _iter=it)
+    def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cp_cmd('-p', '--checksum', 'ADLER32', source_surl, destination_surl, _out=out, **kwargs)
+            self._register_cmd(lurl, destination_surl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
 
-    def _get(self, storagepath, localpath, **kwargs):
-        # Get original command output
-        return self._cp_cmd('-v', '--checksum', 'ADLER32', storagepath, localpath, **kwargs)
+    def _get(self, surl, localpath, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cp_cmd('-f', '--checksum', 'ADLER32', surl, localpath, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return os.path.isfile(localpath)
 
-    def _put(self, localpath, storagepath, remotepath, **kwargs):
-        # Get original command output
-        return self._cp_cmd('-v', '-p', '--checksum', 'ADLER32', localpath, storagepath, 'lfn:'+remotepath, **kwargs)
+    def _put(self, localpath, surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cp_cmd('-p', '--checksum', 'ADLER32', localpath, surl, lurl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
 
-    def _remove(self, storagepath, remotepath, last=False, **kwargs):
-        # Get original command output
-        chain = CommandChain()
-        it = kwargs.pop('_iter', False)
-        kwargs['_iter'] = True
-        # Delete file
-        chain.add(self._del_cmd, '-v', storagepath, **kwargs)
-        # Unregister in lfc
-        chain.add(self._unregister_cmd, '-v', 'lfn:'+remotepath, storagepath, **kwargs)
-        if last:
-            # Delete lfn
-            chain.add(self._del_cmd, '-v', 'lfn:'+remotepath, **kwargs)
-        return self._iterable_output_from_iterable(chain(), _iter=it)
+    def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._del_cmd(surl, _out=out, **kwargs)
+            self._unregister_cmd(lurl, surl, _out=out, **kwargs)
+            if last:
+                # Delete lfn
+                self._del_cmd(lurl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
 
 def get_backend(config):
     """Return the backend according to the provided configuration."""

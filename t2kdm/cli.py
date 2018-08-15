@@ -21,7 +21,7 @@ def is_dir(*args, **kwargs):
 short_cache = Cache(cache_time=60)
 @short_cache.cached
 def ls(*args, **kwargs):
-    return list(utils.strip_output(t2kdm.ls(*args, **kwargs)))
+    return [x.name for x in t2kdm.ls(*args, **kwargs)]
 
 class T2KDmCli(cmd.Cmd):
     """T2K Data Manager Command Line Interface (CLI)
@@ -86,11 +86,8 @@ Type 'help' or '?' to list commands.
         # Let us see whether the path exists
         try:
             ls(pwd)
-        except sh.ErrorReturnCode as e:
-            if "such file or directory" in e.stderr:
-                print_("ERROR, no such remote directory: %s"%(pwd,))
-            else:
-                print_(e.stderr)
+        except t2kdm.backends.DoesNotExistException as e:
+            print_(e)
         else:
             # And whether it is a directory
             if is_dir(pwd):
