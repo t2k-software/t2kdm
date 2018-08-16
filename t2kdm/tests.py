@@ -49,10 +49,10 @@ def temp_dir():
     finally:
         sh.rm('-r', tempdir)
 
-def run_read_only_tests(backend = t2kdm.backend):
+def run_read_only_tests():
     print_("Testing ls...")
 
-    entries = backend.ls(testdir)
+    entries = t2kdm.backend.ls(testdir)
     for e in entries:
         if e.name == testfiles[0]:
             break
@@ -60,7 +60,7 @@ def run_read_only_tests(backend = t2kdm.backend):
         raise Exception("Test file not in listing.")
 
     print_("Testing replicas...")
-    for rep in backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'):
+    for rep in t2kdm.backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'):
         if 'srm-t2k.gridpp.rl.ac.uk' in rep:
             break
     else:
@@ -90,7 +90,7 @@ def run_read_only_tests(backend = t2kdm.backend):
         filename = os.path.join(tempdir, testfiles[0])
 
         # Test choosing source SE automatically
-        assert(t2kdm.get(path, tempdir) == True)
+        assert(t2kdm.backend.get(path, tempdir) == True)
         assert(os.path.isfile(filename))
 
         # Test providing the source SE (RAL tape!)
@@ -149,7 +149,7 @@ def run_read_only_tests(backend = t2kdm.backend):
         assert(cli.completedefault('s', 'lls us', 0, 0) == ['sr/'])
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
-def run_read_write_tests(backend = t2kdm.backend):
+def run_read_write_tests():
     print_("Testing replicate...")
     with no_output():
         assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
@@ -211,8 +211,14 @@ def run_tests():
     parser = argparse.ArgumentParser(description="Run tests for the T2K Data Manager.")
     parser.add_argument('-w', '--write', action='store_true',
         help="do write tests. Default: read only")
+    parser.add_argument('-b', '--backend', default=None,
+        help="specify which backend to use")
 
     args = parser.parse_args()
+    if args.backend is not None:
+        t2kdm.config.backend = args.backend
+        t2kdm.backend = backends.get_backend(t2kdm.config)
+
     run_read_only_tests()
     if args.write:
         run_read_write_tests()
