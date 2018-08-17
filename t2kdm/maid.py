@@ -5,6 +5,7 @@ from six.moves import configparser, html_entities
 import base64
 from six import print_
 import t2kdm
+import t2kdm.interactive
 from contextlib import contextmanager
 import sys, os
 import sh
@@ -240,7 +241,7 @@ class ReplicationTask(Task):
         # Get all entries in the directory and replace the @ with the (lexigraphically) last one
         dirname, basename = posixpath.split(option)
         if basename == '@':
-            entries = list(t2kdm.utils.strip_output(t2kdm.ls(dirname, _iter=True)))
+            entries = [x.name for x in t2kdm.ls(dirname)]
             entries.sort()
             option = posixpath.join(dirname, entries[-1])
 
@@ -250,9 +251,7 @@ class ReplicationTask(Task):
         return kwargs
 
     def _do(self):
-        for line in t2kdm.replicate(self.path, self.destination, recursive=True, _iter=True, _err_to_out=True):
-            print_(line, end='')
-        return True
+        return t2kdm.interactive.replicate(self.path, self.destination, recursive=True, verbose=True) == 0
 
     def __str__(self):
         """Return a string to identify the task by."""
