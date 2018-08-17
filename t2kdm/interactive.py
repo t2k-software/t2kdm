@@ -25,6 +25,7 @@ class _recursive(object):
     def recursive_function(self, remotepath, *args, **kwargs):
         """The recursive wrapper around the original function."""
         recursive = kwargs.pop('recursive', False)
+        list_file = kwargs.pop('list', None)
         if 'verbose' in kwargs:
             verbose = kwargs['verbose']
         else:
@@ -35,6 +36,9 @@ class _recursive(object):
             recursive = True
         else:
             regex = None
+
+        if list_file is not None:
+            list_file = open(list_file, 'wt')
 
         good = 0
         bad = 0
@@ -47,19 +51,30 @@ class _recursive(object):
                 except backends.BackendException as e:
                     print_(e)
                     bad += 1
+                    if list_file is not None:
+                        list_file.write(path + '\n')
                 else:
                     if ret == 0:
                         good += 1
                     else:
                         bad += 1
+                        if list_file is not None:
+                            list_file.write(path + '\n')
             if verbose:
                 print_("%s %d files. %d files failed."%(self.iterated, good, bad))
+            if list_file is not None:
+                list_file.close()
             if bad == 0:
                 return 0
             else:
                 return 1
         else:
-            return self.function(remotepath, *args, **kwargs)
+            ret = self.function(remotepath, *args, **kwargs)
+            if list_file is not None:
+                if ret != 0:
+                    list_file.write(remotepath + '\n')
+                list_file.close()
+            return ret
 
     def __call__(self, function):
         self.function = function

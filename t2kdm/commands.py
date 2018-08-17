@@ -190,7 +190,7 @@ check.add_argument('-q', '--quiet', action='store_true',
 check.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 check.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of problematic files to FILENAME")
+    help="save a list of failed files to FILENAME")
 check.add_argument('-c', '--checksum', action='store_true',
     help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
 check.add_argument('-s', '--se', action='append', default=[],
@@ -204,6 +204,8 @@ replicate.add_argument('destination', type=str,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
 replicate.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively replicate all files and subdirectories [that match REGEX] of a directory")
+replicate.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
 replicate.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 replicate.add_argument('-t', '--tape', action='store_true',
@@ -223,6 +225,8 @@ get.add_argument('-f', '--force', action='store_true',
     help="overwrite local files if necessary")
 get.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively get all files and subdirectories [that match REGEX] of a directory")
+get.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
 get.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 get.add_argument('-t', '--tape', action='store_true',
@@ -256,4 +260,6 @@ remove.add_argument('-f', '--final', action='store_true',
     help="do not refuse to remove the last replica of the file, USE WITH CARE!")
 remove.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively remove all files and subdirectories [that match REGEX] of a directory")
+remove.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
 all_commands.append(remove)
