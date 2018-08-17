@@ -108,6 +108,22 @@ class GridBackend(object):
         """Is the remote path a directory?"""
         return self._is_dir(self.get_lurl(remotepath))
 
+    def _exists(self, surl, **kwargs):
+        raise NotImplementedError()
+
+    @cache.cached
+    def exists(self, surl, **kwargs):
+        """Chcek whether a surl actually exists."""
+        return self._exists(surl, **kwargs)
+
+    def _unregister(self, surl, lurl, verbose=False, **kwargs):
+        raise NotImplementedError()
+
+    def unregister(self, surl, remotepath, verbose=False, **kwargs):
+        """Unregister a given surl from the file catalogue."""
+        lurl = self.get_lurl(remotepath)
+        return self._unregister(surl, lurl, **kwargs)
+
     def _state(self, surl, **kwargs):
         raise NotImplementedError()
 
@@ -505,6 +521,32 @@ class GFALBackend(GridBackend):
             if len(line) > 0:
                 ret.append(line.strip())
         return ret
+
+    def _exists(self, surl, **kwargs):
+        try:
+            state = self._replicas_cmd(surl, 'user.status', **kwargs).strip()
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                return False
+            else:
+                raise BackendException(e.stderr)
+        else:
+            return True
+
+    def _unregister(self, surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._unregister_cmd(lurl, surl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        else:
+            return True
 
     def _state(self, surl, **kwargs):
         try:

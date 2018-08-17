@@ -213,6 +213,8 @@ def get_SE_by_path(path):
 
 def get_SE(SE):
     """Get the StorageElement by all means necessary."""
+    if isinstance(SE, StorageElement):
+        return SE
     if SE in SE_by_name:
         return SE_by_name[SE]
     if SE in SE_by_host:

@@ -62,3 +62,56 @@ def check_replicas(remotepath, ses, cached=False):
             return False
 
     return True
+
+def fix_missing_files(remotepath, verbose=False):
+    """Fix missing files on the storage elements.
+
+    Helps when a replica is registered in the catalogue, but not actually present on the SE.
+    """
+
+    replicas = t2kdm.replicas(remotepath)
+    existing = [ t2kdm.exists(replica) for replica in replicas ]
+
+    # Check that there is at least one replica actually present
+    if not any( existing ):
+        raise RuntimeError("There is not a single replica actually present!")
+
+    # Remove the replicas that are not present and remember which SEs those were
+    ses = []
+    success = True
+    for replica in replicas:
+        if not t2kdm.exists(replica):
+            if verbose:
+                print_("Found missing file. Unregistering replica: "+replica)
+            se = storage.get_SE(replica)
+            if se is not None:
+                ses.append(se)
+                try:
+                    t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
+                except backends.BackendException():
+                    if verbose:
+                        print_("Failed to unregister replica.")
+                    success = False
+            else:
+                print_("Cannot identify storage element of replica.")
+                success = False
+
+    # Replicate the file
+    for se in ses:
+        if verbose:
+            print_("Replicating missing replica.")
+        try:
+            t2kdm.replicate(remotepath, se, verbose=verbose)
+        except backends.BackendException():
+            if verbose:
+                print_("Failed to replicate File.")
+            success = False
+
+    return success
+
+def fix_all(remotepath, verbose=False):
+    """Try to automatically fix some common issues with a file."""
+
+    success = True
+    success = success and fix_missing_files(remotepath, verbose=verbose)
+    return success

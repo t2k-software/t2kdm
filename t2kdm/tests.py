@@ -110,7 +110,7 @@ def run_read_only_tests():
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')
         with no_output(True):
-            assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # Not all files are on the tape
+            assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # There are some deliberate failures here
         assert os.path.isfile(filename)
         assert os.path.getsize(filename) > 0
 

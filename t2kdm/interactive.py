@@ -48,7 +48,7 @@ class _recursive(object):
                     print_(self.iterating + " " + path)
                 try:
                     ret = self.function(path, *args, **kwargs)
-                except backends.BackendException as e:
+                except Exception as e:
                     print_(e)
                     bad += 1
                     if list_file is not None:
@@ -211,6 +211,14 @@ def check(remotepath, *args, **kwargs):
             return 0
         else:
             return 1
+
+@_recursive("Fixing", "Fixed")
+def fix(remotepath, **kwargs):
+    ret = utils.fix_all(remotepath, **kwargs)
+    if ret:
+        return 0
+    else:
+        return 1
 
 def print_storage_elements():
     """Print all available storage elments on screen."""

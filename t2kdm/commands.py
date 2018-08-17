@@ -263,3 +263,14 @@ remove.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=Fal
 remove.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(remove)
+
+fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")
+fix.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/file.txt'")
+fix.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
+fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively remove all files and subdirectories [that match REGEX] of a directory")
+fix.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
+all_commands.append(fix)

@@ -23,6 +23,7 @@ else:
     ls = backend.ls
     is_dir = backend.is_dir
     replicas = backend.replicas
+    exists = backend.exists
     checksum = backend.checksum
     state = backend.state
     replicate = backend.replicate
