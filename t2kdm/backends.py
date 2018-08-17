@@ -28,7 +28,12 @@ import itertools
 import posixpath
 import os, sys
 from t2kdm import storage
+from t2kdm.cache import Cache
 from six import print_
+
+# Add the option to cache the output of functions for 60 seconds.
+# This is enabled by providing the `cached=True` argument.
+cache = Cache(60)
 
 class BackendException(Exception):
     """Exception that is thrown if something goes (horribly) wrong."""
@@ -79,6 +84,7 @@ class GridBackend(object):
     def _ls(self, lurl, **kwargs):
         raise NotImplementedError()
 
+    @cache.cached
     def ls(self, remotepath, **kwargs):
         """List contents of a remote logical path.
 
@@ -97,6 +103,7 @@ class GridBackend(object):
         entry = self._ls(lurl, directory=True)[0]
         return entry.mode[0] == 'd'
 
+    @cache.cached
     def is_dir(self, remotepath):
         """Is the remote path a directory?"""
         return self._is_dir(self.get_lurl(remotepath))
@@ -104,6 +111,7 @@ class GridBackend(object):
     def _state(self, surl, **kwargs):
         raise NotImplementedError()
 
+    @cache.cached
     def state(self, surl, **kwargs):
         """Return the state of a replica, e.g. 'ONLINE'."""
         return self._state(surl, **kwargs)
@@ -111,6 +119,7 @@ class GridBackend(object):
     def _checksum(self, surl, **kwargs):
         raise NotImplementedError()
 
+    @cache.cached
     def checksum(self, surl, **kwargs):
         """Return the checksum of a replica."""
         return self._checksum(surl)
@@ -118,6 +127,7 @@ class GridBackend(object):
     def _replicas(self, lurl, **kwargs):
         raise NotImplementedError()
 
+    @cache.cached
     def replicas(self, remotepath, **kwargs):
         """Return a list of replica surls of a remote logical path."""
 

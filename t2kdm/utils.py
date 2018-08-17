@@ -9,13 +9,6 @@ import re
 import t2kdm
 from t2kdm import backends
 from t2kdm import storage
-from t2kdm.cache import Cache
-
-# Long time cache to save the output of `is_dir`
-long_cache = Cache(cache_time=600)
-@long_cache.cached
-def is_dir(*args, **kwargs):
-    return t2kdm.backend.is_dir(*args, **kwargs)
 
 def remote_iter_recursively(remotepath, regex=None):
     """Iter over remote paths recursively.
@@ -26,7 +19,7 @@ def remote_iter_recursively(remotepath, regex=None):
     if isinstance(regex, str):
         regex = re.compile(regex)
 
-    if is_dir(remotepath):
+    if t2kdm.is_dir(remotepath):
         for entry in t2kdm.ls(remotepath):
             if regex is None or regex.search(entry.name):
                 new_path = posixpath.join(remotepath, entry.name)
@@ -35,35 +28,37 @@ def remote_iter_recursively(remotepath, regex=None):
     else:
         yield remotepath
 
-def check_checksums(remotepath):
+def check_checksums(remotepath, cached=False):
     """Check if the checksums of all replicas are identical."""
 
-    replicas = t2kdm.replicas(remotepath)
-    checksum = t2kdm.checksum(replicas[0])
+    replicas = t2kdm.replicas(remotepath, cached=cached)
+    checksum = t2kdm.checksum(replicas[0], cached=cached)
 
     if '?' in checksum:
         return False
 
     for rep in replicas[1:]:
-        if t2kdm.checksum(rep) != checksum:
+        if t2kdm.checksum(rep, cached=cached) != checksum:
             return False
 
     return True
 
-def check_replicas(remotepath, ses):
+def check_replicas(remotepath, ses, cached=False):
     """Check whether the file is replcated to the given SE(s)."""
 
     check_ses = []
 
     for se in ses:
         if isinstance(se, str):
-            se = storage.get_SE(se)
-            if se is None:
+            se_obj = storage.get_SE(se)
+            if se_obj is None:
                 raise backends.BackendException("Not a valid storage element: %s"%(se,))
+            else:
+                se = se_obj
         check_ses.append(se)
 
     for se in check_ses:
-        if not se.has_replica(remotepath):
+        if not se.has_replica(remotepath, cached=cached):
             return False
 
     return True

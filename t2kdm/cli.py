@@ -8,20 +8,10 @@ import argparse
 import os
 import posixpath
 import t2kdm
-from t2kdm import utils
 from t2kdm.commands import all_commands
-from t2kdm.cache import Cache
 
-# Long time cache to save the output of `is_dir`
-long_cache = Cache(cache_time=600)
-@long_cache.cached
-def is_dir(*args, **kwargs):
-    return t2kdm.backend.is_dir(*args, **kwargs)
-# Short time cache to save the output of `ls`
-short_cache = Cache(cache_time=60)
-@short_cache.cached
 def ls(*args, **kwargs):
-    return [x.name for x in t2kdm.ls(*args, **kwargs)]
+    return [x.name for x in t2kdm.ls(*args, cached=True, **kwargs)]
 
 class T2KDmCli(cmd.Cmd):
     """T2K Data Manager Command Line Interface (CLI)
@@ -90,7 +80,7 @@ Type 'help' or '?' to list commands.
             print_(e)
         else:
             # And whether it is a directory
-            if is_dir(pwd):
+            if t2kdm.is_dir(pwd, cached=True):
                 self.remotedir = pwd
             else:
                 print_("ERROR, not a directory: %s"%(pwd,))
@@ -187,7 +177,7 @@ Type 'help' or '?' to list commands.
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = posixpath.join(searchdir, l)
-                    if is_dir(posixpath.join(abs_searchdir, l)):
+                    if t2kdm.is_dir(posixpath.join(abs_searchdir, l), cached=True):
                         cand += posixpath.sep
                     candidates.append(cand[text_offset:])
 

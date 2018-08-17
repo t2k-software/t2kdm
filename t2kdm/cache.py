@@ -34,13 +34,13 @@ class Cache(object):
         for key in self.cache.keys():
             del self.cache[key]
 
-    def hash(self, *args, **kwargs):
+    def hash(self, function, *args, **kwargs):
         """Turn function parameters into a hash."""
-        return hash(dumps( (args, kwargs) ))
+        return hash(dumps( (function.func_name, args, kwargs) ))
 
-    def get_entry(self, *args, **kwargs):
+    def get_entry(self, function, *args, **kwargs):
         """Get a valid entry from the cache or `None`."""
-        key = self.hash(*args, **kwargs)
+        key = self.hash(function, *args, **kwargs)
         if key in self.cache:
             entry = self.cache[key]
             if entry.is_valid():
@@ -50,21 +50,25 @@ class Cache(object):
         else:
             return None
 
-    def add_entry(self, value, *args, **kwargs):
+    def add_entry(self, value, function, *args, **kwargs):
         """Add an entry to the cache."""
-        key = self.hash(*args, **kwargs)
+        key = self.hash(function, *args, **kwargs)
         self.cache[key] = CacheEntry(value, cache_time=self.cache_time)
 
     def cached(self, function):
         """Decorator to turn a regular function into a cached one."""
 
         def cached_function(*args, **kwargs):
-            entry = self.get_entry(*args, **kwargs)
-            if entry is not None:
-                return entry.value
+            cached = kwargs.pop('cached', False)
+            if cached:
+                entry = self.get_entry(function, *args, **kwargs)
+                if entry is not None:
+                    return entry.value
+                else:
+                    value = function(*args, **kwargs)
+                    self.add_entry(value, function, *args, **kwargs)
+                    return value
             else:
-                value = function(*args, **kwargs)
-                self.add_entry(value, *args, **kwargs)
-                return value
+                return function(*args, **kwargs)
 
         return cached_function

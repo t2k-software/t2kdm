@@ -2,11 +2,7 @@
 
 import posixpath
 import t2kdm
-from t2kdm.cache import Cache
 from six import print_
-
-def replicas(*args, **kwargs):
-    return t2kdm.replicas(*args, **kwargs)
 
 class StorageElement(object):
     """Representation of a grid storage element"""
@@ -46,19 +42,19 @@ class StorageElement(object):
         distance = -common.count('/')
         return distance
 
-    def get_replica(self, remotepath):
+    def get_replica(self, remotepath, cached=False):
         """Return the replica of the file on this SM."""
-        for rep in replicas(remotepath):
+        for rep in t2kdm.replicas(remotepath, cached=cached):
             if self.host in rep:
                 return rep.strip()
         # Replica not found
         return None
 
-    def has_replica(self, remotepath):
+    def has_replica(self, remotepath, cached=False):
         """Check whether the remote path is replicated on this SE."""
-        return any(self.host in replica for replica in replicas(remotepath))
+        return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
 
-    def get_closest_SE(self, remotepath=None, tape=False):
+    def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
 
         If `tape` is False (default), prefer disk SEs over tape SEs.
@@ -71,7 +67,7 @@ class StorageElement(object):
             candidates = SEs
         else:
             candidates = []
-            for rep in replicas(remotepath):
+            for rep in t2kdm.replicas(remotepath, cached=cached):
                 candidates.append(get_SE_by_path(rep))
 
         for SE in candidates:
@@ -223,7 +219,7 @@ def get_SE(SE):
         return SE_by_host[SE]
     return get_SE_by_path(SE)
 
-def get_closest_SE(remotepath=None, location=None, tape=False):
+def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
     """Get the closest storage element with a replica of the given file.
 
     If `tape` is False (default), prefer disk SEs over tape SEs.
@@ -242,4 +238,4 @@ def get_closest_SE(remotepath=None, location=None, tape=False):
         location = location,
         basepath = '/')
 
-    return SE.get_closest_SE(remotepath, tape=tape)
+    return SE.get_closest_SE(remotepath, tape=tape, cached=cached)
