@@ -174,43 +174,39 @@ def remove(remotepath, *args, **kwargs):
     else:
         return 1
 
-from bprofile import BProfile
-profile = BProfile('profile.png')
-
 @_recursive("Checking", "No problems detected for")
 def check(remotepath, *args, **kwargs):
     """Check if everything is alright with the files."""
 
-    with profile:
-        verbose = kwargs.pop('verbose', False)
-        quiet = kwargs.pop('quiet', False)
-        ses = kwargs.pop('se', [])
-        checksum = kwargs.pop('checksum', False)
+    verbose = kwargs.pop('verbose', False)
+    quiet = kwargs.pop('quiet', False)
+    ses = kwargs.pop('se', [])
+    checksum = kwargs.pop('checksum', False)
 
-        if checksum == False and len(ses) == 0:
-            raise InteractiveException("No check specified.")
+    if checksum == False and len(ses) == 0:
+        raise InteractiveException("No check specified.")
 
-        if t2kdm.is_dir(remotepath):
-            raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
+    if t2kdm.is_dir(remotepath):
+        raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
-        if verbose and len(ses) > 0:
-            print_("Checking replicas...")
-        ret = t2kdm.check_replicas(remotepath, ses, cached=True)
-        if not ret and not quiet:
-            print_("%s is not replicated on all SEs!"%(remotepath))
+    if verbose and len(ses) > 0:
+        print_("Checking replicas...")
+    ret = t2kdm.check_replicas(remotepath, ses, cached=True)
+    if not ret and not quiet:
+        print_("%s is not replicated on all SEs!"%(remotepath))
 
-        if checksum:
-            if verbose:
-                print_("Checking checksums...")
-            chk = t2kdm.check_checksums(remotepath, cached=True)
-            if not chk and not quiet:
-                print_("%s has faulty checksums!"%(remotepath))
-            ret = ret and chk
+    if checksum:
+        if verbose:
+            print_("Checking checksums...")
+        chk = t2kdm.check_checksums(remotepath, cached=True)
+        if not chk and not quiet:
+            print_("%s has faulty checksums!"%(remotepath))
+        ret = ret and chk
 
-        if ret == True:
-            return 0
-        else:
-            return 1
+    if ret == True:
+        return 0
+    else:
+        return 1
 
 @_recursive("Fixing", "Fixed")
 def fix(remotepath, **kwargs):
