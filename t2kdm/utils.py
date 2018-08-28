@@ -74,14 +74,23 @@ def fix_missing_files(remotepath, verbose=False):
     replicas = t2kdm.replicas(remotepath)
     existing = []
     for rep in replicas:
-        try:
-            exists = t2kdm.exists(rep)
-        except backends.BackendException:
+        se = storage.get_SE(rep)
+        if se is not None and se.broken:
+            # Known broken SE?
             if verbose:
-                print_("WARNING: Could not check whether replica exists: "+rep)
-                print_("Will assume it does for now.")
+                print_("WARNING: Skipping replica on broken SE: "+rep)
+                print_("Will assume it exists for now.")
             exists = True
             success = False
+        else:
+            try:
+                exists = t2kdm.exists(rep)
+            except backends.BackendException:
+                if verbose:
+                    print_("WARNING: Could not check whether replica exists: "+rep)
+                    print_("Will assume it does for now.")
+                exists = True
+                success = False
         existing.append(exists)
 
 
