@@ -166,7 +166,7 @@ SEs = [
         basepath = 'srm://se03.esc.qmul.ac.uk/t2k.org'),
     StorageElement('IN2P3-CC-disk',
         broken = True,
-        host = 'polgrid4.in2p3.fr',
+        host = 'in2p3.fr',
         type = 'disk',
         location = '/europe/fr/in2p3',
         basepath = 'srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org'),
