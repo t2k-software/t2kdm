@@ -66,6 +66,9 @@ def run_read_only_tests():
     else:
         raise Exception("Did not find expected replica.")
 
+    print_("Testing exists...")
+    assert(t2kdm.backend.exists(rep))
+
     print_("Testing checksum...")
     assert(t2kdm.backend.checksum(rep) == '78e47c34')
 
