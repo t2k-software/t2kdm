@@ -315,7 +315,14 @@ class GridBackend(object):
 
         # Check how many replicas there are
         # If it is only one, refuse to delete it
-        nrep = len(self.replicas(remotepath))
+        replicas = self.replicas(remotepath)
+        nrep = 0
+        for rep in replicas:
+            # Only count non-broken replicas
+            se = storage.get_SE(rep)
+            if se is not None and not se.broken:
+                nrep += 1
+
         if not final and nrep <= 1:
             raise BackendException("Only one replica of file left! Aborting.")
 
