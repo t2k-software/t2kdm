@@ -611,13 +611,21 @@ class GFALBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-p', '--checksum', 'ADLER32', source_surl, destination_surl, _out=out, **kwargs)
-            self._register_cmd(lurl, destination_surl, _out=out, **kwargs)
+            self._cp_cmd('-p', '-T', '1800', '--checksum', 'ADLER32', source_surl, destination_surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
+            elif 'File exists' in e.stderr:
+                if verbose:
+                    print_("Replica already exists. Checking checksum...")
+                if self.checksum(destination_surl) == self.checksum(source_surl):
+                    if verbose:
+                        print_("Checksums match. Registering replica.")
+                else:
+                    raise BackendException("File with different checksum already present.")
             else:
                 raise BackendException(e.stderr)
+            self._register_cmd(lurl, destination_surl, _out=out, **kwargs)
         return True
 
     def _get(self, surl, localpath, verbose=False, **kwargs):
