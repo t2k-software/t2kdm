@@ -318,9 +318,9 @@ class GridBackend(object):
         replicas = self.replicas(remotepath)
         nrep = 0
         for rep in replicas:
-            # Only count non-broken replicas
+            # Only count non-blacklisted replicas
             se = storage.get_SE(rep)
-            if se is not None and not se.broken:
+            if se is not None and not se.blacklisted:
                 nrep += 1
 
         if not final and nrep <= 1:

@@ -7,7 +7,7 @@ from six import print_
 class StorageElement(object):
     """Representation of a grid storage element"""
 
-    def __init__(self, name, host, type, location, basepath, broken=False):
+    def __init__(self, name, host, type, location, basepath, blacklisted=False):
         """Initialise StorageElement.
 
         `name`: Identifier for element
@@ -15,7 +15,7 @@ class StorageElement(object):
         `type`: Storage type of element ('tape' or 'disk')
         `location`: Location of the SE, e.g. '/europe/uk/ral'
         `basepath`: Base path for standard storage paths on element
-        `broken`: Is the SE broken and should not be used any more?
+        `blacklisted`: Is the SE blacklisted and should not be used?
         """
 
         self.name = name
@@ -23,7 +23,7 @@ class StorageElement(object):
         self.basepath = basepath
         self.location = location
         self.type = type
-        self.broken = broken
+        self.blacklisted = blacklisted
 
     def get_storage_path(self, remotepath):
         """Generate the standard storage path for this SE from a logical file name."""
@@ -75,7 +75,7 @@ class StorageElement(object):
         for SE in candidates:
             if SE is None:
                 continue
-            if SE.broken:
+            if SE.blacklisted:
                 continue
             if closest_SE is None:
                 # Always accept the first SE
@@ -165,7 +165,7 @@ SEs = [
         location = '/europe/uk/london/qmul',
         basepath = 'srm://se03.esc.qmul.ac.uk/t2k.org'),
     StorageElement('IN2P3-CC-disk',
-        broken = True,
+        blacklisted = True,
         host = 'in2p3.fr',
         type = 'disk',
         location = '/europe/fr/in2p3',

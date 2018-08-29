@@ -75,10 +75,9 @@ def fix_missing_files(remotepath, verbose=False):
     existing = []
     for rep in replicas:
         se = storage.get_SE(rep)
-        if se is not None and se.broken:
-            # Known broken SE?
+        if se is not None and se.blacklisted:
             if verbose:
-                print_("WARNING: Skipping replica on broken SE: "+rep)
+                print_("WARNING: Skipping replica on blacklisted SE: "+rep)
                 print_("Will assume it exists for now.")
             exists = True
             success = False
