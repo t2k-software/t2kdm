@@ -93,7 +93,7 @@ class StorageElement(object):
                     closest_distance = self.get_distance(SE)
             elif tape or closest_SE.type == 'tape':
                 # We accept the candidate tape SEs
-                # Either bu choice or because the current best candidate is already a tape SE
+                # Either by choice or because the current best candidate is already a tape SE
                 if self.get_distance(SE) < closest_distance:
                     # But only if it is *better* than the current choice
                     closest_SE = SE
