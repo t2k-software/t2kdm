@@ -7,7 +7,7 @@ from six import print_
 class StorageElement(object):
     """Representation of a grid storage element"""
 
-    def __init__(self, name, host, type, location, basepath, blacklisted=False):
+    def __init__(self, name, host, type, location, basepath, broken=False):
         """Initialise StorageElement.
 
         `name`: Identifier for element
@@ -15,7 +15,7 @@ class StorageElement(object):
         `type`: Storage type of element ('tape' or 'disk')
         `location`: Location of the SE, e.g. '/europe/uk/ral'
         `basepath`: Base path for standard storage paths on element
-        `blacklisted`: Is the SE blacklisted and should not be used?
+        `broken`: Is the SE broken and should not be used? Equivalent to a forced blacklisting.
         """
 
         self.name = name
@@ -23,7 +23,11 @@ class StorageElement(object):
         self.basepath = basepath
         self.location = location
         self.type = type
-        self.blacklisted = blacklisted
+        self.broken = broken
+
+    def is_blacklisted(self):
+        """Is the SE blacklisted?"""
+        return self.broken or self.name in t2kdm.config.blacklist
 
     def get_storage_path(self, remotepath):
         """Generate the standard storage path for this SE from a logical file name."""
@@ -75,7 +79,7 @@ class StorageElement(object):
         for SE in candidates:
             if SE is None:
                 continue
-            if SE.blacklisted:
+            if SE.is_blacklisted():
                 continue
             if closest_SE is None:
                 # Always accept the first SE
@@ -165,7 +169,7 @@ SEs = [
         location = '/europe/uk/london/qmul',
         basepath = 'srm://se03.esc.qmul.ac.uk/t2k.org'),
     StorageElement('IN2P3-CC-disk',
-        blacklisted = True,
+        broken = True,
         host = 'in2p3.fr',
         type = 'disk',
         location = '/europe/fr/in2p3',

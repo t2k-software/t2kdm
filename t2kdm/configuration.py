@@ -11,7 +11,8 @@ default_values = {
     'backend':      'gfal',
     'basedir':      '/t2k.org',
     'location':     '/',
-    'maid_config':  path.join(app_dirs.user_config_dir, 'maid.conf')
+    'maid_config':  path.join(app_dirs.user_config_dir, 'maid.conf'),
+    'blacklist':    '-',
 }
 
 descriptions = {
@@ -27,6 +28,10 @@ descriptions = {
                     "You can see the locations of all available SEs by running `t2kdm-SEs`.",
     'maid_config':  "Where the configuration file for the `t2kdm-maid` command is stored.\n"\
                     "If you do not deal with raw data replication, don't worry about it.\n",
+    'blacklist':    "Blacklist storage elements from being used automatically.\n"\
+                    "They can still be specified explicitly.\n"\
+                    "Provide the list as whitespace-separated list of SE names.\n"\
+                    "Example: UKI-LT2-QMUL2-disk UKI-NORTHGRID-SHEF-HEP-disk",
 }
 
 class Configuration(object):

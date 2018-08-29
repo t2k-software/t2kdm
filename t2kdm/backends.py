@@ -320,7 +320,7 @@ class GridBackend(object):
         for rep in replicas:
             # Only count non-blacklisted replicas
             se = storage.get_SE(rep)
-            if se is not None and not se.blacklisted:
+            if se is not None and not se.is_blacklisted():
                 nrep += 1
 
         if not final and nrep <= 1:
