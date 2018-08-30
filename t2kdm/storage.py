@@ -103,7 +103,12 @@ class StorageElement(object):
         return closest_SE
 
     def __str__(self):
-        return "%s (%s) [%s]"%(self.name, self.host, self.location)
+        if self.broken:
+            return "%s (%s) [%s] --> BROKEN! <--"%(self.name, self.host, self.location)
+        elif self.is_blacklisted():
+            return "%s (%s) [%s] --> BLACKLISTED <--"%(self.name, self.host, self.location)
+        else:
+            return "%s (%s) [%s]"%(self.name, self.host, self.location)
 
 class TriumfStorageElement(StorageElement):
     """Special case of StorageElement for TRIUMF.
