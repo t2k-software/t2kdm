@@ -87,8 +87,9 @@ class StorageElement(object):
                 closest_distance = self.get_distance(SE)
             elif SE.type != 'tape':
                 # We always accept non-tape SEs
-                if self.get_distance(SE) <= closest_distance:
-                    # Also when they are equally close as the current choice
+                # if they are closer or equal distance to the current choice
+                # or if the curent choice is a tape replica and `tape` is not requested
+                if self.get_distance(SE) <= closest_distance or (closest_SE.type == 'tape' and not tape):
                     closest_SE = SE
                     closest_distance = self.get_distance(SE)
             elif tape or closest_SE.type == 'tape':
