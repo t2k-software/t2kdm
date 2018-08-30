@@ -248,7 +248,7 @@ def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
         if location == '/':
             print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `t2kdm-config`?\nWARNING:")
 
-    # Create a psude SE with the correct location
+    # Create a pseudo SE with the correct location
     SE = StorageElement('local',
         host = 'localhost',
         type = 'disk',
