@@ -262,6 +262,8 @@ remove.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=Fal
     help="recursively remove all files and subdirectories [that match REGEX] of a directory")
 remove.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
+remove.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
 all_commands.append(remove)
 
 fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")
