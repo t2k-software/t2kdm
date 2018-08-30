@@ -213,7 +213,7 @@ replicate.add_argument('-t', '--tape', action='store_true',
 replicate.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 replicate.add_argument('-x', '--bringonline', action='store_true',
-    help=argparse.SUPPRESS)
+    help="do not wait for tape replicas to come online (EXPERT OPTION)")
 all_commands.append(replicate)
 
 get = Command('get', t2kdm.interactive.get, "Download file from grid.")
@@ -234,7 +234,7 @@ get.add_argument('-t', '--tape', action='store_true',
 get.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 get.add_argument('-x', '--bringonline', action='store_true',
-    help=argparse.SUPPRESS)
+    help="do not wait for tape replicas to come online (EXPERT OPTION)")
 all_commands.append(get)
 
 put = Command('put', t2kdm.interactive.put, "Upload file to the grid.")
