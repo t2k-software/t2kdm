@@ -122,7 +122,7 @@ class GridBackend(object):
     def unregister(self, surl, remotepath, verbose=False, **kwargs):
         """Unregister a given surl from the file catalogue."""
         lurl = self.get_lurl(remotepath)
-        return self._unregister(surl, lurl, **kwargs)
+        return self._unregister(surl, lurl, verbose=verbose, **kwargs)
 
     def _state(self, surl, **kwargs):
         raise NotImplementedError()
@@ -295,11 +295,13 @@ class GridBackend(object):
         """
         raise NotImplementedError()
 
-    def remove(self, remotepath, destination, final=False, verbose=False, **kwargs):
+    def remove(self, remotepath, destination, final=False, verbose=False, unregister=False, **kwargs):
         """Remove the replica of a file from a storage element.
 
         This command will refuse to remove the last replica of a file
         unless the `final` argument is `True`!
+        If `unregister` is `True`, the replica will be removed from the catalogue,
+        but the physicalcopy will not be deleted.
         """
 
         # Get destination SE and check if file is already not present
@@ -329,7 +331,10 @@ class GridBackend(object):
         destination_path = dst.get_replica(remotepath)
         lurl = self.get_lurl(remotepath)
 
-        return self._remove(destination_path, lurl, last=(nrep<=1), verbose=verbose, **kwargs)
+        if unregister:
+            return self.unregister(destination_path, remotepath)
+        else:
+            return self._remove(destination_path, lurl, last=(nrep<=1), verbose=verbose, **kwargs)
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
@@ -466,7 +471,10 @@ class LCGBackend(GridBackend):
         else:
             out = None
         try:
-            self._del_cmd('-v', surl, _out=out, _err_to_out=True, **kwargs)
+            if unregister:
+                raise BackendException("Operation not supported by LCG backend.")
+            else:
+                self._del_cmd('-v', surl, _out=out, _err_to_out=True, **kwargs)
         except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
