@@ -63,6 +63,31 @@ def check_replicas(remotepath, ses, cached=False):
 
     return True
 
+def fix_known_bad_SEs(remotepath, verbose=False):
+    """Fix replicas on known bad storage elements.
+
+    Unregisters all replicas on
+
+        IN2P3-CC-disk
+
+    """
+
+    success = True
+
+    se = storage.SE_by_name['IN2P3-CC-disk']
+    replica = se.get_replica(remotepath)
+    if replica is not None:
+        if verbose:
+            print_("Found replica on bad storage element. Unregistering replica: "+replica)
+        try:
+            t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
+        except backends.BackendException():
+            if verbose:
+                print_("Failed to unregister replica.")
+            success = False
+
+    return success
+
 def fix_missing_files(remotepath, verbose=False):
     """Fix missing files on the storage elements.
 
@@ -133,5 +158,6 @@ def fix_all(remotepath, verbose=False):
     """Try to automatically fix some common issues with a file."""
 
     success = True
+    success = success and fix_known_bad_SEs(remotepath, verbose=verbose)
     success = success and fix_missing_files(remotepath, verbose=verbose)
     return success
