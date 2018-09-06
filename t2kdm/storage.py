@@ -66,6 +66,18 @@ class StorageElement(object):
         If `tape` is False (default), prefer disk SEs over tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
+        SEs = self.get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
+        if len(SEs) >= 1:
+            return SEs[0]
+        else:
+            return None
+
+    def get_closest_SEs(self, remotepath=None, tape=False, cached=False):
+        """Get a list of the storage element with the closest replicas.
+
+        If `tape` is False (default), prefer disk SEs over tape SEs.
+        If no `rempotepath` is provided, just return the closest SE over all.
+        """
         closest_SE = None
         closest_distance = None
 
@@ -76,31 +88,17 @@ class StorageElement(object):
             for rep in t2kdm.replicas(remotepath, cached=cached):
                 candidates.append(get_SE_by_path(rep))
 
-        for SE in candidates:
-            if SE is None:
-                continue
+        def sorter(SE):
+            distance = self.get_distance(SE)
+            if SE.type == 'tape':
+                if tape:
+                    distance += 0.5
+                else:
+                    distance += 10
             if SE.is_blacklisted():
-                continue
-            if closest_SE is None:
-                # Always accept the first SE
-                closest_SE = SE
-                closest_distance = self.get_distance(SE)
-            elif SE.type != 'tape':
-                # We always accept non-tape SEs
-                # if they are closer or equal distance to the current choice
-                # or if the curent choice is a tape replica and `tape` is not requested
-                if self.get_distance(SE) <= closest_distance or (closest_SE.type == 'tape' and not tape):
-                    closest_SE = SE
-                    closest_distance = self.get_distance(SE)
-            elif tape or closest_SE.type == 'tape':
-                # We accept the candidate tape SEs
-                # Either by choice or because the current best candidate is already a tape SE
-                if self.get_distance(SE) < closest_distance:
-                    # But only if it is *better* than the current choice
-                    closest_SE = SE
-                    closest_distance = self.get_distance(SE)
+                distance += 100
 
-        return closest_SE
+        return sorted(candidates, key=sorter)
 
     def __str__(self):
         if self.broken:

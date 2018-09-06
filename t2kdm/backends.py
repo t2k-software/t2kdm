@@ -162,18 +162,30 @@ class GridBackend(object):
 
     def get_file_source(self, remotepath, source=None, destination=None, tape=False):
         """Return the closest replica and corresponding SE of the given file."""
+        return next(self.iter_file_sources(remotepath, source=source, destination=destination, tape=tape))
+
+    def iter_file_sources(self, remotepath, source=None, destination=None, tape=False):
+        """Iterate over the closest replicas and corresponding SEs of the given file."""
 
         # Get source SE
         if source is None:
             if destination is None:
                 src = storage.get_closest_SE(remotepath, tape=tape)
+                if src is None:
+                    raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
+                yield src.get_replica(remotepath), src
+                return
             else:
                 dst = storage.get_SE(destination)
                 if dst is None:
                     raise BackendException("Could not find storage element %s."%(destination,))
-                src = dst.get_closest_SE(remotepath, tape=tape)
-            if src is None:
-                raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
+                srclst = dst.get_closest_SEs(remotepath, tape=tape)
+                if len(srclst) == 0:
+                    raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
+                else:
+                    for src in srclst:
+                        yield src.get_replica(remotepath), src
+                    return
         else:
             src = storage.get_SE(source)
             if src is None:
@@ -182,7 +194,8 @@ class GridBackend(object):
             if not src.has_replica(remotepath):
                 # Replica not present at source, throw error
                 raise BackendException("%s\nNo replica present at source storage element %s"%(remotepath, src.name,))
-        return src.get_replica(remotepath), src
+            yield src.get_replica(remotepath), src
+            return
 
     def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
@@ -210,17 +223,33 @@ class GridBackend(object):
                 print_("Replica of %s already present at destination storage element %s."%(remotepath, dst.name,))
             return True
 
-        source_path, src = self.get_file_source(remotepath, source, destination, tape)
         destination_path = dst.get_storage_path(remotepath)
-        if verbose:
-            print_("Copying %s to %s"%(source_path, destination_path))
-
-        if src.type == 'tape':
+        failure = None
+        for source_path, src in self.iter_file_sources(remotepath, source, destination, tape):
             if verbose:
-                print_("Bringing online %s"%(source_path,))
-            return self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose) and self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                print_("Copying %s to %s"%(source_path, destination_path))
+
+            if src.type == 'tape':
+                if verbose:
+                    print_("Bringing online %s"%(source_path,))
+                try:
+                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose) and self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                except BackendException as e:
+                    failure = e
+                    ret = False
+            else:
+                try:
+                    ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                except BackendException as e:
+                    failure = e
+                    ret = False
+            if ret:
+                return True
+
+        if failure is not None:
+            raise failure
         else:
-            return self._replicate(source_path, destination_path, lurl, verbose=verbose)
+            return False
 
     def _get(self, surl, localpath, verbose=False, **kwargs):
         raise NotImplementedError()
