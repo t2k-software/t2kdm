@@ -272,14 +272,32 @@ class GridBackend(object):
             raise BackendException("File does already exist: %s."%(localpath,))
 
         # Get the source replica
-        replica, src = self.get_file_source(remotepath, source, tape=tape)
-
-        if src.type == 'tape':
+        failure = None
+        for replica, src in self.iter_file_sources(remotepath, source, tape=tape):
             if verbose:
-                print_("Bringing online %s"%(replica,))
-            return self.bringonline(replica, timeout=bringonline_timeout, verbose=verbose) and self._get(replica, localpath, verbose=verbose, **kwargs)
+                print_("Copying %s to %s"%(replica, localpath))
+
+            if src.type == 'tape':
+                if verbose:
+                    print_("Bringing online %s"%(replica,))
+                try:
+                    ret = self.bringonline(replica, timeout=bringonline_timeout, verbose=verbose) and self._get(replica, localpath, verbose=verbose, **kwargs)
+                except BackendException as e:
+                    failure = e
+                    ret = False
+            else:
+                try:
+                    ret = self._get(replica, localpath, verbose=verbose, **kwargs)
+                except BackendException as e:
+                    failure = e
+                    ret = False
+            if ret:
+                return True
+
+        if failure is not None:
+            raise failure
         else:
-            return self._get(replica, localpath, verbose=verbose, **kwargs)
+            return False
 
     def _put(self, localpath, surl, remotepath, verbose=False, **kwargs):
         raise NotImplementedError()
