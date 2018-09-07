@@ -208,6 +208,12 @@ SEs = [
         type = 'disk',
         location = '/asia/jp/kek',
         basepath = 'srm://kek2-se01.cc.kek.jp/t2k.org'),
+    StorageElement('JP-KEK-CRC-02-disk-old',
+        broken = True,
+        host = 'kek2-tmpse.cc.kek.jp',
+        type = 'disk',
+        location = '/asia/jp/kek',
+        basepath = 'srm://kek2-tmpse.cc.kek.jp/dpm/cc.kek.jp/home/t2k.org'),
 # TODO (Possibly Dirac SEs that are not available to T2K in general):
 #GRIF-disk
 #GridPPSandboxSE
