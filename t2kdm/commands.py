@@ -192,6 +192,8 @@ replicas.add_argument('-c', '--checksum', action='store_true',
     help="display checksums of all replicas")
 replicas.add_argument('-s', '--state', action='store_true',
     help="display the state of all replicas, e.g. 'ONLINE'")
+replicas.add_argument('-n', '--name', action='store_true',
+    help="display the name of the storage element")
 all_commands.append(replicas)
 
 check = Command('check', t2kdm.interactive.check, "Check the replicas of a given file/directory.")

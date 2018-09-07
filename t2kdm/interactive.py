@@ -107,12 +107,19 @@ def replicas(*args, **kwargs):
 
     checksum = kwargs.pop('checksum', False)
     state = kwargs.pop('state', False)
+    name = kwargs.pop('name', False)
     reps = t2kdm.replicas(*args, **kwargs)
     for r in reps:
         if checksum:
             print_(t2kdm.checksum(r), end=' ')
         if state:
             print_(t2kdm.state(r), end=' ')
+        if name:
+            se = t2kdm.storage.get_SE(r)
+            if se is None:
+                print_('?', end=' ')
+            else:
+                print_(se.name, end=' ')
         print_(r)
     return 0
 
