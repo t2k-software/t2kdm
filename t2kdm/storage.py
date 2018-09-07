@@ -86,9 +86,13 @@ class StorageElement(object):
         else:
             candidates = []
             for rep in t2kdm.replicas(remotepath, cached=cached):
-                candidates.append(get_SE_by_path(rep))
+                cand = get_SE_by_path(rep)
+                if cand is not None:
+                    candidates.append(cand)
 
         def sorter(SE):
+            if SE is None:
+                return 1000
             distance = self.get_distance(SE)
             if SE.type == 'tape':
                 if tape:
@@ -97,6 +101,7 @@ class StorageElement(object):
                     distance += 10
             if SE.is_blacklisted():
                 distance += 100
+            return distance
 
         return sorted(candidates, key=sorter)
 
