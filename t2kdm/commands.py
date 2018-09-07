@@ -90,12 +90,13 @@ class Command(object):
 
         return ret
 
-    def run_from_cli(self, argstring, **kwargs):
+    def run_from_cli(self, argstring, _return=False, **kwargs):
         """Run command from command line interface.
 
         Parses single string into arguments.
         Prints output on screen.
-        Returns `False`.
+        Returns `False`, unless `_return` is `True`.
+        Then it returns the actual return value.
         """
 
         try:
@@ -104,8 +105,9 @@ class Command(object):
             print_(e)
             return False
 
+        ret = False
         try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
-            self.run_from_arglist(args, **kwargs)
+            ret = self.run_from_arglist(args, **kwargs)
         except t2kdm.backends.BackendException as e:
             print_(e)
         except t2kdm.interactive.InteractiveException as e:
@@ -115,7 +117,10 @@ class Command(object):
         except SystemExit:
             pass
 
-        return False
+        if _return:
+            return ret
+        else:
+            return False
 
     def run_from_arglist(self, arglist, **kwargs):
         """Run command with list of arguments."""
@@ -133,6 +138,15 @@ class Command(object):
         # Make remote paths absolute
         if remotedir is not None and 'remotepath' in name and not posixpath.isabs(value):
             value = posixpath.normpath(posixpath.join(remotedir, value))
+
+        # Special case: remote basename == @
+        if 'remotepath' in name:
+            # Get all entries in the directory and replace the @ with the (lexigraphically) last one
+            dirname, basename = posixpath.split(value)
+            if basename == '@':
+                entries = [x.name for x in t2kdm.ls(dirname)]
+                entries.sort()
+                value = posixpath.join(dirname, entries[-1])
 
         return value
 

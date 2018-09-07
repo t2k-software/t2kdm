@@ -5,7 +5,8 @@ from six.moves import configparser, html_entities
 import base64
 from six import print_
 import t2kdm
-import t2kdm.interactive
+import t2kdm.cli
+import t2kdm.commands
 from contextlib import contextmanager
 import sys, os
 import sh
@@ -93,25 +94,6 @@ class Task(object):
         else:
             # Nothing to do
             yield
-
-    @staticmethod
-    def parse_config(section, option, value):
-        """Parse a configuration string into kwargs for `__init__`."""
-        if value is None:
-            arguments = []
-        else:
-            arguments = value.split()
-
-        kwargs = {}
-
-        if 'monthly' in arguments:
-            kwargs['frequency'] = 'monthly'
-        if 'weekly' in arguments:
-            kwargs['frequency'] = 'weekly'
-        if 'daily' in arguments:
-            kwargs['frequency'] = 'daily'
-
-        return kwargs
 
     def _pre_do(self, id=None):
         """Bookkeeping when starting a task."""
@@ -212,50 +194,27 @@ class Task(object):
         """Return a string to identify the task by."""
         return '%s_Task'%(self.frequency,)
 
-class ReplicationTask(Task):
+class CommandTask(Task):
     """Replicate a folder to a SE."""
 
     def __init__(self, **kwargs):
-        self.path = kwargs.pop('path')
-        self.destination = kwargs.pop('destination')
-        Task.__init__(self, **kwargs)
-
-    @staticmethod
-    def parse_config(section, option, value):
-        """Parse a configuration string into kwargs for `__init__`."""
-        if value is None:
-            arguments = []
+        self.commandline = kwargs.pop('commandline')
+        command, argstr = self.commandline.split(' ', 1)
+        for cmd in t2kdm.commands.all_commands:
+            if cmd.name == command:
+                self.command = cmd
+                self.argstr = argstr
+                break
         else:
-            arguments = value.split()
-
-        # Let base class do its thing
-        kwargs = Task.parse_config(section, option, value)
-
-        if option.startswith('replicate(') and option.endswith(')') :
-            # Remove replicate instruction
-            option = option[10:-1]
-        else:
-            raise RuntimeError("Bad replication task: %s"(option,))
-
-        # Special case: basename == @
-        # Get all entries in the directory and replace the @ with the (lexigraphically) last one
-        dirname, basename = posixpath.split(option)
-        if basename == '@':
-            entries = [x.name for x in t2kdm.ls(dirname)]
-            entries.sort()
-            option = posixpath.join(dirname, entries[-1])
-
-        kwargs['destination'] = section
-        kwargs['path'] = option
-
-        return kwargs
+            raise ValueError("Unknown command: %s"%(command,))
+        super(CommandTask, self).__init__(**kwargs)
 
     def _do(self):
-        return t2kdm.interactive.replicate(self.path, self.destination, recursive=True, verbose=True) == 0
+        return self.command.run_from_cli(self.argstr, _return=True) == 0
 
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_ReplicationTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.destination)
+        return '%s_CommandTask_>%s<'%(self.frequency, self.commandline)
 
 class TrimLogTask(Task):
     """Task to trim a log file to a certain number of line.
@@ -276,7 +235,7 @@ class TrimLogTask(Task):
 
         self.path = kwargs.pop('path')
         self.nlines = kwargs.pop('nlines')
-        Task.__init__(self, **kwargs)
+        super(TrimLogTask, self).__init__(**kwargs)
 
     def _do(self):
         with tempfile.TemporaryFile('w+t') as tf:
@@ -340,14 +299,14 @@ class TaskLog(object):
     def _parse_line(self, line):
         """Return dict of parsed line."""
         elements = line.split()
-        if len(elements) != 4:
+        if len(elements) < 4:
             raise TaskLog.ParseError()
 
         ret = {
             'time': self.parse_time(elements[0]),
             'id': elements[1],
             'state': elements[2],
-            'task': elements[3],
+            'task': ' '.join(elements[3:]),
         }
         return ret
 
@@ -401,37 +360,29 @@ class Maid(object):
 
         The file must look like this:
 
-            [DEFAULT]
+            [log]
             tasklog = /path/to/logfile.txt
             trimlog = monthly
 
-            [SOME_SE_NAME]
-            replicate(/first/folder/to/be/replicated/to/the/SE) = daily
-            replicate(/second/folder/to/be/replicated/to/the/SE) = daily
-            replicate(/etc/)
+            [daily]
+            replicate /some/folder/ SOME_SE_disk -vr
+            replicate /second/different/folder/to/be/replicated/to/the/SE/@ -vr
 
-            [SOME_OTHER_SE_NAME]
-            replicate(/first/folder/to/be/replicated/to/the/SE) = weekly
-            replicate(/second/different/folder/to/be/replicated/to/the/SE/@) = daily
-            replicate(/etc) = monthly
+            [weekly]
+            check /some/folder/ -c -s SOME_SE_disk -vr
 
-            [ETC]
-            replicate(/etc) = recursive daily
+            [monthly]
+            fix /some/other/folder/@ -vr
 
-        Optionally, arguments can be assigned to the paths.
-        Available arguments:
-
-            daily           - aim to replicate this path every day
-            weekly          - aim to replicate this path about once per week (default)
-            monthly         - aim to replicate this path about once per month
-
-        Each replication order is handled independently. So it is possible to
+        Each command in `daily/weekly/monthly` is handled independently. So it is possible to
         request a weekly transfer of a certain folder, while additionally replicating
         a subfolder every day:
 
-            [EXAMPLE_SE]
-            replicate(/some/data/folder) = weekly
-            replicate(/some/data/folder/very/important/@) = daily
+            [daily]
+            replicate /some/data/folder/very/important/@ SOME_SE_disk -vr
+
+            [monthly]
+            replicate /some/data/folder/ SOME_SE_disk -vr
 
         If the last level of the path to be replicated is an '@' character,
         it will be replaced by the *lexigraphically* last element in the directory.
@@ -452,11 +403,11 @@ class Maid(object):
         # Store tasks
         self.tasks = {}
 
-        tasklog_path = parser.get('DEFAULT', 'tasklog')
+        tasklog_path = parser.get('log', 'tasklog')
         self.tasklog = TaskLog(tasklog_path)
 
         # Create TrimLogTask
-        trim_freq = parser.get('DEFAULT', 'trimlog')
+        trim_freq = parser.get('log', 'trimlog')
         new_task = TrimLogTask(path=tasklog_path, nlines=1000, frequency=trim_freq)
         new_id = new_task.get_id()
         # If an html report is requested, redirect the output to the appropriate file
@@ -466,26 +417,26 @@ class Maid(object):
         self.tasks[new_id] = new_task
 
         for sec in parser.sections():
-            # Create Replication tasks for storage elements
-            if sec in t2kdm.storage.SE_by_name:
-                print_("Reading tasks for %s..."%(sec,))
-                for opt in parser.options(sec):
-                    if opt.startswith('replicate'):
-                        val = parser.get(sec, opt) # Create the task from the config file line
-                        if val is None:
-                            print_("Adding replication task: %s"%(opt,))
-                        else:
-                            print_("Adding replication task: %s = %s"%(opt,val))
-                        new_task = ReplicationTask(**ReplicationTask.parse_config(sec, opt, val))
-                        new_id = new_task.get_id()
-                        if new_id in self.tasks: # Make sure the task does not already exist
-                            raise RuntimeError("Duplicate task: %s"%(new_id,))
-                        # If an html report is requested, redirect the output to the appropriate file
-                        if self.report is not None:
-                            new_task.logfile = os.path.join(self.report, new_task.get_logname())
+            freq = sec.lower()
+            if freq not in ['daily', 'weekly', 'monthly']:
+                continue
+            print_("Adding %s tasks..."%(freq,))
+            for opt in parser.options(sec):
+                val = parser.get(sec, opt) # Create the task from the config file line
+                if val is None:
+                    print_("Adding task: %s"%(opt,))
+                else:
+                    print_("Adding task: %s = %s"%(opt,val))
+                new_task = CommandTask(commandline=opt, frequency=freq)
+                new_id = new_task.get_id()
+                if new_id in self.tasks: # Make sure the task does not already exist
+                    raise RuntimeError("Duplicate task: %s"%(new_id,))
+                # If an html report is requested, redirect the output to the appropriate file
+                if self.report is not None:
+                    new_task.logfile = os.path.join(self.report, new_task.get_logname())
 
-                        # Store task in dict of tasks
-                        self.tasks[new_id] = new_task
+                # Store task in dict of tasks
+                self.tasks[new_id] = new_task
 
     @staticmethod
     def _quote_html(s):
