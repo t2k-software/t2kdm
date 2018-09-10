@@ -10,7 +10,7 @@ experiment.
 """
 
 setup(name='t2kdm',
-    version='1.0.0',
+    version='1.0.1',
     description=description,
     long_description=long_description,
     url='http://github.com/ast0815/t2kdm',
