@@ -10,7 +10,7 @@ experiment.
 """
 
 setup(name='t2kdm',
-    version='0.6.0',
+    version='1.0.0',
     description=description,
     long_description=long_description,
     url='http://github.com/ast0815/t2kdm',
@@ -31,7 +31,7 @@ setup(name='t2kdm',
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production',
 
         # Indicate who your project is intended for
         'Intended Audience :: Developers',
