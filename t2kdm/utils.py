@@ -74,17 +74,21 @@ def fix_known_bad_SEs(remotepath, verbose=False):
 
     success = True
 
-    se = storage.SE_by_name['IN2P3-CC-disk']
-    replica = se.get_replica(remotepath)
-    if replica is not None:
-        if verbose:
-            print_("Found replica on bad storage element. Unregistering replica: "+replica)
-        try:
-            t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
-        except backends.BackendException():
-            if verbose:
-                print_("Failed to unregister replica.")
+    replicas = t2kdm.replicas(remotepath)
+    for replica in replicas:
+        se = storage.get_SE(replica)
+        if se is None:
+            print_("Found replica on unknown storage element: "+replica)
             success = False
+        elif se.broken:
+            if verbose:
+                print_("Found replica on bad storage element. Unregistering replica: "+replica)
+            try:
+                t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
+            except backends.BackendException():
+                if verbose:
+                    print_("Failed to unregister replica.")
+                success = False
 
     return success
 
