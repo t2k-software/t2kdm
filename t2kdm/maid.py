@@ -118,6 +118,7 @@ class Task(object):
 
         with self.redirected_output(append=False):
             self._pre_do(id=id)
+            print_(self)
             print_("TASK STARTED")
             # Add a timestamp to the beginning of the output
             sh.date(_out=sys.stdout)
