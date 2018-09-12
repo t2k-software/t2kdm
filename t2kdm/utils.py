@@ -121,10 +121,12 @@ def fix_missing_files(remotepath, verbose=False):
                 success = False
         existing.append(exists)
 
-
     # Check that there is at least one replica actually present
     if not any( existing ):
-        raise RuntimeError("There is not a single replica actually present!")
+        if verbose:
+            print_("WARNING: There is not a single replica actually present!")
+            print_("Doing nothing.")
+        return False
 
     # Remove the replicas that are not present and remember which SEs those were
     ses = []
