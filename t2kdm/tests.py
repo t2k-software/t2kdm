@@ -101,6 +101,8 @@ def run_read_only_tests():
             t2kdm.backend.get(path, tempdir, source=testSEs[2], force=False)
         except backends.BackendException as e:
             assert("already exist" in e.args[0])
+        else:
+            raise Exception("Should have refused to overwrite!")
         assert(t2kdm.backend.get(path, tempdir, source=testSEs[2], force=True) == True)
         assert(os.path.isfile(filename))
         os.remove(filename)
