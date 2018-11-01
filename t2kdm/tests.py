@@ -180,7 +180,7 @@ def run_read_write_tests():
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
     for SE in storage.SEs:
-        if SE.type == 'tape' or 'TRIUMF' in SE.name:
+        if SE.type == 'tape' or 'TRIUMF' in SE.name or SE.is_blacklisted():
             # These SEs do not seem to cooperate
             continue
         print_(SE.name)
