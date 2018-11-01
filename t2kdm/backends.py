@@ -680,7 +680,12 @@ class GFALBackend(GridBackend):
                     raise BackendException("File with different checksum already present.")
             else:
                 raise BackendException(e.stderr)
-        self._register_cmd(lurl, destination_surl, _out=out, **kwargs)
+
+        try:
+            self._register_cmd(lurl, destination_surl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            raise BackendException(e.stderr)
+
         return True
 
     def _get(self, surl, localpath, verbose=False, **kwargs):
