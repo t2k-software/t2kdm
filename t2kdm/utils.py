@@ -3,7 +3,8 @@
 import posixpath
 from copy import deepcopy
 from six import print_
-import sys, sh
+import os, sys, sh
+import tempfile
 from contextlib import contextmanager
 import re
 import t2kdm
@@ -160,10 +161,118 @@ def fix_missing_files(remotepath, verbose=False):
 
     return success
 
+def _test_replica(replica, verbose=False):
+    """Test whether a replica has the checksum it reports and whether it passes the gzip test."""
+
+    tempdir = tempfile.mkdtemp()
+    tempf = os.path.join(tempdir, 'temp.gz')
+
+    try:
+        if verbose:
+            print_("Downloading and checking replica: "+replica)
+        t2kdm.backend._get(replica, tempf, verbose=verbose)
+
+        remote_checksum = t2kdm.checksum(replica)
+        local_checksum = sh.adler32(tempf).strip()
+
+        if local_checksum != remote_checksum:
+            if verbose:
+                print_(replica)
+                print_("Local checksum %s is different from remote checksum %s."%(local_checksum, remote_checksum))
+            return False
+
+        try:
+            sh.gzip(tempf, test=True)
+        except sh.ErrorReturnCode:
+            if verbose:
+                print_(replica)
+                print_("Failed the gzip integrity test.")
+            return False
+        else:
+            return True
+
+    finally:
+        sh.rm('-f', tempf)
+        sh.rmdir(tempdir)
+
+def fix_checksum_errors(remotepath, verbose=False):
+    """Fix replicas with differing checksums.
+
+    This can only be done for files that can be checked for corruption.
+    Otherwise there is no way to decide which file is actually the correct one.
+    """
+
+    replicas = t2kdm.replicas(remotepath)
+    checksums = [t2kdm.checksum(r) for r in replicas]
+
+    if len(set(checksums)) == 1 and '?' not in checksums[0]:
+        # Nothing to do here
+        return True
+
+    if verbose:
+        print_("Found faulty checksums.")
+
+    if not remotepath.endswith('.gz'):
+        if verbose:
+            print_("WARNING: Can only check file consistency of *.gz files!")
+            print_("Doing nothing.")
+        return False
+
+    good_replicas = []
+    bad_replicas = []
+    for replica in replicas:
+        if _test_replica(replica, verbose=verbose):
+            good_replicas.append(replica)
+        else:
+            bad_replicas.append(replica)
+
+    if len(good_replicas) == 0:
+        if verbose:
+            print_("WARNING: Not a single good replica present!")
+            print_("Doing nothing.")
+        return False
+
+    if len(bad_replicas) == 0:
+        if verbose:
+            print_("WARNING: Not a single bad replica present!")
+            print_("This should not happen, since the checksums are different.")
+            print_("Doing nothing.")
+        return False
+
+    bad_SEs = []
+    for replica in bad_replicas:
+        SE = storage.get_SE(replica)
+        if SE is None:
+            if verbose:
+                print_("WARNING: Could not find storage element for replica: "+replica)
+            continue
+        bad_SEs.append(SE)
+
+    success = True
+
+    for SE in bad_SEs:
+        if verbose:
+            print_("Removing bad replica from %s."%(SE.name,))
+        try:
+            t2kdm.remove(remotepath, SE, verbose=verbose)
+        except:
+            success = False
+
+    for SE in bad_SEs:
+        if verbose:
+            print_("Re-replicating file on %s."%(SE.name,))
+        try:
+            t2kdm.replicate(remotepath, SE, verbose=verbose)
+        except:
+            success = False
+
+    return success
+
 def fix_all(remotepath, verbose=False):
     """Try to automatically fix some common issues with a file."""
 
     success = True
     success = success and fix_known_bad_SEs(remotepath, verbose=verbose)
     success = success and fix_missing_files(remotepath, verbose=verbose)
+    success = success and fix_checksum_errors(remotepath, verbose=verbose)
     return success
