@@ -8,7 +8,7 @@ import os
 from os import path
 
 default_values = {
-    'backend':      'gfal',
+    'backend':      'dirac',
     'basedir':      '/t2k.org',
     'location':     '/',
     'maid_config':  path.join(app_dirs.user_config_dir, 'maid.conf'),
@@ -17,7 +17,7 @@ default_values = {
 
 descriptions = {
     'backend':      "Which backend should be used?\n"\
-                    "Supported backends: gfal, lcg",
+                    "Supported backends: dirac, gfal, lcg",
     'basedir':      "What base directory should be assumed for all files on the grid?",
     'location':     "What is your location?\n"\
                     "This is used to determine the closest storage element when downloading files.\n"\

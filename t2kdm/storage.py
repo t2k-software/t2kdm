@@ -132,7 +132,7 @@ class TriumfStorageElement(StorageElement):
 
 # Add actual SEs
 SEs = [
-    StorageElement('RAL-LCG22-tape',
+    StorageElement('RAL-LCG2-T2K-tape',
         host = 'srm-t2k.gridpp.rl.ac.uk',
         type = 'tape',
         location = '/europe/uk/ral',
@@ -183,7 +183,7 @@ SEs = [
         type = 'disk',
         location = '/europe/fr/in2p3',
         basepath = 'srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org'),
-    StorageElement('PIC-disk',
+    StorageElement('pic-disk',
         host = 'srm.pic.es',
         type = 'disk',
         location = '/europe/es/pic',

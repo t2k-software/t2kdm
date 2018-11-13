@@ -16,7 +16,7 @@ import posixpath
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
-testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-SOUTHGRID-OX-HEP-disk', 'RAL-LCG22-tape']
+testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-SOUTHGRID-OX-HEP-disk', 'RAL-LCG2-T2K-tape']
 
 @contextmanager
 def no_output(redirect=True):
@@ -59,9 +59,12 @@ def run_read_only_tests():
     else:
         raise Exception("Test file not in listing.")
 
+    print_("Testing is_dir...")
+    assert(t2kdm.is_dir('/test/t2kdm'))
+
     print_("Testing replicas...")
-    for rep in t2kdm.backend.replicas('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz'):
-        if 'srm-t2k.gridpp.rl.ac.uk' in rep:
+    for rep in t2kdm.backend.replicas('/test/t2kdm/test1.txt'):
+        if 'heplnx204.pp.rl.ac.uk' in rep:
             break
     else:
         raise Exception("Did not find expected replica.")
@@ -70,10 +73,10 @@ def run_read_only_tests():
     assert(t2kdm.backend.exists(rep))
 
     print_("Testing checksum...")
-    assert(t2kdm.backend.checksum(rep) == '78e47c34')
+    assert(t2kdm.backend.checksum(rep) == '529506c1')
 
     print_("Testing state...")
-    assert('NEARLINE' in t2kdm.backend.state(rep))
+    assert('ONLINE' in t2kdm.backend.state(rep))
 
     print_("Testing StorageElement...")
     # Test distance calculation
@@ -81,7 +84,7 @@ def run_read_only_tests():
     # Test getting SE by host
     assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
     # Test getting the closest SE
-    assert(storage.get_closest_SE('/nd280/raw/ND280/ND280/00000000_00000999/nd280_00000001_0000.daq.mid.gz') is not None)
+    assert(storage.get_closest_SE('/test/t2kdm/test1.txt') is not None)
 
     print_("Testing TriumfStorageElement...")
     # Test special case of TRIUMF SE

@@ -734,6 +734,253 @@ class GFALBackend(GridBackend):
                 raise BackendException(e.stderr)
         return True
 
+class DIRACBackend(GridBackend):
+    """Grid backend using the GFAL command line tools `gfal-*`."""
+
+    def __init__(self, **kwargs):
+        GridBackend.__init__(self, **kwargs)
+
+        self._xattr_cmd = sh.Command('gfal-xattr')
+        self._replica_checksum_cmd = sh.Command('gfal-sum')
+        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
+        self._cp_cmd = sh.Command('gfal-copy')
+
+        self._ls_cmd = sh.Command('dirac-dms-filecatalog-cli')
+        self._replicas_cmd = sh.Command('dirac-dms-lfn-replicas')
+        self._unregister_cmd = sh.Command('dirac-dms-remove-catalog-replicas')
+        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
+        self._add_cmd = sh.Command('dirac-dms-add-file')
+        self._del_cmd = sh.Command('dirac-dms-remove-replicas')
+        self._delall_cmd = sh.Command('dirac-dms-remove-files')
+
+    @staticmethod
+    def strip_lurl(lurl):
+        """Strip te unnecessary stuff from the beginning of lurls.
+
+        lfn:/grid/t2k.org/... -> /t2k.org/...
+
+        """
+        return lurl[9:]
+
+    def _ls(self, lurl, **kwargs):
+        # Translate keyword arguments
+        d = kwargs.pop('directory', False)
+        slurl = self.strip_lurl(lurl)
+        if d:
+            # DIRAC does not support the -d flag
+            # Do an ls of the containing directory and filter the result
+            cmd = 'ls -l '+posixpath.dirname(slurl)+'\n'
+        else:
+            cmd = 'ls -l '+slurl+'\n'
+        try:
+            output = self._ls_cmd(_in=cmd, **kwargs)
+        except sh.ErrorReturnCode as e:
+            # This never happens as DIRAC does not seem to care if a path does not exist.
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        ret = []
+        splash_text = True
+        for line in output:
+            fields = line.split()
+            if len(fields) < 5:
+                continue
+            # Remove CLI prompt
+            if fields[0] == 'FC:/>':
+                splash_text = False
+                fields = fields[1:]
+            if splash_text:
+                continue
+            mode, links, uid, gid, size = fields[:5]
+            name = fields[-1]
+            modified = ' '.join(fields[5:-1])
+            if (not d) or (lurl.endswith('/'+name)):
+                ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
+        if len(ret)==0:
+            if d:
+                # At least we know when a '-d' entry does not exist
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                # Check whether this entry exists or not
+                self._ls(lurl, directory=True)
+        return ret
+
+    def _replicas(self, lurl, **kwargs):
+        # Check the lurl actually exists
+        self._ls(lurl, directory=True)
+
+        lurl = self.strip_lurl(lurl)
+        ret = []
+        try:
+            output = self._replicas_cmd('-a', lurl, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        for line in output:
+            # The actual replicas are the last field in the returned table
+            line = line.strip()
+            line = line.split()
+            if len(line) < 1:
+                continue
+            line = line[-1]
+            if line.startswith('srm:'):
+                ret.append(line.strip())
+        return ret
+
+    def _exists(self, surl, **kwargs):
+        try:
+            state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                return False
+            else:
+                raise BackendException(e.stderr)
+        else:
+            return True
+
+    def _unregister(self, surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+
+        # DIRAC only needs to know the SE name to unregister a replica
+        se = storage.get_SE(surl).name
+        try:
+            self._unregister_cmd(lurl, se, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        else:
+            return True
+
+    def _state(self, surl, **kwargs):
+        try:
+            state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
+        except sh.ErrorReturnCode:
+            state = '?'
+        except sh.SignalException_SIGSEGV:
+            state = '?'
+        return state
+
+    def _checksum(self, surl, **kwargs):
+        try:
+            checksum = self._replica_checksum_cmd(surl, 'ADLER32', **kwargs).split()[1]
+        except sh.ErrorReturnCode:
+            checksum = '?'
+        except sh.SignalException_SIGSEGV:
+            checksum = '?'
+        except IndexError:
+            checksum = '?'
+        return checksum
+
+    def _bringonline(self, surl, timeout, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        # gfal does not notice when files come online, it seems
+        # split task into many requests with short timeouts
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        time_left = timeout
+        while(True):
+            if time_left > 10:
+                timeout = 10
+            else:
+                timeout = time_left
+            time_left -= 10
+            try:
+                self._bringonline_cmd('-t', timeout, surl, _out=out, **kwargs)
+            except sh.ErrorReturnCode:
+                # Not online yet.
+                if time_left > 0:
+                    continue
+                else:
+                    return False
+            else:
+                # File is online.
+                return True
+
+    def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+
+        lurl = self.strip_lurl(lurl)
+        source = storage.get_SE(source_surl).name
+        destination = storage.get_SE(destination_surl).name
+        try:
+            self._replicate_cmd(lurl, destination, source, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+
+        return True
+
+    def _get(self, surl, localpath, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        try:
+            self._cp_cmd('-f', '--checksum', 'ADLER32', surl, localpath, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return os.path.isfile(localpath)
+
+    def _put(self, localpath, surl, lurl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+        lurl = self.strip_lurl(lurl)
+        se = storage.get_SE(surl).name
+
+        try:
+            self._add_cmd(lurl, localpath, se, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
+
+    def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+
+        lurl = self.strip_lurl(lurl)
+        se = storage.get_SE(surl).name
+
+        try:
+            if last:
+                # Delete lfn
+                self._delall_cmd(lurl, _out=out, **kwargs)
+            else:
+                self._del_cmd(lurl, se, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(e.stderr)
+        return True
+
 def get_backend(config):
     """Return the backend according to the provided configuration."""
 
@@ -741,5 +988,7 @@ def get_backend(config):
         return LCGBackend(basedir = config.basedir)
     if config.backend == 'gfal':
         return GFALBackend(basedir = config.basedir)
+    if config.backend == 'dirac':
+        return DIRACBackend(basedir = config.basedir)
     else:
         raise config.ConfigError('backend', "Unknown backend!")
