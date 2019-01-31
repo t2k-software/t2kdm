@@ -779,7 +779,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         ret = []
         splash_text = True
         for line in output:
@@ -818,7 +821,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         for line in output:
             # The actual replicas are the last field in the returned table
             line = line.strip()
@@ -837,7 +843,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 return False
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         else:
             return True
 
@@ -855,7 +864,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         else:
             return True
 
@@ -924,7 +936,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
 
         return True
 
@@ -939,7 +954,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         return os.path.isfile(localpath)
 
     def _put(self, localpath, surl, lurl, verbose=False, **kwargs):
@@ -956,7 +974,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         return True
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
@@ -978,7 +999,10 @@ class DIRACBackend(GridBackend):
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                raise BackendException(e.stderr)
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         return True
 
 def get_backend(config):
