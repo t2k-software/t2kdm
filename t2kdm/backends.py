@@ -740,13 +740,16 @@ class DIRACBackend(GridBackend):
     def __init__(self, **kwargs):
         GridBackend.__init__(self, **kwargs)
 
+        from DIRAC.Core.Base import Script
+        Script.initialize()
+        from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
+        self.fc = FileCatalog()
+
         self._xattr_cmd = sh.Command('gfal-xattr')
         self._replica_checksum_cmd = sh.Command('gfal-sum')
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
 
-        self._ls_cmd = sh.Command('dirac-dms-filecatalog-cli')
-        self._replicas_cmd = sh.Command('dirac-dms-lfn-replicas')
         self._unregister_cmd = sh.Command('dirac-dms-remove-catalog-replicas')
         self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
         self._add_cmd = sh.Command('dirac-dms-add-file')
@@ -762,79 +765,75 @@ class DIRACBackend(GridBackend):
         """
         return lurl[9:]
 
+    def _get_dir_entry(self, lurl):
+        """Take a lurl and return a DirEntry."""
+        md = self.fc.getFileMetadata(lurl)
+        if not md['OK']:
+            raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
+        if lurl not in md['Value']['Successful']:
+            if 'No such file' in md['Value']['Failed'][lurl]:
+                # File does not exist, maybe a directory?
+                md = self.fc.getDirectoryMetadata(lurl)
+                if lurl not in md['Value']['Successful']:
+                    raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(md['Value']['Failed'][lurl])
+        md = md['Value']['Successful'][lurl]
+        return DirEntry(posixpath.basename(lurl), mode=oct(md['Mode']), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md['ModificationDate']))
+
+    def _iter_directory(self, lurl):
+        """Iterate over entries in a directory."""
+
+        lst = self.fc.listDirectory(lurl)
+        if not lst['OK']:
+            raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
+        if lurl not in lst['Value']['Successful']:
+            if 'Directory does not' in lst['Value']['Failed'][lurl]:
+                # Dir does not exist, maybe a File?
+                if self.fc.isFile(lurl):
+                    lst = [lurl]
+                else:
+                    raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(lst['Value']['Failed'][lurl])
+        else:
+            lst = sorted(lst['Value']['Successful'][lurl]['Files'].keys() + lst['Value']['Successful'][lurl]['SubDirs'].keys())
+
+        for path in lst:
+            yield path
+
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
         d = kwargs.pop('directory', False)
-        slurl = self.strip_lurl(lurl)
+        lurl = self.strip_lurl(lurl)
+
         if d:
-            # DIRAC does not support the -d flag
-            # Do an ls of the containing directory and filter the result
-            cmd = 'ls -l '+posixpath.dirname(slurl)+'\n'
-        else:
-            cmd = 'ls -l '+slurl+'\n'
-        try:
-            output = self._ls_cmd(_in=cmd, **kwargs)
-        except sh.ErrorReturnCode as e:
-            # This never happens as DIRAC does not seem to care if a path does not exist.
-            if 'No such file' in e.stderr:
-                raise DoesNotExistException("No such file or Directory.")
-            else:
-                if len(e.stderr) == 0:
-                    raise BackendException(e.stdout)
-                else:
-                    raise BackendException(e.stderr)
+            # Just the requested entry itself
+            return [self._get_dir_entry(lurl)]
+
         ret = []
-        splash_text = True
-        for line in output:
-            fields = line.split()
-            if len(fields) < 5:
-                continue
-            # Remove CLI prompt
-            if fields[0] == 'FC:/>':
-                splash_text = False
-                fields = fields[1:]
-            if splash_text:
-                continue
-            mode, links, uid, gid, size = fields[:5]
-            name = fields[-1]
-            modified = ' '.join(fields[5:-1])
-            if (not d) or (lurl.endswith('/'+name)):
-                ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        if len(ret)==0:
-            if d:
-                # At least we know when a '-d' entry does not exist
-                raise DoesNotExistException("No such file or Directory.")
-            else:
-                # Check whether this entry exists or not
-                self._ls(lurl, directory=True)
+        for path in self._iter_directory(lurl):
+            # TODO: Possible optimisation, listDirectory already conatins all information, is it cached?
+            ret.append(self._get_dir_entry(path))
+
         return ret
 
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
         self._ls(lurl, directory=True)
-
         lurl = self.strip_lurl(lurl)
-        ret = []
-        try:
-            output = self._replicas_cmd('-a', lurl, **kwargs)
-        except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+
+        rep = self.fc.getReplicas(lurl)
+        if not rep['OK']:
+            raise BackendException("Failed to list path '%s': %s", lurl, rep['Message'])
+        if lurl not in rep['Value']['Successful']:
+            if 'No such file' in rep['Value']['Failed'][lurl]:
                 raise DoesNotExistException("No such file or Directory.")
             else:
-                if len(e.stderr) == 0:
-                    raise BackendException(e.stdout)
-                else:
-                    raise BackendException(e.stderr)
-        for line in output:
-            # The actual replicas are the last field in the returned table
-            line = line.strip()
-            line = line.split()
-            if len(line) < 1:
-                continue
-            line = line[-1]
-            if line.startswith('srm:'):
-                ret.append(line.strip())
-        return ret
+                raise BackendException(rep['Value']['Failed'][lurl])
+        rep = rep['Value']['Successful'][lurl]
+
+        return rep.values()
 
     def _exists(self, surl, **kwargs):
         try:
