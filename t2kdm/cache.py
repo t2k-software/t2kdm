@@ -36,6 +36,10 @@ class Cache(object):
 
     def hash(self, function, *args, **kwargs):
         """Turn function parameters into a hash."""
+        # Protect against non-pickleable `self`s
+        args = list(args)
+        if len(args) > 0:
+            args[0] = repr(args[0])
         return hash(dumps( (function.func_name, args, kwargs) ))
 
     def get_entry(self, function, *args, **kwargs):
