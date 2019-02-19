@@ -742,19 +742,25 @@ class DIRACBackend(GridBackend):
 
         from DIRAC.Core.Base import Script
         Script.initialize()
+        from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+        self.pm = ProxyManagerClient()
+
+        proxy = self.pm.getUserProxiesInfo()
+        if not proxy['OK']:
+            raise BackendException("Proxy error.")
+
         from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
         self.fc = FileCatalog()
+        from DIRAC.DataManagementSystem.Client.DataManager import DataManager
+        self.dm = DataManager()
 
         self._xattr_cmd = sh.Command('gfal-xattr')
         self._replica_checksum_cmd = sh.Command('gfal-sum')
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
 
-        self._unregister_cmd = sh.Command('dirac-dms-remove-catalog-replicas')
         self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
         self._add_cmd = sh.Command('dirac-dms-add-file')
-        self._del_cmd = sh.Command('dirac-dms-remove-replicas')
-        self._delall_cmd = sh.Command('dirac-dms-remove-files')
 
     @staticmethod
     def strip_lurl(lurl):
@@ -764,6 +770,22 @@ class DIRACBackend(GridBackend):
 
         """
         return lurl[9:]
+
+    @staticmethod
+    def _check_return_value(ret):
+        if not ret['OK']:
+            raise BackendException("Failed: %s", ret['Message'])
+        for path, error in ret['Value']['Failed'].items():
+            if ('No such' in error) or ('Directory does not' in error):
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                raise BackendException(error)
+
+    def _is_dir(self, lurl):
+        lurl = self.strip_lurl(lurl)
+        isdir = self.fc.isDirectory(lurl)
+        self._check_return_value(isdir)
+        return isdir['Value']['Successful'][lurl]
 
     def _get_dir_entry(self, lurl):
         """Take a lurl and return a DirEntry."""
@@ -775,7 +797,7 @@ class DIRACBackend(GridBackend):
                 # File does not exist, maybe a directory?
                 md = self.fc.getDirectoryMetadata(lurl)
                 if lurl not in md['Value']['Successful']:
-                    raise DoesNotExistException("No such file or Directory.")
+                    raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(md['Value']['Failed'][lurl])
         md = md['Value']['Successful'][lurl]
@@ -824,13 +846,7 @@ class DIRACBackend(GridBackend):
         lurl = self.strip_lurl(lurl)
 
         rep = self.fc.getReplicas(lurl)
-        if not rep['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, rep['Message'])
-        if lurl not in rep['Value']['Successful']:
-            if 'No such file' in rep['Value']['Failed'][lurl]:
-                raise DoesNotExistException("No such file or Directory.")
-            else:
-                raise BackendException(rep['Value']['Failed'][lurl])
+        self._check_return_value(rep)
         rep = rep['Value']['Successful'][lurl]
 
         return rep.values()
@@ -849,26 +865,14 @@ class DIRACBackend(GridBackend):
         else:
             return True
 
-    def _unregister(self, surl, lurl, verbose=False, **kwargs):
-        if verbose:
-            out = sys.stdout
-        else:
-            out = None
-
-        # DIRAC only needs to know the SE name to unregister a replica
+    def _deregister(self, surl, lurl, verbose=False, **kwargs):
+        # DIRAC only needs to know the SE name to deregister a replica
         se = storage.get_SE(surl).name
-        try:
-            self._unregister_cmd(lurl, se, _out=out, **kwargs)
-        except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
-                raise DoesNotExistException("No such file or directory.")
-            else:
-                if len(e.stderr) == 0:
-                    raise BackendException(e.stdout)
-                else:
-                    raise BackendException(e.stderr)
-        else:
-            return True
+        ret = self.dm.removeReplicaFromCatalog(se, [lurl])
+        self._check_return_value(ret)
+        if verbose:
+            print_("Successfully deregistered replica of %s from %s."%(lurl, se))
+        return True
 
     def _state(self, surl, **kwargs):
         try:
@@ -988,20 +992,21 @@ class DIRACBackend(GridBackend):
         lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
-        try:
-            if last:
-                # Delete lfn
-                self._delall_cmd(lurl, _out=out, **kwargs)
-            else:
-                self._del_cmd(lurl, se, _out=out, **kwargs)
-        except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+        if last:
+            # Delete lfn
+            ret = self.dm.removeFile([lurl])
+        else:
+            ret = self.dm.removeReplica(se, [lurl])
+
+        if not ret['OK']:
+            raise BackendException('Failed: %s'%(ret['Message']))
+
+        for lurl, error in ret['Value']['Failed'].items():
+            if 'No such file' in error:
                 raise DoesNotExistException("No such file or directory.")
             else:
-                if len(e.stderr) == 0:
-                    raise BackendException(e.stdout)
-                else:
-                    raise BackendException(e.stderr)
+                raise BackendException(error)
+
         return True
 
 def get_backend(config):
