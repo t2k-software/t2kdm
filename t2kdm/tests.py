@@ -191,7 +191,8 @@ def run_read_write_tests():
         assert(SE.has_replica(remotename) == True)
 
     print_("Testing remove...")
-    t2kdm.remove(testdir, testSEs[1], recursive=True) # Remove everything from SE1
+    with no_output():
+        assert(t2kdm.interactive.remove(testdir, testSEs[1], recursive=True) == 0) # Remove everything from SE1
     # Remove uploaded file from previous test
     try:
         # This should fail!
