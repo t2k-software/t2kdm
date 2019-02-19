@@ -116,13 +116,13 @@ class GridBackend(object):
         """Chcek whether a surl actually exists."""
         return self._exists(surl, **kwargs)
 
-    def _unregister(self, surl, lurl, verbose=False, **kwargs):
+    def _deregister(self, surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def unregister(self, surl, remotepath, verbose=False, **kwargs):
+    def deregister(self, surl, remotepath, verbose=False, **kwargs):
         """Unregister a given surl from the file catalogue."""
         lurl = self.get_lurl(remotepath)
-        return self._unregister(surl, lurl, verbose=verbose, **kwargs)
+        return self._deregister(surl, lurl, verbose=verbose, **kwargs)
 
     def _state(self, surl, **kwargs):
         raise NotImplementedError()
@@ -335,19 +335,19 @@ class GridBackend(object):
         return self._put(localpath, surl, lurl, verbose=verbose, **kwargs)
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
-        """Remove the given replica and unregister it from the remotepath.
+        """Remove the given replica and deregister it from the remotepath.
 
         If `last` is `True`, this replica is the last and the
         lfc entry should be removed as well.
         """
         raise NotImplementedError()
 
-    def remove(self, remotepath, destination, final=False, verbose=False, unregister=False, **kwargs):
+    def remove(self, remotepath, destination, final=False, verbose=False, deregister=False, **kwargs):
         """Remove the replica of a file from a storage element.
 
         This command will refuse to remove the last replica of a file
         unless the `final` argument is `True`!
-        If `unregister` is `True`, the replica will be removed from the catalogue,
+        If `deregister` is `True`, the replica will be removed from the catalogue,
         but the physicalcopy will not be deleted.
         """
 
@@ -378,8 +378,8 @@ class GridBackend(object):
         destination_path = dst.get_replica(remotepath)
         lurl = self.get_lurl(remotepath)
 
-        if unregister:
-            return self.unregister(destination_path, remotepath)
+        if deregister:
+            return self.deregister(destination_path, remotepath)
         else:
             return self._remove(destination_path, lurl, last=(nrep<=1), verbose=verbose, **kwargs)
 
@@ -518,7 +518,7 @@ class LCGBackend(GridBackend):
         else:
             out = None
         try:
-            if unregister:
+            if deregister:
                 raise BackendException("Operation not supported by LCG backend.")
             else:
                 self._del_cmd('-v', surl, _out=out, _err_to_out=True, **kwargs)
@@ -542,7 +542,7 @@ class GFALBackend(GridBackend):
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
         self._register_cmd = sh.Command('gfal-legacy-register')
-        self._unregister_cmd = sh.Command('gfal-legacy-unregister')
+        self._deregister_cmd = sh.Command('gfal-legacy-deregister')
         self._del_cmd = sh.Command('gfal-rm')
 
     def _ls(self, lurl, **kwargs):
@@ -595,13 +595,13 @@ class GFALBackend(GridBackend):
         else:
             return True
 
-    def _unregister(self, surl, lurl, verbose=False, **kwargs):
+    def _deregister(self, surl, lurl, verbose=False, **kwargs):
         if verbose:
             out = sys.stdout
         else:
             out = None
         try:
-            self._unregister_cmd(lurl, surl, _out=out, **kwargs)
+            self._deregister_cmd(lurl, surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
@@ -723,7 +723,7 @@ class GFALBackend(GridBackend):
             out = None
         try:
             self._del_cmd(surl, _out=out, **kwargs)
-            self._unregister_cmd(lurl, surl, _out=out, **kwargs)
+            self._deregister_cmd(lurl, surl, _out=out, **kwargs)
             if last:
                 # Delete lfn
                 self._del_cmd(lurl, _out=out, **kwargs)

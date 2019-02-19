@@ -280,8 +280,8 @@ remove.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 remove.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
-remove.add_argument('-x', '--unregister', action='store_true',
-    help="unregister only, do NOT try to delete the actual replica (EXPERT OPTION)")
+remove.add_argument('-x', '--deregister', action='store_true',
+    help="deregister only, do NOT try to delete the actual replica (EXPERT OPTION)")
 all_commands.append(remove)
 
 fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")

@@ -85,10 +85,10 @@ def fix_known_bad_SEs(remotepath, verbose=False):
             if verbose:
                 print_("Found replica on bad storage element. Unregistering replica: "+replica)
             try:
-                t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
+                t2kdm.backend.deregister(replica, remotepath, verbose=verbose)
             except backends.BackendException():
                 if verbose:
-                    print_("Failed to unregister replica.")
+                    print_("Failed to deregister replica.")
                 success = False
 
     return success
@@ -139,10 +139,10 @@ def fix_missing_files(remotepath, verbose=False):
             if se is not None:
                 ses.append(se)
                 try:
-                    t2kdm.backend.unregister(replica, remotepath, verbose=verbose)
+                    t2kdm.backend.deregister(replica, remotepath, verbose=verbose)
                 except backends.BackendException():
                     if verbose:
-                        print_("Failed to unregister replica.")
+                        print_("Failed to deregister replica.")
                     success = False
             else:
                 print_("Cannot identify storage element of replica.")
