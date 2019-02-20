@@ -985,18 +985,17 @@ class DIRACBackend(GridBackend):
         return True
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
-        if verbose:
-            out = sys.stdout
-        else:
-            out = None
-
         lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
         if last:
             # Delete lfn
+            if verbose:
+                print_("Removing all replicas of %s."%(lurl,))
             ret = self.dm.removeFile([lurl])
         else:
+            if verbose:
+                print_("Removing replica of %s from %s."%(lurl, se))
             ret = self.dm.removeReplica(se, [lurl])
 
         if not ret['OK']:
