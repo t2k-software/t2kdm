@@ -254,7 +254,7 @@ get.add_argument('-x', '--bringonline', action='store_true',
 all_commands.append(get)
 
 put = Command('put', t2kdm.interactive.put, "Upload file to the grid.")
-put.add_argument('localpath', type=str, nargs='?', default='./',
+put.add_argument('localpath', type=str,
     help="the file to be uploaded")
 put.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
@@ -262,6 +262,8 @@ put.add_argument('-d', '--destination', type=str, default=None,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no destination is provided, the closest one is chosen")
 put.add_argument('-t', '--tape', action='store_true',
     help="accept tape storage elements when choosing the closest one")
+put.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
 all_commands.append(put)
 
 SEs = Command('SEs', t2kdm.interactive.print_storage_elements, "Print all available storage elements on screen.")
