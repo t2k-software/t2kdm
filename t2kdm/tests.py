@@ -16,7 +16,7 @@ import posixpath
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
-testSEs = ['UKI-LT2-QMUL2-disk', 'UKI-LT2-IC-HEP-disk']
+testSEs = ['UKI-LT2-QMUL2-disk']
 
 @contextmanager
 def no_output(redirect=True):
@@ -97,12 +97,12 @@ def run_read_only_tests():
 
         # Test providing the source SE
         try:
-            t2kdm.backend.get(path, tempdir, source=testSEs[1], force=False)
+            t2kdm.backend.get(path, tempdir, source=testSEs[0], force=False)
         except backends.BackendException as e:
             assert("already exist" in e.args[0])
         else:
             raise Exception("Should have refused to overwrite!")
-        assert(t2kdm.backend.get(path, tempdir, source=testSEs[1], force=True) == True)
+        assert(t2kdm.backend.get(path, tempdir, source=testSEs[0], force=True) == True)
         assert(os.path.isfile(filename))
         os.remove(filename)
 
@@ -155,10 +155,11 @@ def run_read_only_tests():
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
 def run_read_write_tests():
-    print_("Testing replicate...")
-    with no_output():
-        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
-        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[0], verbose=True) == 0)
+    print_("Cannot test replicate...")
+    #print_("Testing replicate...")
+    #with no_output():
+    #    assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
+    #    assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[0], verbose=True) == 0)
 
     print_("Testing put...")
     with temp_dir() as tempdir:
@@ -187,8 +188,9 @@ def run_read_write_tests():
         assert(SE.has_replica(remotename) == True)
 
     print_("Testing remove...")
-    with no_output():
-        assert(t2kdm.interactive.remove(testdir, testSEs[1], recursive=True) == 0) # Remove everything from SE1
+    print_("Cannot test recursive wipe...")
+    #with no_output():
+    #    assert(t2kdm.interactive.remove(testdir, testSEs[1], recursive=True) == 0) # Remove everything from SE1
     # Remove uploaded file from previous test
     try:
         # This should fail!

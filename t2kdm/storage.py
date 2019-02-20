@@ -139,6 +139,7 @@ SEs = [
         location = '/europe/uk/liv',
         basepath = 'srm://hepgrid11.ph.liv.ac.uk/dpm/ph.liv.ac.uk/home/hyperk.org'),
     StorageElement('UKI-LT2-IC-HEP-disk',
+        broken = True,
         host = 'gfe02.grid.hep.ph.ic.ac.uk',
         type = 'disk',
         location = '/europe/uk/london/ic',
