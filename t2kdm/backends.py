@@ -792,11 +792,11 @@ class DIRACBackend(GridBackend):
         md = self.fc.getFileMetadata(lurl)
         if not md['OK']:
             raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
-        if lurl not in md['Value']['Successful']:
-            if 'No such file' in md['Value']['Failed'][lurl]:
+        for path, error in md['Value']['Failed'].items():
+            if 'No such file' in error:
                 # File does not exist, maybe a directory?
                 md = self.fc.getDirectoryMetadata(lurl)
-                if lurl not in md['Value']['Successful']:
+                for path, error in md['Value']['Failed'].items():
                     raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(md['Value']['Failed'][lurl])
@@ -809,11 +809,12 @@ class DIRACBackend(GridBackend):
         lst = self.fc.listDirectory(lurl)
         if not lst['OK']:
             raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
-        if lurl not in lst['Value']['Successful']:
-            if 'Directory does not' in lst['Value']['Failed'][lurl]:
+        for path, error in lst['Value']['Failed'].items():
+            if 'Directory does not' in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
                     lst = [lurl]
+                    break
                 else:
                     raise DoesNotExistException("No such file or Directory.")
             else:
