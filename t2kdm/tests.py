@@ -16,7 +16,7 @@ import posixpath
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
-testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-SOUTHGRID-OX-HEP-disk', 'RAL-LCG2-T2K-tape']
+testSEs = ['UKI-LT2-QMUL2-disk', 'UKI-LT2-IC-HEP-disk']
 
 @contextmanager
 def no_output(redirect=True):
@@ -64,7 +64,7 @@ def run_read_only_tests():
 
     print_("Testing replicas...")
     for rep in t2kdm.backend.replicas('/test/t2kdm/test1.txt'):
-        if 'heplnx204.pp.rl.ac.uk' in rep:
+        if 'qmul.ac.uk' in rep:
             break
     else:
         raise Exception("Did not find expected replica.")
@@ -82,13 +82,9 @@ def run_read_only_tests():
     # Test distance calculation
     assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)
     # Test getting SE by host
-    assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    assert('se03.esc.qmul.ac.uk' in storage.SE_by_host['se03.esc.qmul.ac.uk'].get_storage_path('/nd280/test'))
     # Test getting the closest SE
     assert(storage.get_closest_SE('/test/t2kdm/test1.txt') is not None)
-
-    print_("Testing TriumfStorageElement...")
-    # Test special case of TRIUMF SE
-    assert('t2ksrm.nd280.org/nd280data/' in storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing get...")
     with temp_dir() as tempdir:
@@ -99,14 +95,14 @@ def run_read_only_tests():
         assert(t2kdm.backend.get(path, tempdir) == True)
         assert(os.path.isfile(filename))
 
-        # Test providing the source SE (RAL tape!)
+        # Test providing the source SE
         try:
-            t2kdm.backend.get(path, tempdir, source=testSEs[2], force=False)
+            t2kdm.backend.get(path, tempdir, source=testSEs[1], force=False)
         except backends.BackendException as e:
             assert("already exist" in e.args[0])
         else:
             raise Exception("Should have refused to overwrite!")
-        assert(t2kdm.backend.get(path, tempdir, source=testSEs[2], force=True) == True)
+        assert(t2kdm.backend.get(path, tempdir, source=testSEs[1], force=True) == True)
         assert(os.path.isfile(filename))
         os.remove(filename)
 
@@ -118,9 +114,9 @@ def run_read_only_tests():
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')
         with no_output(True):
-            assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # There are some deliberate failures here
+            assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) == 0)
         assert os.path.isfile(filename)
-        assert os.path.getsize(filename) > 0
+        assert os.path.getsize(filename) == 0
 
     print_("Testing Commands...")
     with no_output(True):
@@ -145,7 +141,7 @@ def run_read_only_tests():
     with no_output(True):
         cli.onecmd('help ls')
         cli.onecmd('ls .')
-        cli.onecmd('cd /nd280')
+        cli.onecmd('cd /user')
         cli.onecmd('cd ..')
         cli.onecmd('cd /abcxyz')
         cli.onecmd('lcd /')
@@ -154,7 +150,7 @@ def run_read_only_tests():
         cli.onecmd('lcd /abcxyz')
         cli.onecmd('lls .')
         cli.onecmd('lls ".')
-        assert(cli.completedefault('28', 'ls nd28', 0, 0) == ['280/'])
+        assert(cli.completedefault('s', 'ls us', 0, 0) == ['ser/'])
         assert(cli.completedefault('s', 'lls us', 0, 0) == ['sr/'])
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
@@ -162,7 +158,7 @@ def run_read_write_tests():
     print_("Testing replicate...")
     with no_output():
         assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
-        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2], verbose=True) == 0)
+        assert(t2kdm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[0], verbose=True) == 0)
 
     print_("Testing put...")
     with temp_dir() as tempdir:

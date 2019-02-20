@@ -9,7 +9,7 @@ from os import path
 
 default_values = {
     'backend':      'dirac',
-    'basedir':      '/t2k.org',
+    'basedir':      '/hyperk.org',
     'location':     '/',
     'maid_config':  path.join(app_dirs.user_config_dir, 'maid.conf'),
     'blacklist':    '-',
