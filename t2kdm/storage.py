@@ -245,8 +245,9 @@ def get_SE(SE):
         return SE_by_host[SE]
     return get_SE_by_path(SE)
 
-def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
-    """Get the closest storage element with a replica of the given file.
+
+def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
+    """Get a list of the storage element with the closest replicas.
 
     If `tape` is False (default), prefer disk SEs over tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
@@ -264,4 +265,16 @@ def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
         location = location,
         basepath = '/')
 
-    return SE.get_closest_SE(remotepath, tape=tape, cached=cached)
+    return SE.get_closest_SEs(remotepath, tape=tape, cached=cached)
+
+def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
+    """Get the storage element with the closest replica.
+
+    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If no `rempotepath` is provided, just return the closest SE over all.
+    """
+    SEs = get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
+    if len(SEs) >= 1:
+        return SEs[0]
+    else:
+        return None

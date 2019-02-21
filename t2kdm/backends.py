@@ -170,10 +170,11 @@ class GridBackend(object):
         # Get source SE
         if source is None:
             if destination is None:
-                src = storage.get_closest_SE(remotepath, tape=tape)
-                if src is None:
+                srclst = storage.get_closest_SEs(remotepath, tape=tape)
+                if len(srclst) == 0:
                     raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
-                yield src.get_replica(remotepath), src
+                for src in srclst:
+                    yield src.get_replica(remotepath), src
                 return
             else:
                 dst = storage.get_SE(destination)
