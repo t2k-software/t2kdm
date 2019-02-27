@@ -189,18 +189,22 @@ def check(remotepath, *args, **kwargs):
     quiet = kwargs.pop('quiet', False)
     ses = kwargs.pop('se', [])
     checksum = kwargs.pop('checksum', False)
+    states = kwargs.pop('states', False)
 
-    if checksum == False and len(ses) == 0:
+    if checksum == False and len(ses) == 0 and states == False:
         raise InteractiveException("No check specified.")
 
     if t2kdm.is_dir(remotepath):
         raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
-    if verbose and len(ses) > 0:
-        print_("Checking replicas...")
-    ret = t2kdm.check_replicas(remotepath, ses, cached=True)
-    if not ret and not quiet:
-        print_("%s is not replicated on all SEs!"%(remotepath))
+    ret = True
+
+    if len(ses) > 0:
+        if verbose and len(ses) > 0:
+            print_("Checking replicas...")
+        ret = ret and t2kdm.check_replicas(remotepath, ses, cached=True)
+        if not ret and not quiet:
+            print_("%s is not replicated on all SEs!"%(remotepath))
 
     if checksum:
         if verbose:
@@ -209,6 +213,14 @@ def check(remotepath, *args, **kwargs):
         if not chk and not quiet:
             print_("%s has faulty checksums!"%(remotepath))
         ret = ret and chk
+
+    if states:
+        if verbose:
+            print_("Checking replica states...")
+        stat = t2kdm.check_replica_states(remotepath, cached=True)
+        if not stat and not quiet:
+            print_("%s has faulty replica states!"%(remotepath))
+        ret = ret and stat
 
     if ret == True:
         return 0

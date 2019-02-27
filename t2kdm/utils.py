@@ -44,6 +44,17 @@ def check_checksums(remotepath, cached=False):
 
     return True
 
+def check_replica_states(remotepath, cached=False):
+    """Check if the state of all replicas."""
+
+    replicas = t2kdm.replicas(remotepath, cached=cached)
+
+    for rep in replicas:
+        if t2kdm.state(rep, cached=cached) not in ['ONLINE', 'NEARLINE', 'ONLINE_AND_NEARLINE']:
+            return False
+
+    return True
+
 def check_replicas(remotepath, ses, cached=False):
     """Check whether the file is replcated to the given SE(s)."""
 

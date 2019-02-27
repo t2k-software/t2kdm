@@ -34,3 +34,4 @@ else:
     # And from utils
     check_checksums = utils.check_checksums
     check_replicas = utils.check_replicas
+    check_replica_states = utils.check_replica_states

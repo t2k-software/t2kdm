@@ -211,6 +211,8 @@ check.add_argument('-c', '--checksum', action='store_true',
     help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
 check.add_argument('-s', '--se', action='append', default=[],
     help="report replication status to the given storage element, can be used multiple times")
+check.add_argument('-S', '--states', action='store_true',
+    help="checl whether all replicas are in a resonable state ('ONLINE', 'NEARLINE', or 'ONLINE_AND_NEARLINE')")
 all_commands.append(check)
 
 replicate = Command('replicate', t2kdm.interactive.replicate, "Replicate file to a storage element.")
