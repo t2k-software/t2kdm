@@ -234,16 +234,21 @@ class GridBackend(object):
                 if verbose:
                     print_("Bringing online %s"%(source_path,))
                 try:
-                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose) and self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose)
                 except BackendException as e:
                     failure = e
                     ret = False
-            else:
-                try:
-                    ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
-                except BackendException as e:
-                    failure = e
-                    ret = False
+                if ret == False:
+                    if verbose:
+                        print_("Failed to bring replica online.")
+                    continue
+
+            try:
+                ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
+            except BackendException as e:
+                failure = e
+                ret = False
+
             if ret:
                 return True
 
