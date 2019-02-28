@@ -82,13 +82,9 @@ def run_read_only_tests():
     # Test distance calculation
     assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)
     # Test getting SE by host
-    assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/t2k.org/nd280/test'))
     # Test getting the closest SE
     assert(storage.get_closest_SE('/test/t2kdm/test1.txt') is not None)
-
-    print_("Testing TriumfStorageElement...")
-    # Test special case of TRIUMF SE
-    assert('t2ksrm.nd280.org/nd280data/' in storage.SE_by_host['t2ksrm.nd280.org'].get_storage_path('/nd280/test'))
 
     print_("Testing get...")
     with temp_dir() as tempdir:
@@ -183,7 +179,7 @@ def run_read_write_tests():
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
     for SE in storage.SEs:
-        if SE.type == 'tape' or 'TRIUMF' in SE.name or SE.is_blacklisted():
+        if SE.type == 'tape' or SE.is_blacklisted():
             # These SEs do not seem to cooperate
             continue
         print_(SE.name)
