@@ -25,6 +25,9 @@ class _recursive(object):
     def recursive_function(self, remotepath, *args, **kwargs):
         """The recursive wrapper around the original function."""
         recursive = kwargs.pop('recursive', False)
+        recursive_se = kwargs.pop('recursivese', None)
+        if recursive_se is not None and recursive == False:
+            recursive = True
         list_file = kwargs.pop('list', None)
         if 'verbose' in kwargs:
             verbose = kwargs['verbose']
@@ -43,7 +46,7 @@ class _recursive(object):
         good = 0
         bad = 0
         if recursive is True:
-            for path in utils.remote_iter_recursively(remotepath, regex):
+            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se):
                 if verbose:
                     print_(self.iterating + " " + path)
                 try:

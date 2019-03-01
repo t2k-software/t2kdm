@@ -203,6 +203,8 @@ check.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280'")
 check.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively check all files and subdirectories [that match REGEX] of a directory")
+check.add_argument('-R', '--recursivese', default=None,
+    help="use listing of physical files on this SE for recursion")
 check.add_argument('-q', '--quiet', action='store_true',
     help="do not print problematic files to screen")
 check.add_argument('-v', '--verbose', action='store_true',

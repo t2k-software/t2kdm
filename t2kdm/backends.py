@@ -125,6 +125,16 @@ class GridBackend(object):
         """Is the remote path a directory?"""
         return self._is_dir(self.get_lurl(remotepath))
 
+    def _is_dir_se(self, surl):
+        entry = self._ls_se(surl, directory=True)[0]
+        return entry.mode[0] == 'd'
+
+    @cache.cached
+    def is_dir_se(self, remotepath, se):
+        """Is the storage path a directory?"""
+        se = storage.get_SE(se)
+        return self._is_dir_se(se.get_storage_path(remotepath))
+
     def _exists(self, surl, **kwargs):
         raise NotImplementedError()
 

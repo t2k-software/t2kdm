@@ -11,20 +11,25 @@ import t2kdm
 from t2kdm import backends
 from t2kdm import storage
 
-def remote_iter_recursively(remotepath, regex=None):
+def remote_iter_recursively(remotepath, regex=None, se=None):
     """Iter over remote paths recursively.
 
     If `regex` is given, only consider files/folders that match the reular expression.
+    If `se` is given, iterate over listing of physical files on SE rather than the file catalogue.
     """
 
     if isinstance(regex, str):
         regex = re.compile(regex)
 
-    if t2kdm.is_dir(remotepath):
-        for entry in t2kdm.ls(remotepath):
+    if t2kdm.is_dir(remotepath) or (se is not None and t2kdm.is_dir_se(remotepath, se)):
+        if se is None:
+            entries = t2kdm.ls(remotepath)
+        else:
+            entries = t2kdm.ls_se(remotepath, se)
+        for entry in entries:
             if regex is None or regex.search(entry.name):
                 new_path = posixpath.join(remotepath, entry.name)
-                for path in remote_iter_recursively(new_path, regex):
+                for path in remote_iter_recursively(new_path, regex, se=se):
                     yield path
     else:
         yield remotepath

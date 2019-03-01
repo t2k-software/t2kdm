@@ -71,6 +71,9 @@ def run_read_only_tests():
     print_("Testing is_dir...")
     assert(t2kdm.is_dir('/test/t2kdm'))
 
+    print_("Testing is_dir_se...")
+    assert(t2kdm.is_dir_se('/test/t2kdm', se=testSEs[0]))
+
     print_("Testing replicas...")
     for rep in t2kdm.backend.replicas('/test/t2kdm/test1.txt'):
         if 'heplnx204.pp.rl.ac.uk' in rep:
@@ -128,6 +131,8 @@ def run_read_only_tests():
             assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # There are some deliberate failures here
         assert os.path.isfile(filename)
         assert os.path.getsize(filename) > 0
+        with no_output(True):
+            assert(t2kdm.interactive.check(testdir, se=testSEs[0:1], recursivese=testSEs[0], quiet=False, verbose=True) == 0)
 
     print_("Testing Commands...")
     with no_output(True):
