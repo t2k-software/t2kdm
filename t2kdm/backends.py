@@ -28,6 +28,7 @@ import sh
 import itertools
 import posixpath
 import os, sys
+import uuid
 from t2kdm import storage
 from t2kdm.cache import Cache
 from six import print_
@@ -143,11 +144,19 @@ class GridBackend(object):
         """Chcek whether a surl actually exists."""
         return self._exists(surl, **kwargs)
 
+    def _register(self, surl, lurl, verbose=False, **kwargs):
+        raise NotImplementedError()
+
+    def register(self, surl, remotepath, verbose=False, **kwargs):
+        """Register a given surl on the file catalogue."""
+        lurl = self.get_lurl(remotepath)
+        return self._register(surl, lurl, verbose=verbose, **kwargs)
+
     def _deregister(self, surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
 
     def deregister(self, surl, remotepath, verbose=False, **kwargs):
-        """Unregister a given surl from the file catalogue."""
+        """Deregister a given surl from the file catalogue."""
         lurl = self.get_lurl(remotepath)
         return self._deregister(surl, lurl, verbose=verbose, **kwargs)
 
@@ -244,14 +253,24 @@ class GridBackend(object):
         dst = storage.get_SE(destination)
         if dst is None:
             raise BackendException("Could not find storage element %s."%(destination,))
+        destination_path = dst.get_storage_path(remotepath)
 
-        if dst.has_replica(remotepath):
+        if dst.has_replica(remotepath, check_dark=True):
             # Replica already at destination, nothing to do here
             if verbose:
                 print_("Replica of %s already present at destination storage element %s."%(remotepath, dst.name,))
-            return True
+            try:
+                dark = not dst.has_replica(remotepath)
+            except DoesNotExistException:
+                dark = True
+            if dark:
+                if verbose:
+                    print_("Replica seems to be dark. Attempting registration.")
+                return self.register(destination_path, remotepath, verbose=verbose)
+            else:
+                # Replica already present, nothing to do.
+                return True
 
-        destination_path = dst.get_storage_path(remotepath)
         failure = None
         for source_path, src in self.iter_file_sources(remotepath, source, destination, tape):
             if verbose:
@@ -914,6 +933,28 @@ class DIRACBackend(GridBackend):
                     raise BackendException(e.stderr)
         else:
             return True
+
+    def _register(self, surl, lurl, verbose=False, **kwargs):
+        # Register an existing physical copy in the file catalogue
+        se = storage.get_SE(surl).name
+        # See if file already exists in DFC
+        ret = self.fc.getFileMetadata(lurl)
+        try:
+            self._check_return_value(ret)
+        except DoesNotExistException:
+            # Add new file
+            size = self._ls_se(surl, directory=True)[0].size
+            checksum = self.checksum(surl)
+            guid = str(uuid.uuid4()) # The guid does not seem to be important. Make it unique if possible.
+            ret = self.dm.registerFile((lurl, surl, size, se, guid, checksum))
+        else:
+            # Add new replica
+            ret = self.dm.registerReplica((lurl, surl, se))
+
+        self._check_return_value(ret)
+        if verbose:
+            print_("Successfully registered replica %s of %s from %s."%(surl, lurl, se))
+        return True
 
     def _deregister(self, surl, lurl, verbose=False, **kwargs):
         # DIRAC only needs to know the SE name to deregister a replica

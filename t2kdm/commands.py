@@ -226,6 +226,8 @@ replicate.add_argument('destination', type=str,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
 replicate.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively replicate all files and subdirectories [that match REGEX] of a directory")
+replicate.add_argument('-R', '--recursivese', default=None,
+    help="use listing of physical files on this SE for recursion")
 replicate.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 replicate.add_argument('-s', '--source', type=str, default=None,

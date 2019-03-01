@@ -65,9 +65,15 @@ class StorageElement(object):
         # Replica not found
         return None
 
-    def has_replica(self, remotepath, cached=False):
-        """Check whether the remote path is replicated on this SE."""
-        return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
+    def has_replica(self, remotepath, cached=False, check_dark=False):
+        """Check whether the remote path is replicated on this SE.
+
+        If `check_dark` is `True`, check the physical file location, instead of relying on the catalogue.
+        """
+        if not check_dark:
+            return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
+        else:
+            return t2kdm.exists(self.get_storage_path(remotepath), cached=cached)
 
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
