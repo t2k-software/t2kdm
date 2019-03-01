@@ -92,6 +92,8 @@ def run_read_only_tests():
     assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)
     # Test getting SE by host
     assert('srm-t2k.gridpp.rl.ac.uk' in storage.SE_by_host['srm-t2k.gridpp.rl.ac.uk'].get_storage_path('/nd280/test'))
+    # Test storage path arithmetic
+    assert(storage.SEs[0].get_logical_path(storage.SEs[0].get_storage_path('/nd280/test')) == '/nd280/test')
     # Test getting the closest SE
     assert(storage.get_closest_SE('/test/t2kdm/test1.txt') is not None)
 

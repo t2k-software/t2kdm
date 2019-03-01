@@ -35,6 +35,15 @@ class StorageElement(object):
             raise ValueError("Remote path needs to be absolute, not relative!")
         return (self.basepath + t2kdm.config.basedir + remotepath).strip()
 
+    def get_logical_path(self, surl):
+        """Try to get the logical remotepath from a surl."""
+        remotepath = None
+        if surl.startswith(self.basepath):
+            remotepath = surl[len(self.basepath):]
+        if remotepath.startswith(t2kdm.config.basedir):
+            remotepath = remotepath[len(t2kdm.config.basedir):]
+        return remotepath
+
     def get_distance(self, other):
         """Return the distance to another StorageElement.
 
