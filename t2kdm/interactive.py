@@ -84,7 +84,11 @@ def ls(*args, **kwargs):
     """Print the contents of a directory on screen."""
 
     long = kwargs.pop('long', False)
-    entries = t2kdm.ls(*args, **kwargs)
+    se = kwargs.pop('se', None)
+    if se is None:
+        entries = t2kdm.ls(*args, **kwargs)
+    else:
+        entries = t2kdm.ls_se(*args, se=se, **kwargs)
     if long:
         # Detailed listing
         for e in entries:

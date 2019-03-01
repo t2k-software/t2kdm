@@ -183,6 +183,8 @@ ls.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
 ls.add_argument('-d', '--directory', action='store_true',
     help="list directory entries instead of contents")
+ls.add_argument('-s', '--se', type=str, default=None,
+    help="list physical contents on this SE rather than the file catalogue")
 all_commands.append(ls)
 
 replicas = Command('replicas', t2kdm.interactive.replicas, "List replicas of a remote logical path.")

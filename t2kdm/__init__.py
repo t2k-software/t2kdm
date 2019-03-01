@@ -21,6 +21,7 @@ else:
 
     # Get functions from backend
     ls = backend.ls
+    ls_se = backend.ls_se
     is_dir = backend.is_dir
     replicas = backend.replicas
     exists = backend.exists

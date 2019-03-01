@@ -59,6 +59,15 @@ def run_read_only_tests():
     else:
         raise Exception("Test file not in listing.")
 
+    print_("Testing ls_se...")
+
+    entries = t2kdm.backend.ls_se(testdir, se=testSEs[0])
+    for e in entries:
+        if e.name == testfiles[0]:
+            break
+    else:
+        raise Exception("Test file not in listing.")
+
     print_("Testing is_dir...")
     assert(t2kdm.is_dir('/test/t2kdm'))
 

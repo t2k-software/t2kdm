@@ -97,6 +97,25 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
         return self._ls(lurl, **kwargs)
 
+    def _ls_se(self, surl, **kwargs):
+        raise NotImplementedError()
+
+    def ls_se(self, remotepath, se, **kwargs):
+        """List physical contents of a remote path on a specific SE.
+
+        Supported keyword arguments:
+
+        directory: Bool. Default: False
+            List directory entries instead of contents.
+        """
+
+        lurl = self.get_lurl(remotepath)
+        ses = storage.get_SE(se)
+        if ses is None:
+            raise BackendException("Could not find storage element %s."%(se,))
+        surl = ses.get_storage_path(remotepath)
+        return self._ls_se(surl, **kwargs)
+
     def _is_dir(self, lurl):
         entry = self._ls(lurl, directory=True)[0]
         return entry.mode[0] == 'd'
@@ -573,6 +592,9 @@ class GFALBackend(GridBackend):
             ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
         return ret
 
+    def _ls_se(self, surl, **kwargs):
+        return self._ls(surl, **kwargs)
+
     def _replicas(self, lurl, **kwargs):
         ret = []
         try:
@@ -762,6 +784,7 @@ class DIRACBackend(GridBackend):
         self._replica_checksum_cmd = sh.Command('gfal-sum')
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
+        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
 
         self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
         self._add_cmd = sh.Command('dirac-dms-add-file')
@@ -832,6 +855,30 @@ class DIRACBackend(GridBackend):
             # TODO: Possible optimisation, listDirectory already conatins all information, is it cached?
             ret.append(self._get_dir_entry(path))
 
+        return ret
+
+    def _ls_se(self, surl, **kwargs):
+        # Translate keyword arguments
+        d = kwargs.pop('directory', False)
+        args = []
+        if -d:
+            args.append('-d')
+        args.append('-l')
+        args.append(surl)
+        try:
+            output = self._ls_se_cmd(*args, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        ret = []
+        for line in output:
+            fields = line.split()
+            mode, links, gid, uid, size = fields[:5]
+            name = fields[-1]
+            modified = ' '.join(fields[5:-1])
+            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
         return ret
 
     def _replicas(self, lurl, **kwargs):
