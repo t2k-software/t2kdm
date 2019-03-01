@@ -81,12 +81,9 @@ def check_replicas(remotepath, ses, cached=False):
     return True
 
 def fix_known_bad_SEs(remotepath, verbose=False):
-    """Fix replicas on known bad storage elements.
+    """Fix replicas on known broken storage elements.
 
-    Unregisters all replicas on
-
-        IN2P3-CC-disk
-
+    Unregisters all replicas on them.
     """
 
     success = True

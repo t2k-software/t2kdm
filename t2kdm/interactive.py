@@ -207,7 +207,7 @@ def check(remotepath, *args, **kwargs):
     ret = True
 
     if len(ses) > 0:
-        if verbose and len(ses) > 0:
+        if verbose:
             print_("Checking replicas...")
         ret = ret and t2kdm.check_replicas(remotepath, ses, cached=True)
         if not ret and not quiet:
