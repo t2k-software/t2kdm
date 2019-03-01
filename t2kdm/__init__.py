@@ -21,7 +21,9 @@ else:
 
     # Get functions from backend
     ls = backend.ls
+    ls_se = backend.ls_se
     is_dir = backend.is_dir
+    is_dir_se = backend.is_dir_se
     replicas = backend.replicas
     exists = backend.exists
     checksum = backend.checksum
@@ -34,3 +36,4 @@ else:
     # And from utils
     check_checksums = utils.check_checksums
     check_replicas = utils.check_replicas
+    check_replica_states = utils.check_replica_states

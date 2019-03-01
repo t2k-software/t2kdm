@@ -196,7 +196,7 @@ class Task(object):
         return '%s_Task'%(self.frequency,)
 
 class CommandTask(Task):
-    """Replicate a folder to a SE."""
+    """General task based on the commands in t2kdm.commands."""
 
     def __init__(self, **kwargs):
         self.commandline = kwargs.pop('commandline')

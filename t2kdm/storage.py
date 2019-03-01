@@ -33,7 +33,16 @@ class StorageElement(object):
         """Generate the standard storage path for this SE from a logical file name."""
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return (self.basepath + remotepath).strip()
+        return (self.basepath + t2kdm.config.basedir + remotepath).strip()
+
+    def get_logical_path(self, surl):
+        """Try to get the logical remotepath from a surl."""
+        remotepath = None
+        if surl.startswith(self.basepath):
+            remotepath = surl[len(self.basepath):]
+        if remotepath.startswith(t2kdm.config.basedir):
+            remotepath = remotepath[len(t2kdm.config.basedir):]
+        return remotepath
 
     def get_distance(self, other):
         """Return the distance to another StorageElement.
@@ -56,9 +65,15 @@ class StorageElement(object):
         # Replica not found
         return None
 
-    def has_replica(self, remotepath, cached=False):
-        """Check whether the remote path is replicated on this SE."""
-        return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
+    def has_replica(self, remotepath, cached=False, check_dark=False):
+        """Check whether the remote path is replicated on this SE.
+
+        If `check_dark` is `True`, check the physical file location, instead of relying on the catalogue.
+        """
+        if not check_dark:
+            return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
+        else:
+            return t2kdm.exists(self.get_storage_path(remotepath), cached=cached)
 
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
@@ -113,23 +128,6 @@ class StorageElement(object):
         else:
             return "%s (%s) [%s]"%(self.name, self.host, self.location)
 
-class TriumfStorageElement(StorageElement):
-    """Special case of StorageElement for TRIUMF.
-
-    Storage file paths do not translate one-to-one to logical file paths,
-    so we have to catch these differences.
-    """
-
-    def get_storage_path(self, remotepath):
-        """Generate the standard storage path for this SE from a logical file name."""
-
-        # ND280 data is in the sub folder `nd280data`
-        if remotepath.startswith('/nd280/'):
-            return StorageElement.get_storage_path(self, '/nd280data/' + remotepath[7:])
-
-        #Everything else seems to be one-to-one
-        return StorageElement.get_storage_path(self, remotepath)
-
 # Add actual SEs
 SEs = [
     StorageElement('UKI-NORTHGRID-LIV-HEP-disk',
@@ -137,13 +135,13 @@ SEs = [
         host = 'hepgrid11.ph.liv.ac.uk',
         type = 'disk',
         location = '/europe/uk/liv',
-        basepath = 'srm://hepgrid11.ph.liv.ac.uk/dpm/ph.liv.ac.uk/home/hyperk.org'),
+        basepath = 'srm://hepgrid11.ph.liv.ac.uk:8446/srm/managerv2?SFN=/dpm/ph.liv.ac.uk/home/hyperk.org'),
     StorageElement('UKI-LT2-IC-HEP-disk',
         broken = True,
         host = 'gfe02.grid.hep.ph.ic.ac.uk',
         type = 'disk',
         location = '/europe/uk/london/ic',
-        basepath = 'rm://gfe02.grid.hep.ph.ic.ac.uk/pnfs/hep.ph.ic.ac.uk/data/hyperk'),
+        basepath = 'srm://gfe02.grid.hep.ph.ic.ac.uk:8443/srm/managerv2?SFN=/pnfs/hep.ph.ic.ac.uk/data/hyperk'),
     StorageElement('UKI-LT2-QMUL2-disk',
         host = 'se03.esc.qmul.ac.uk',
         type = 'disk',
@@ -175,8 +173,9 @@ def get_SE(SE):
         return SE_by_host[SE]
     return get_SE_by_path(SE)
 
-def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
-    """Get the closest storage element with a replica of the given file.
+
+def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
+    """Get a list of the storage element with the closest replicas.
 
     If `tape` is False (default), prefer disk SEs over tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
@@ -194,4 +193,16 @@ def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
         location = location,
         basepath = '/')
 
-    return SE.get_closest_SE(remotepath, tape=tape, cached=cached)
+    return SE.get_closest_SEs(remotepath, tape=tape, cached=cached)
+
+def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
+    """Get the storage element with the closest replica.
+
+    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If no `rempotepath` is provided, just return the closest SE over all.
+    """
+    SEs = get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
+    if len(SEs) >= 1:
+        return SEs[0]
+    else:
+        return None

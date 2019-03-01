@@ -183,6 +183,8 @@ ls.add_argument('-l', '--long', action='store_true',
     help="longer, more detailed output")
 ls.add_argument('-d', '--directory', action='store_true',
     help="list directory entries instead of contents")
+ls.add_argument('-s', '--se', type=str, default=None,
+    help="list physical contents on this SE rather than the file catalogue")
 all_commands.append(ls)
 
 replicas = Command('replicas', t2kdm.interactive.replicas, "List replicas of a remote logical path.")
@@ -201,6 +203,8 @@ check.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280'")
 check.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively check all files and subdirectories [that match REGEX] of a directory")
+check.add_argument('-R', '--recursivese', default=None,
+    help="use listing of physical files on this SE for recursion")
 check.add_argument('-q', '--quiet', action='store_true',
     help="do not print problematic files to screen")
 check.add_argument('-v', '--verbose', action='store_true',
@@ -211,6 +215,8 @@ check.add_argument('-c', '--checksum', action='store_true',
     help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
 check.add_argument('-s', '--se', action='append', default=[],
     help="report replication status to the given storage element, can be used multiple times")
+check.add_argument('-S', '--states', action='store_true',
+    help="checl whether all replicas are in a resonable state ('ONLINE', 'NEARLINE', or 'ONLINE_AND_NEARLINE')")
 all_commands.append(check)
 
 replicate = Command('replicate', t2kdm.interactive.replicate, "Replicate file to a storage element.")
@@ -220,6 +226,8 @@ replicate.add_argument('destination', type=str,
     help="the destination storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'")
 replicate.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
     help="recursively replicate all files and subdirectories [that match REGEX] of a directory")
+replicate.add_argument('-R', '--recursivese', default=None,
+    help="use listing of physical files on this SE for recursion")
 replicate.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 replicate.add_argument('-s', '--source', type=str, default=None,

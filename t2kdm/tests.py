@@ -59,8 +59,20 @@ def run_read_only_tests():
     else:
         raise Exception("Test file not in listing.")
 
+    print_("Testing ls_se...")
+
+    entries = t2kdm.backend.ls_se(testdir, se=testSEs[0])
+    for e in entries:
+        if e.name == testfiles[0]:
+            break
+    else:
+        raise Exception("Test file not in listing.")
+
     print_("Testing is_dir...")
     assert(t2kdm.is_dir('/test/t2kdm'))
+
+    print_("Testing is_dir_se...")
+    assert(t2kdm.is_dir_se('/test/t2kdm', se=testSEs[0]))
 
     print_("Testing replicas...")
     for rep in t2kdm.backend.replicas('/test/t2kdm/test1.txt'):
@@ -83,6 +95,8 @@ def run_read_only_tests():
     assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)
     # Test getting SE by host
     assert('se03.esc.qmul.ac.uk' in storage.SE_by_host['se03.esc.qmul.ac.uk'].get_storage_path('/nd280/test'))
+    # Test storage path arithmetic
+    assert(storage.SEs[0].get_logical_path(storage.SEs[0].get_storage_path('/nd280/test')) == '/nd280/test')
     # Test getting the closest SE
     assert(storage.get_closest_SE('/test/t2kdm/test1.txt') is not None)
 
@@ -117,6 +131,8 @@ def run_read_only_tests():
             assert(t2kdm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) == 0)
         assert os.path.isfile(filename)
         assert os.path.getsize(filename) == 0
+        with no_output(True):
+            assert(t2kdm.interactive.check(testdir, se=testSEs[0:1], recursivese=testSEs[0], quiet=False, verbose=True) == 0)
 
     print_("Testing Commands...")
     with no_output(True):
@@ -180,7 +196,7 @@ def run_read_write_tests():
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
     for SE in storage.SEs:
-        if SE.type == 'tape' or 'TRIUMF' in SE.name or SE.is_blacklisted():
+        if SE.type == 'tape' or SE.is_blacklisted():
             # These SEs do not seem to cooperate
             continue
         print_(SE.name)

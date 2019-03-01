@@ -9,10 +9,11 @@ To avoid confusion, the following convention is used for function arguments:
 remotepath
     The logical path of a grid file, as presented to the user.
     Sarts with a '/'.
+    Does *not* include the "basedir" of the configuration.
 
 lurl:
     The logical url of the file, as used by the file catalogue.
-    Starts with 'lfn:/'.
+    It is catalogue specific: catalogue_prefix + basedir + remotepath.
 
 surl
     The storage location of a replica.
@@ -27,6 +28,7 @@ import sh
 import itertools
 import posixpath
 import os, sys
+import uuid
 from t2kdm import storage
 from t2kdm.cache import Cache
 from six import print_
@@ -71,14 +73,11 @@ class GridBackend(object):
             All paths are specified relative to that position.
         """
 
-        # LFC paths alway put a '/grid' as highest level directory.
-        # Let us not expose that to the user.
-        self.baseurl = 'lfn:/grid' + kwargs.pop('basedir', '/t2k.org')
+        self.baseurl = kwargs.pop('catalogue_prefix', '') + kwargs.pop('basedir', '/t2k.org')
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
     def get_lurl(self, remotepath):
-        """Prepend the base dir to a path."""
         return posixpath.normpath(self.baseurl + remotepath)
 
     def _ls(self, lurl, **kwargs):
@@ -99,6 +98,25 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
         return self._ls(lurl, **kwargs)
 
+    def _ls_se(self, surl, **kwargs):
+        raise NotImplementedError()
+
+    def ls_se(self, remotepath, se, **kwargs):
+        """List physical contents of a remote path on a specific SE.
+
+        Supported keyword arguments:
+
+        directory: Bool. Default: False
+            List directory entries instead of contents.
+        """
+
+        lurl = self.get_lurl(remotepath)
+        ses = storage.get_SE(se)
+        if ses is None:
+            raise BackendException("Could not find storage element %s."%(se,))
+        surl = ses.get_storage_path(remotepath)
+        return self._ls_se(surl, **kwargs)
+
     def _is_dir(self, lurl):
         entry = self._ls(lurl, directory=True)[0]
         return entry.mode[0] == 'd'
@@ -108,6 +126,16 @@ class GridBackend(object):
         """Is the remote path a directory?"""
         return self._is_dir(self.get_lurl(remotepath))
 
+    def _is_dir_se(self, surl):
+        entry = self._ls_se(surl, directory=True)[0]
+        return entry.mode[0] == 'd'
+
+    @cache.cached
+    def is_dir_se(self, remotepath, se):
+        """Is the storage path a directory?"""
+        se = storage.get_SE(se)
+        return self._is_dir_se(se.get_storage_path(remotepath))
+
     def _exists(self, surl, **kwargs):
         raise NotImplementedError()
 
@@ -116,11 +144,19 @@ class GridBackend(object):
         """Chcek whether a surl actually exists."""
         return self._exists(surl, **kwargs)
 
+    def _register(self, surl, lurl, verbose=False, **kwargs):
+        raise NotImplementedError()
+
+    def register(self, surl, remotepath, verbose=False, **kwargs):
+        """Register a given surl on the file catalogue."""
+        lurl = self.get_lurl(remotepath)
+        return self._register(surl, lurl, verbose=verbose, **kwargs)
+
     def _deregister(self, surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
 
     def deregister(self, surl, remotepath, verbose=False, **kwargs):
-        """Unregister a given surl from the file catalogue."""
+        """Deregister a given surl from the file catalogue."""
         lurl = self.get_lurl(remotepath)
         return self._deregister(surl, lurl, verbose=verbose, **kwargs)
 
@@ -170,10 +206,11 @@ class GridBackend(object):
         # Get source SE
         if source is None:
             if destination is None:
-                src = storage.get_closest_SE(remotepath, tape=tape)
-                if src is None:
+                srclst = storage.get_closest_SEs(remotepath, tape=tape)
+                if len(srclst) == 0:
                     raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
-                yield src.get_replica(remotepath), src
+                for src in srclst:
+                    yield src.get_replica(remotepath), src
                 return
             else:
                 dst = storage.get_SE(destination)
@@ -216,14 +253,24 @@ class GridBackend(object):
         dst = storage.get_SE(destination)
         if dst is None:
             raise BackendException("Could not find storage element %s."%(destination,))
+        destination_path = dst.get_storage_path(remotepath)
 
-        if dst.has_replica(remotepath):
+        if dst.has_replica(remotepath, check_dark=True):
             # Replica already at destination, nothing to do here
             if verbose:
                 print_("Replica of %s already present at destination storage element %s."%(remotepath, dst.name,))
-            return True
+            try:
+                dark = not dst.has_replica(remotepath)
+            except DoesNotExistException:
+                dark = True
+            if dark:
+                if verbose:
+                    print_("Replica seems to be dark. Attempting registration.")
+                return self.register(destination_path, remotepath, verbose=verbose)
+            else:
+                # Replica already present, nothing to do.
+                return True
 
-        destination_path = dst.get_storage_path(remotepath)
         failure = None
         for source_path, src in self.iter_file_sources(remotepath, source, destination, tape):
             if verbose:
@@ -233,16 +280,21 @@ class GridBackend(object):
                 if verbose:
                     print_("Bringing online %s"%(source_path,))
                 try:
-                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose) and self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose)
                 except BackendException as e:
                     failure = e
                     ret = False
-            else:
-                try:
-                    ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
-                except BackendException as e:
-                    failure = e
-                    ret = False
+                if ret == False:
+                    if verbose:
+                        print_("Failed to bring replica online.")
+                    continue
+
+            try:
+                ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
+            except BackendException as e:
+                failure = e
+                ret = False
+
             if ret:
                 return True
 
@@ -387,7 +439,7 @@ class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('lfc-ls')
@@ -533,7 +585,7 @@ class GFALBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('gfal-ls').bake(color='never')
@@ -568,6 +620,9 @@ class GFALBackend(GridBackend):
             modified = ' '.join(fields[5:-1])
             ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
         return ret
+
+    def _ls_se(self, surl, **kwargs):
+        return self._ls(surl, **kwargs)
 
     def _replicas(self, lurl, **kwargs):
         ret = []
@@ -738,7 +793,7 @@ class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='', **kwargs)
 
         from DIRAC.Core.Base import Script
         Script.initialize()
@@ -758,18 +813,10 @@ class DIRACBackend(GridBackend):
         self._replica_checksum_cmd = sh.Command('gfal-sum')
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
+        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
 
         self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
         self._add_cmd = sh.Command('dirac-dms-add-file')
-
-    @staticmethod
-    def strip_lurl(lurl):
-        """Strip te unnecessary stuff from the beginning of lurls.
-
-        lfn:/grid/t2k.org/... -> /t2k.org/...
-
-        """
-        return lurl[9:]
 
     @staticmethod
     def _check_return_value(ret):
@@ -782,7 +829,6 @@ class DIRACBackend(GridBackend):
                 raise BackendException(error)
 
     def _is_dir(self, lurl):
-        lurl = self.strip_lurl(lurl)
         isdir = self.fc.isDirectory(lurl)
         self._check_return_value(isdir)
         return isdir['Value']['Successful'][lurl]
@@ -828,7 +874,6 @@ class DIRACBackend(GridBackend):
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
         d = kwargs.pop('directory', False)
-        lurl = self.strip_lurl(lurl)
 
         if d:
             # Just the requested entry itself
@@ -841,10 +886,33 @@ class DIRACBackend(GridBackend):
 
         return ret
 
+    def _ls_se(self, surl, **kwargs):
+        # Translate keyword arguments
+        d = kwargs.pop('directory', False)
+        args = []
+        if -d:
+            args.append('-d')
+        args.append('-l')
+        args.append(surl)
+        try:
+            output = self._ls_se_cmd(*args, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
+            else:
+                raise BackendException(e.stderr)
+        ret = []
+        for line in output:
+            fields = line.split()
+            mode, links, gid, uid, size = fields[:5]
+            name = fields[-1]
+            modified = ' '.join(fields[5:-1])
+            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
+        return ret
+
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
         self._ls(lurl, directory=True)
-        lurl = self.strip_lurl(lurl)
 
         rep = self.fc.getReplicas(lurl)
         self._check_return_value(rep)
@@ -865,6 +933,28 @@ class DIRACBackend(GridBackend):
                     raise BackendException(e.stderr)
         else:
             return True
+
+    def _register(self, surl, lurl, verbose=False, **kwargs):
+        # Register an existing physical copy in the file catalogue
+        se = storage.get_SE(surl).name
+        # See if file already exists in DFC
+        ret = self.fc.getFileMetadata(lurl)
+        try:
+            self._check_return_value(ret)
+        except DoesNotExistException:
+            # Add new file
+            size = self._ls_se(surl, directory=True)[0].size
+            checksum = self.checksum(surl)
+            guid = str(uuid.uuid4()) # The guid does not seem to be important. Make it unique if possible.
+            ret = self.dm.registerFile((lurl, surl, size, se, guid, checksum))
+        else:
+            # Add new replica
+            ret = self.dm.registerReplica((lurl, surl, se))
+
+        self._check_return_value(ret)
+        if verbose:
+            print_("Successfully registered replica %s of %s from %s."%(surl, lurl, se))
+        return True
 
     def _deregister(self, surl, lurl, verbose=False, **kwargs):
         # DIRAC only needs to know the SE name to deregister a replica
@@ -931,7 +1021,6 @@ class DIRACBackend(GridBackend):
         else:
             out = None
 
-        lurl = self.strip_lurl(lurl)
         source = storage.get_SE(source_surl).name
         destination = storage.get_SE(destination_surl).name
         try:
@@ -969,7 +1058,6 @@ class DIRACBackend(GridBackend):
             out = sys.stdout
         else:
             out = None
-        lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
         try:
@@ -985,7 +1073,6 @@ class DIRACBackend(GridBackend):
         return True
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
-        lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
         if last:
