@@ -9,10 +9,11 @@ To avoid confusion, the following convention is used for function arguments:
 remotepath
     The logical path of a grid file, as presented to the user.
     Sarts with a '/'.
+    Does *not* include the "basedir" of the configuration.
 
 lurl:
     The logical url of the file, as used by the file catalogue.
-    Starts with 'lfn:/'.
+    It is catalogue specific: catalogue_prefix + basedir + remotepath.
 
 surl
     The storage location of a replica.
@@ -71,14 +72,11 @@ class GridBackend(object):
             All paths are specified relative to that position.
         """
 
-        # LFC paths alway put a '/grid' as highest level directory.
-        # Let us not expose that to the user.
-        self.baseurl = 'lfn:/grid' + kwargs.pop('basedir', '/t2k.org')
+        self.baseurl = kwargs.pop('catalogue_prefix', '') + kwargs.pop('basedir', '/t2k.org')
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
     def get_lurl(self, remotepath):
-        """Prepend the base dir to a path."""
         return posixpath.normpath(self.baseurl + remotepath)
 
     def _ls(self, lurl, **kwargs):
@@ -393,7 +391,7 @@ class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('lfc-ls')
@@ -539,7 +537,7 @@ class GFALBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
 
         #self._proxy_init_cmd = sh.Command('voms-proxy-init')
         self._ls_cmd = sh.Command('gfal-ls').bake(color='never')
@@ -744,7 +742,7 @@ class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, **kwargs)
+        GridBackend.__init__(self, catalogue_prefix='', **kwargs)
 
         from DIRAC.Core.Base import Script
         Script.initialize()
@@ -769,15 +767,6 @@ class DIRACBackend(GridBackend):
         self._add_cmd = sh.Command('dirac-dms-add-file')
 
     @staticmethod
-    def strip_lurl(lurl):
-        """Strip te unnecessary stuff from the beginning of lurls.
-
-        lfn:/grid/t2k.org/... -> /t2k.org/...
-
-        """
-        return lurl[9:]
-
-    @staticmethod
     def _check_return_value(ret):
         if not ret['OK']:
             raise BackendException("Failed: %s", ret['Message'])
@@ -788,7 +777,6 @@ class DIRACBackend(GridBackend):
                 raise BackendException(error)
 
     def _is_dir(self, lurl):
-        lurl = self.strip_lurl(lurl)
         isdir = self.fc.isDirectory(lurl)
         self._check_return_value(isdir)
         return isdir['Value']['Successful'][lurl]
@@ -834,7 +822,6 @@ class DIRACBackend(GridBackend):
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
         d = kwargs.pop('directory', False)
-        lurl = self.strip_lurl(lurl)
 
         if d:
             # Just the requested entry itself
@@ -850,7 +837,6 @@ class DIRACBackend(GridBackend):
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
         self._ls(lurl, directory=True)
-        lurl = self.strip_lurl(lurl)
 
         rep = self.fc.getReplicas(lurl)
         self._check_return_value(rep)
@@ -937,7 +923,6 @@ class DIRACBackend(GridBackend):
         else:
             out = None
 
-        lurl = self.strip_lurl(lurl)
         source = storage.get_SE(source_surl).name
         destination = storage.get_SE(destination_surl).name
         try:
@@ -975,7 +960,6 @@ class DIRACBackend(GridBackend):
             out = sys.stdout
         else:
             out = None
-        lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
         try:
@@ -991,7 +975,6 @@ class DIRACBackend(GridBackend):
         return True
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
-        lurl = self.strip_lurl(lurl)
         se = storage.get_SE(surl).name
 
         if last:

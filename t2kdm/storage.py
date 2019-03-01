@@ -30,14 +30,10 @@ class StorageElement(object):
         return self.broken or self.name in t2kdm.config.blacklist
 
     def get_storage_path(self, remotepath):
-        """Generate the standard storage path for this SE from a logical file name.
-
-        The remotepath must include the base dir from the configuration,
-        e.g. by using a backends `get_lurl` method.
-        """
+        """Generate the standard storage path for this SE from a logical file name."""
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return (self.basepath + remotepath).strip()
+        return (self.basepath + t2kdm.config.basedir + remotepath).strip()
 
     def get_distance(self, other):
         """Return the distance to another StorageElement.
