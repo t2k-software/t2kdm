@@ -83,6 +83,7 @@ def run_read_only_tests():
 
     print_("Testing exists...")
     assert(t2kdm.backend.exists(rep))
+    assert(not t2kdm.backend.exists(posixpath.dirname(rep)))
 
     print_("Testing checksum...")
     assert(t2kdm.backend.checksum(rep) == '529506c1')

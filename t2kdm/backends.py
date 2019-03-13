@@ -922,7 +922,7 @@ class DIRACBackend(GridBackend):
 
     def _exists(self, surl, **kwargs):
         try:
-            state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
+            ret = self._ls_se_cmd(surl, '-d', '-l', **kwargs).strip()
         except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 return False
@@ -932,7 +932,7 @@ class DIRACBackend(GridBackend):
                 else:
                     raise BackendException(e.stderr)
         else:
-            return True
+            return ret[0] != 'd' # Return `False` for directories
 
     def _register(self, surl, lurl, verbose=False, **kwargs):
         # Register an existing physical copy in the file catalogue
