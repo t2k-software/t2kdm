@@ -83,15 +83,21 @@ class _recursive(object):
         self.function = function
         return self.recursive_function
 
-def ls(*args, **kwargs):
+def _check_path(remotepath):
+    """Make sure the remotepath is absolute."""
+    if not remotepath.startswith('/'):
+        raise InteractiveException("Remote path must be absolute!")
+
+def ls(remotepath, *args, **kwargs):
     """Print the contents of a directory on screen."""
+    _check_path(remotepath)
 
     long = kwargs.pop('long', False)
     se = kwargs.pop('se', None)
     if se is None:
-        entries = t2kdm.ls(*args, **kwargs)
+        entries = t2kdm.ls(remotepath, *args, **kwargs)
     else:
-        entries = t2kdm.ls_se(*args, se=se, **kwargs)
+        entries = t2kdm.ls_se(remotepath, *args, se=se, **kwargs)
     if long:
         # Detailed listing
         for e in entries:
@@ -109,13 +115,14 @@ def ls(*args, **kwargs):
             print_(e.name)
     return 0
 
-def replicas(*args, **kwargs):
+def replicas(remotepath, *args, **kwargs):
     """Print the replicas of a file on screen."""
+    _check_path(remotepath)
 
     checksum = kwargs.pop('checksum', False)
     state = kwargs.pop('state', False)
     name = kwargs.pop('name', False)
-    reps = t2kdm.replicas(*args, **kwargs)
+    reps = t2kdm.replicas(remotepath, *args, **kwargs)
     for r in reps:
         if checksum:
             print_(t2kdm.checksum(r), end=' ')
@@ -133,6 +140,7 @@ def replicas(*args, **kwargs):
 @_recursive("Replicating", "Replicated")
 def replicate(remotepath, *args, **kwargs):
     """Replicate files to a storage element."""
+    _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
     verbose = kwargs.pop('verbose', False)
@@ -152,6 +160,7 @@ def replicate(remotepath, *args, **kwargs):
 @_recursive("Getting", "Downloaded")
 def get(remotepath, *args, **kwargs):
     """Download files."""
+    _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
     verbose = kwargs.pop('verbose', False)
@@ -168,9 +177,11 @@ def get(remotepath, *args, **kwargs):
     else:
         return 0
 
-def put(*args, **kwargs):
+def put(localpath, remotepath, *args, **kwargs):
     """Upload a file to the grid."""
-    ret = t2kdm.put(*args, **kwargs)
+    _check_path(remotepath)
+
+    ret = t2kdm.put(localpath, remotepath, *args, **kwargs)
     if ret:
         return 0
     else:
@@ -179,6 +190,8 @@ def put(*args, **kwargs):
 @_recursive("Removing", "Removed")
 def remove(remotepath, *args, **kwargs):
     """Remove a file from a given SE."""
+    _check_path(remotepath)
+
     verbose = kwargs.pop('verbose', False)
     kwargs['verbose'] = verbose
 
@@ -191,6 +204,7 @@ def remove(remotepath, *args, **kwargs):
 @_recursive("Checking", "No problems detected for")
 def check(remotepath, *args, **kwargs):
     """Check if everything is alright with the files."""
+    _check_path(remotepath)
 
     verbose = kwargs.pop('verbose', False)
     quiet = kwargs.pop('quiet', False)

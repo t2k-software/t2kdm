@@ -83,6 +83,7 @@ def run_read_only_tests():
 
     print_("Testing exists...")
     assert(t2kdm.backend.exists(rep))
+    assert(not t2kdm.backend.exists(posixpath.dirname(rep)))
 
     print_("Testing checksum...")
     assert(t2kdm.backend.checksum(rep) == '529506c1')
@@ -141,9 +142,9 @@ def run_read_only_tests():
 
         cmd.ls.run_from_cli('abc') # This should not work, but not throw exception
         cmd.ls.run_from_cli('"abc') # This should not work, but not throw exception
-        with fake_argv(['t2kdm-ls']):
+        with fake_argv(['t2kdm-ls', '/']):
             assert(cmd.ls.run_from_console() == 0) # This should work
-        with fake_argv(['t2kdm-cli']):
+        with fake_argv(['t2kdm-cli', '/']):
             assert(cmd.ls.run_from_console() == 0) # This should work
         with fake_argv(['t2kdm-ls', '/abcxyz']):
             assert(cmd.ls.run_from_console() != 0) # This should not work, hence the not 0 return value
