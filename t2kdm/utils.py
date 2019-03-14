@@ -23,9 +23,9 @@ def remote_iter_recursively(remotepath, regex=None, se=None):
 
     if t2kdm.is_dir(remotepath) or (se is not None and t2kdm.is_dir_se(remotepath, se)):
         if se is None:
-            entries = t2kdm.ls(remotepath)
+            entries = t2kdm.iter_ls(remotepath)
         else:
-            entries = t2kdm.ls_se(remotepath, se)
+            entries = t2kdm.iter_ls_se(remotepath, se)
         for entry in entries:
             if regex is None or regex.search(entry.name):
                 new_path = posixpath.join(remotepath, entry.name)

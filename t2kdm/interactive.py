@@ -95,9 +95,9 @@ def ls(remotepath, *args, **kwargs):
     long = kwargs.pop('long', False)
     se = kwargs.pop('se', None)
     if se is None:
-        entries = t2kdm.ls(remotepath, *args, **kwargs)
+        entries = t2kdm.iter_ls(remotepath, *args, **kwargs)
     else:
-        entries = t2kdm.ls_se(remotepath, *args, se=se, **kwargs)
+        entries = t2kdm.iter_ls_se(remotepath, *args, se=se, **kwargs)
     if long:
         # Detailed listing
         for e in entries:

@@ -95,13 +95,38 @@ class GridBackend(object):
             List directory entries instead of contents.
         """
 
+        return list(self.iter_ls(remotepath, **kwargs))
+
+    def iter_ls(self, remotepath, **kwargs):
+        """List contents of a remote logical path.
+
+        Returns an iterator of directory entries.
+
+        Supported keyword arguments:
+
+        directory: Bool. Default: False
+            List directory entries instead of contents.
+        """
+
         lurl = self.get_lurl(remotepath)
         return self._ls(lurl, **kwargs)
 
     def _ls_se(self, surl, **kwargs):
         raise NotImplementedError()
 
+    @cache.cached
     def ls_se(self, remotepath, se, **kwargs):
+        """List physical contents of a remote path on a specific SE.
+
+        Supported keyword arguments:
+
+        directory: Bool. Default: False
+            List directory entries instead of contents.
+        """
+
+        return list(self.iter_ls_se(remotepath, se, **kwargs))
+
+    def iter_ls_se(self, remotepath, se, **kwargs):
         """List physical contents of a remote path on a specific SE.
 
         Supported keyword arguments:
@@ -118,7 +143,7 @@ class GridBackend(object):
         return self._ls_se(surl, **kwargs)
 
     def _is_dir(self, lurl):
-        entry = self._ls(lurl, directory=True)[0]
+        entry = next(self._ls(lurl, directory=True))
         return entry.mode[0] == 'd'
 
     @cache.cached
@@ -127,7 +152,7 @@ class GridBackend(object):
         return self._is_dir(self.get_lurl(remotepath))
 
     def _is_dir_se(self, surl):
-        entry = self._ls_se(surl, directory=True)[0]
+        entry = next(self._ls_se(surl, directory=True))
         return entry.mode[0] == 'd'
 
     @cache.cached
@@ -474,7 +499,8 @@ class LCGBackend(GridBackend):
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
             ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        return ret
+        for e in ret:
+            yield e
 
     def _replicas(self, lurl, **kwargs):
         ret = []
@@ -619,7 +645,8 @@ class GFALBackend(GridBackend):
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
             ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        return ret
+        for e in ret:
+            yield e
 
     def _ls_se(self, surl, **kwargs):
         return self._ls(surl, **kwargs)
@@ -877,14 +904,12 @@ class DIRACBackend(GridBackend):
 
         if d:
             # Just the requested entry itself
-            return [self._get_dir_entry(lurl)]
+            yield self._get_dir_entry(lurl)
+            return
 
-        ret = []
         for path in self._iter_directory(lurl):
             # TODO: Possible optimisation, listDirectory already conatins all information, is it cached?
-            ret.append(self._get_dir_entry(path))
-
-        return ret
+            yield self._get_dir_entry(path)
 
     def _ls_se(self, surl, **kwargs):
         # Translate keyword arguments
@@ -908,7 +933,8 @@ class DIRACBackend(GridBackend):
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
             ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        return ret
+        for e in ret:
+            yield e
 
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
@@ -943,7 +969,7 @@ class DIRACBackend(GridBackend):
             self._check_return_value(ret)
         except DoesNotExistException:
             # Add new file
-            size = self._ls_se(surl, directory=True)[0].size
+            size = next(self._ls_se(surl, directory=True)).size
             checksum = self.checksum(surl)
             guid = str(uuid.uuid4()) # The guid does not seem to be important. Make it unique if possible.
             ret = self.dm.registerFile((lurl, surl, size, se, guid, checksum))
