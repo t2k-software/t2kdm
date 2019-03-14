@@ -509,7 +509,8 @@ class Maid(object):
         """
 
         # Report if necessary
-        task._pre_do()
+        self.update_task_states() # Make sure tasks are up to date
+        task._pre_do() # Set task to STARTED
         self.generate_index()
 
         # Do the task and log it
@@ -533,6 +534,7 @@ class Maid(object):
                 self.tasklog.log('FAILED', task.get_id())
 
         # Report if necessary
+        self.update_task_states() # Update tasks that might have run in parallel
         self.generate_index()
 
         return success
@@ -545,9 +547,11 @@ class Maid(object):
         for task in started:
             if task in self.tasks:
                 t = self.tasks[task]
-                t.last_done = started[task][1] # tuple of (pid, time)
-                t.last_id =  started[task][0]
-                t.state = 'STARTED'
+                if t.last_done is None or t.last_done < started[task][1]:
+                    # Do not overwrite start dates that were updated in this process
+                    t.last_done = started[task][1] # tuple of (pid, time)
+                    t.last_id =  started[task][0]
+                    t.state = 'STARTED'
 
         for task in done:
             if task in self.tasks:
@@ -556,7 +560,7 @@ class Maid(object):
                     t.last_done = done[task][1] # tuple of (pid, time)
                     t.last_id =  done[task][0]
                     t.state = 'DONE'
-                elif task in started and started[task][1] <= done[task][1]:
+                elif t.last_done <= done[task][1]:
                     # Do not overwrite if task was started after last DONE
                     t.last_id =  done[task][0]
                     t.state = 'DONE'
@@ -568,7 +572,7 @@ class Maid(object):
                     t.last_done = failed[task][1] # tuple of (pid, time)
                     t.last_id =  failed[task][0]
                     t.state = 'FAILED'
-                elif task in started and started[task][1] <= failed[task][1]:
+                elif t.last_done <= failed[task][1]:
                     # Do not overwrite if task was started after last FAILED
                     t.last_id =  failed[task][0]
                     t.state = 'FAILED'
@@ -578,8 +582,6 @@ class Maid(object):
 
         If `return_all` is `True`, all tasks will be returned, not just the due ones.
         """
-
-        self.update_task_states()
 
         ret = []
         for t in self.tasks:
@@ -596,6 +598,8 @@ class Maid(object):
 
         If `eager` is `True`, do tasks even before they are due again.
         """
+
+        self.update_task_states()
         tasks = self.get_open_tasks(return_all=eager)
 
         if len(tasks) > 0:
