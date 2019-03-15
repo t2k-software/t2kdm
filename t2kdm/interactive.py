@@ -52,6 +52,12 @@ class _recursive(object):
                 try:
                     ret = self.function(path, *args, **kwargs)
                 except Exception as e:
+                    if not verbose:
+                        # Tell the user which file failed.
+                        # Only necessary if they have not already been told.
+                        print_(self.iterating + " " + path + "failed.")
+                    else:
+                        print_("Failed.")
                     print_(e)
                     bad += 1
                     if list_file is not None:
