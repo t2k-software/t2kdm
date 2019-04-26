@@ -28,6 +28,7 @@ else:
     is_dir_se = backend.is_dir_se
     replicas = backend.replicas
     exists = backend.exists
+    is_online = backend.is_online
     checksum = backend.checksum
     state = backend.state
     replicate = backend.replicate

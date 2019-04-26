@@ -211,6 +211,20 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
         return self._replicas(lurl, **kwargs)
 
+    @cache.cached
+    def is_online(self, surl):
+        """Return `True` if the replica is online."""
+        try:
+            state = self.state(surl, cached=False)
+        except sh.ErrorReturnCode as e:
+            # Raise backend failures
+            if len(e.stderr) == 0:
+                raise BackendException(e.stdout)
+            else:
+                raise BackendException(e.stderr)
+
+        return state.startswith('ONLINE')
+
     def _bringonline(self, surl, timeout, verbose=False, **kwargs):
         raise NotImplementedError()
 
