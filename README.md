@@ -21,6 +21,10 @@ to it:
     # Re-enable Python "assert" statements
     # Only needed for the `t2kdm-tests` command
     unset PYTHONOPTIMIZE
+    
+    # User configuration files for "voms-*" commands when no "/etc/vomses"
+    # Uncomment if needed
+    #export VOMS_USERCONF=${DIRAC}/etc/grid-security/vomses
 
 Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
 environment. Within this environment you can install t2kdm releases directly

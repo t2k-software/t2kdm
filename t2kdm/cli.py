@@ -11,7 +11,7 @@ import t2kdm
 from t2kdm.commands import all_commands
 
 def ls(*args, **kwargs):
-    return [x.name for x in t2kdm.ls(*args, cached=True, **kwargs)]
+    return [x.name for x in t2kdm.iter_ls(*args, cached=True, **kwargs)]
 
 class T2KDmCli(cmd.Cmd):
     """T2K Data Manager Command Line Interface (CLI)

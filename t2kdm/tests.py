@@ -91,6 +91,9 @@ def run_read_only_tests():
     print_("Testing state...")
     assert('ONLINE' in t2kdm.backend.state(rep))
 
+    print_("Testing is_online...")
+    assert(t2kdm.backend.is_online(rep))
+
     print_("Testing StorageElement...")
     # Test distance calculation
     assert(storage.SEs[0].get_distance(storage.SEs[1]) < 0)

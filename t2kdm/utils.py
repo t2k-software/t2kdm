@@ -11,25 +11,47 @@ import t2kdm
 from t2kdm import backends
 from t2kdm import storage
 
-def remote_iter_recursively(remotepath, regex=None, se=None):
+def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=False):
     """Iter over remote paths recursively.
 
     If `regex` is given, only consider files/folders that match the reular expression.
     If `se` is given, iterate over listing of physical files on SE rather than the file catalogue.
+    If `ignore_exceptions` is `True`, exceptions are ignored where possible.
     """
 
     if isinstance(regex, str):
         regex = re.compile(regex)
 
-    if t2kdm.is_dir(remotepath) or (se is not None and t2kdm.is_dir_se(remotepath, se)):
-        if se is None:
-            entries = t2kdm.ls(remotepath)
+    # Check whther the path is a directory.
+    # Check both in the file catalogue and on the storage element,
+    # because the directory might not yet exist in the catalogue.
+    try:
+        isdir = t2kdm.is_dir(remotepath, cached=True) or (se is not None and t2kdm.is_dir_se(remotepath, se, cached=True))
+    except Exception as e:
+        print_("Recursion failure!")
+        if ignore_exceptions:
+            print_(e)
         else:
-            entries = t2kdm.ls_se(remotepath, se)
+            raise
+        return
+
+    if isdir:
+        try:
+            if se is None:
+                entries = t2kdm.iter_ls(remotepath)
+            else:
+                entries = t2kdm.iter_ls_se(remotepath, se)
+        except Exception as e:
+            print_("Recursion failure!")
+            if ignore_exceptions:
+                print_(e)
+            else:
+                raise
+            return
         for entry in entries:
             if regex is None or regex.search(entry.name):
                 new_path = posixpath.join(remotepath, entry.name)
-                for path in remote_iter_recursively(new_path, regex, se=se):
+                for path in remote_iter_recursively(new_path, regex, se=se, ignore_exceptions=ignore_exceptions):
                     yield path
     else:
         yield remotepath
@@ -75,7 +97,9 @@ def check_replicas(remotepath, ses, cached=False):
         check_ses.append(se)
 
     for se in check_ses:
-        if not se.has_replica(remotepath, cached=cached):
+        if not se.has_replica(remotepath, check_dark=False, cached=cached):
+            return False
+        if not se.has_replica(remotepath, check_dark=True, cached=cached):
             return False
 
     return True

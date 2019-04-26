@@ -46,12 +46,18 @@ class _recursive(object):
         good = 0
         bad = 0
         if recursive is True:
-            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se):
+            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se, ignore_exceptions=True):
                 if verbose:
                     print_(self.iterating + " " + path)
                 try:
                     ret = self.function(path, *args, **kwargs)
                 except Exception as e:
+                    if not verbose:
+                        # Tell the user which file failed.
+                        # Only necessary if they have not already been told.
+                        print_(self.iterating + " " + path + "failed.")
+                    else:
+                        print_("Failed.")
                     print_(e)
                     bad += 1
                     if list_file is not None:
@@ -95,9 +101,9 @@ def ls(remotepath, *args, **kwargs):
     long = kwargs.pop('long', False)
     se = kwargs.pop('se', None)
     if se is None:
-        entries = t2kdm.ls(remotepath, *args, **kwargs)
+        entries = t2kdm.iter_ls(remotepath, *args, **kwargs)
     else:
-        entries = t2kdm.ls_se(remotepath, *args, se=se, **kwargs)
+        entries = t2kdm.iter_ls_se(remotepath, *args, se=se, **kwargs)
     if long:
         # Detailed listing
         for e in entries:
@@ -215,7 +221,7 @@ def check(remotepath, *args, **kwargs):
     if checksum == False and len(ses) == 0 and states == False:
         raise InteractiveException("No check specified.")
 
-    if t2kdm.is_dir(remotepath):
+    if t2kdm.is_dir(remotepath, cached=True):
         raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
     ret = True

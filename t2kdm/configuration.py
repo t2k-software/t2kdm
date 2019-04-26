@@ -17,7 +17,8 @@ default_values = {
 
 descriptions = {
     'backend':      "Which backend should be used?\n"\
-                    "Supported backends: dirac, gfal, lcg",
+                    "Supported backends: dirac\n"\
+                    "Legacy backends: gfal, lcg",
     'basedir':      "What base directory should be assumed for all files on the grid?",
     'location':     "What is your location?\n"\
                     "This is used to determine the closest storage element when downloading files.\n"\
