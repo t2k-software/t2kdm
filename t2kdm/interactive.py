@@ -46,7 +46,7 @@ class _recursive(object):
         good = 0
         bad = 0
         if recursive is True:
-            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se):
+            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se, ignore_exceptions=True):
                 if verbose:
                     print_(self.iterating + " " + path)
                 try:
