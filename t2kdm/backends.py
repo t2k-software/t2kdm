@@ -513,15 +513,12 @@ class LCGBackend(GridBackend):
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise
-        ret = []
         for line in output:
             fields = line.split()
             mode, links, uid, gid, size = fields[:5]
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
-            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        for e in ret:
-            yield e
+            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
 
     def _replicas(self, lurl, **kwargs):
         ret = []
@@ -659,15 +656,12 @@ class GFALBackend(GridBackend):
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
-        ret = []
         for line in output:
             fields = line.split()
             mode, links, gid, uid, size = fields[:5]
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
-            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        for e in ret:
-            yield e
+            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
 
     def _ls_se(self, surl, **kwargs):
         return self._ls(surl, **kwargs)
@@ -947,15 +941,12 @@ class DIRACBackend(GridBackend):
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
-        ret = []
         for line in output:
             fields = line.split()
             mode, links, gid, uid, size = fields[:5]
             name = fields[-1]
             modified = ' '.join(fields[5:-1])
-            ret.append(DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified))
-        for e in ret:
-            yield e
+            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
 
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
