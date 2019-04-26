@@ -97,7 +97,9 @@ def check_replicas(remotepath, ses, cached=False):
         check_ses.append(se)
 
     for se in check_ses:
-        if not se.has_replica(remotepath, cached=cached):
+        if not se.has_replica(remotepath, check_dark=False, cached=cached):
+            return False
+        if not se.has_replica(remotepath, check_dark=True, cached=cached):
             return False
 
     return True
