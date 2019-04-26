@@ -221,7 +221,7 @@ def check(remotepath, *args, **kwargs):
     if checksum == False and len(ses) == 0 and states == False:
         raise InteractiveException("No check specified.")
 
-    if t2kdm.is_dir(remotepath):
+    if t2kdm.is_dir(remotepath, cached=True):
         raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
     ret = True
