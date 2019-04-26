@@ -314,6 +314,9 @@ class GridBackend(object):
                 # Replica already present, nothing to do.
                 return True
 
+        if dst.has_replica(remotepath, check_dark=False):
+            raise BackendException("Replica of %s not present at destination storage element %s, but catalogue claims it is. Aborting."%(remotepath, dst.name,))
+
         failure = None
         for source_path, src in self.iter_file_sources(remotepath, source, destination, tape):
             if verbose:
