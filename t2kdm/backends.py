@@ -29,6 +29,7 @@ import itertools
 import posixpath
 import os, sys
 import uuid
+import time
 from t2kdm import storage
 from t2kdm.cache import Cache
 from six import print_
@@ -233,7 +234,10 @@ class GridBackend(object):
 
         Returns `True` when file is online, `False` if not.
         """
-        return self._bringonline(surl, timeout, verbose=verbose, **kwargs)
+        if self.is_online(surl):
+            return True
+        else:
+            return self._bringonline(surl, timeout, verbose=verbose, **kwargs)
 
     def get_file_source(self, remotepath, source=None, destination=None, tape=False):
         """Return the closest replica and corresponding SE of the given file."""
@@ -1031,29 +1035,45 @@ class DIRACBackend(GridBackend):
         else:
             out = None
         # gfal does not notice when files come online, it seems
-        # split task into many requests with short timeouts
+        # Just send a single short request, then check regularly
+
         if verbose:
             out = sys.stdout
         else:
             out = None
-        time_left = timeout
+
+        end = time.time() + timeout
+
+        try:
+            self._bringonline_cmd('-t', 10, surl, _out=out, **kwargs)
+        except sh.ErrorReturnCode:
+            # The command fails if the file is not online
+            # To be expected after 10 seconds
+            pass
+
+        wait = 5
         while(True):
-            if time_left > 10:
-                timeout = 10
-            else:
-                timeout = time_left
-            time_left -= 10
-            try:
-                self._bringonline_cmd('-t', timeout, surl, _out=out, **kwargs)
-            except sh.ErrorReturnCode:
-                # Not online yet.
-                if time_left > 0:
-                    continue
-                else:
-                    return False
-            else:
-                # File is online.
+            if verbose:
+                print_("Checking replica state...")
+            if self.is_online(surl):
+                if verbose:
+                    print_("Replica brought online.")
                 return True
+
+            time_left = end - time.time()
+            if time_left <= 0:
+                if verbose:
+                    print_("Could not bring replica online.")
+                return False
+
+            wait *= 2
+            if time_left < wait:
+                wait = time_left
+
+            if verbose:
+                print_("Timeout remaining: %d s"%(time_left))
+                print_("Checking again in: %d s"%(wait))
+            time.sleep(wait)
 
     def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
         if verbose:
