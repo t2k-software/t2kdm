@@ -300,7 +300,7 @@ fix.add_argument('remotepath', type=str,
 fix.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
-    help="recursively remove all files and subdirectories [that match REGEX] of a directory")
+    help="recursively fix all files and subdirectories [that match REGEX] of a directory")
 fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
