@@ -500,6 +500,62 @@ class GridBackend(object):
             last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
+    def _move_replica(self, surl, new_surl, verbose=False):
+        """Rename a replica on disk."""
+        raise NotImplementedError()
+
+    def move(self, remotepath, new_remotepath, verbose=False):
+        """Move a single file to a new position on the grid.
+
+        This reates a new file catalogue entry and moves all replicas to
+        correspond to that entry.
+        """
+
+        # Append the basename to the new remotepath if it is a directory
+        if new_remotepath[-1]==posixpath.sep or self.is_dir(new_remotepath):
+            new_remotepath = posixpath.join(new_remotepath, posixpath.basename(remotepath))
+
+        # Make sure destination does not exist already
+        if self.is_file(new_remotepath):
+            raise BackendException("New file name already exists!")
+
+        # Make sure everything works
+        success = True
+
+        # Loop over replicas of the file
+        replicas = self.replicas(remotepath)
+        if len(replicas) == 0:
+            raise BackendException("File has no replicas!")
+        for surl in replicas:
+            if verbose:
+                print_("Moving replica: %s"%(surl))
+            # Get target storage elment
+            se = storage.get_SE(surl)
+            if se is None:
+                raise BackendException("Could not find storage element.")
+            # Get the new surl
+            new_surl = se.get_storage_path(new_remotepath)
+            if verbose:
+                print_("New surl: %s"%(new_surl))
+            # Move the file
+            success &= self._move_replica(surl, new_surl, verbose)
+            # Register new replica
+            if verbose:
+                print_("Registering new replica...")
+            success &= self.replicate(new_remotepath, se, verbose=verbose)
+            # Remove old replica from catalogue
+            if verbose:
+                print_("Deregistering old surl...")
+            success &= self.deregister(surl, remotepath, verbose=verbose)
+
+        # If everything worked out, delete the file
+        if success:
+            if verbose:
+                print_("Removing old catalogue entry...")
+            return self.remove(remotepath, se, final=True, verbose=verbose)
+        else:
+            return False
+
 class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
@@ -525,6 +581,8 @@ class DIRACBackend(GridBackend):
         self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
         self._cp_cmd = sh.Command('gfal-copy')
         self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
+        self._move_cmd = sh.Command('gfal-rename')
+        self._mkdir_cmd = sh.Command('gfal-mkdir')
 
         self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
         self._add_cmd = sh.Command('dirac-dms-add-file')
@@ -822,6 +880,26 @@ class DIRACBackend(GridBackend):
             else:
                 raise BackendException(error)
 
+        return True
+
+    def _move_replica(self, surl, new_surl, verbose=False, **kwargs):
+        if verbose:
+            out = sys.stdout
+        else:
+            out = None
+
+        try:
+            folder = posixpath.dirname(new_surl)
+            self._mkdir_cmd(folder, '-p', _out=out, **kwargs)
+            self._move_cmd(surl, new_surl, _out=out, **kwargs)
+        except sh.ErrorReturnCode as e:
+            if 'No such file' in e.stderr:
+                raise DoesNotExistException("No such file or directory.")
+            else:
+                if len(e.stderr) == 0:
+                    raise BackendException(e.stdout)
+                else:
+                    raise BackendException(e.stderr)
         return True
 
 def get_backend(config):

@@ -207,6 +207,18 @@ def remove(remotepath, *args, **kwargs):
     else:
         return 1
 
+@_recursive("Moving", "Moved")
+def move(oldremotepath, newremotepath, *args, **kwargs):
+    """Move a file to a new position."""
+    _check_path(oldremotepath)
+    _check_path(newremotepath)
+
+    ret = t2kdm.move(oldremotepath, newremotepath, *args, **kwargs)
+    if ret == True:
+        return 0
+    else:
+        return 1
+
 @_recursive("Checking", "No problems detected for")
 def check(remotepath, *args, **kwargs):
     """Check if everything is alright with the files."""

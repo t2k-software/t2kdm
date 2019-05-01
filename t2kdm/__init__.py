@@ -35,6 +35,7 @@ else:
     state = backend.state
     replicate = backend.replicate
     remove = backend.remove
+    move = backend.move
     get = backend.get
     put = backend.put
 

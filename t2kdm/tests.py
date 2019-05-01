@@ -202,7 +202,17 @@ def run_read_write_tests():
         # Prepare something to upload
         with open(filename, 'wt') as f:
             f.write("This is testfile #3.\n")
-        t2kdm.put(filename, testdir+'/', destination=testSEs[0])
+        assert(t2kdm.put(filename, testdir+'/', destination=testSEs[0]))
+
+    print_("Testing move...")
+    assert(t2kdm.move(remotename, remotename+'2'))
+    assert(t2kdm.move(remotename+'2', remotename))
+    try:
+        t2kdm.move(remotename, remotename)
+    except backends.BackendException as e:
+        pass
+    else:
+        raise Exception("Moving to existing file names should not be possible.")
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work

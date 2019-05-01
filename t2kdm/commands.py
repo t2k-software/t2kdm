@@ -304,3 +304,17 @@ fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False,
 fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
+
+move = Command('move', t2kdm.interactive.move, "Move a single file to a new position.",
+    epilog="A recursive move only makes sense if the newremotepath is a directory (signified by a '/' at the end).")
+move.add_argument('oldremotepath', type=str,
+    help="the old remote logical path, e.g. '/nd280/file.txt'")
+move.add_argument('newremotepath', type=str,
+    help="the new remote logical path, e.g. '/nd280/new_file.txt' or '/new_folder/'")
+move.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
+move.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively move all files and subdirectories [that match REGEX] of a directory")
+move.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
+all_commands.append(move)
