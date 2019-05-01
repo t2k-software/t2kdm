@@ -32,14 +32,14 @@ class Command(object):
     `remotedir` is specified repectively.
     """
 
-    def __init__(self, name, function, description=""):
+    def __init__(self, name, function, description="", **kwargs):
         self.name = name
         self.function = function
         # Set prog to command name, iff we are running in the CLI
         if "t2kdm-cli" in sys.argv[0]:
-            self.parser = argparse.ArgumentParser(prog=name, description=description)
+            self.parser = argparse.ArgumentParser(prog=name, description=description, **kwargs)
         else:
-            self.parser = argparse.ArgumentParser(description=description)
+            self.parser = argparse.ArgumentParser(description=description, **kwargs)
         self.positional_arguments = []
         self.keyword_arguments = []
 
