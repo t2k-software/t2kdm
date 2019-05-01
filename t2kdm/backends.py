@@ -454,7 +454,7 @@ class GridBackend(object):
         if dst is None:
             raise BackendException("Could not find storage element %s.\n"%(destination,))
 
-        if not dst.has_replica(remotepath):
+        if not final and not dst.has_replica(remotepath):
             # Replica already not present at destination, nothing to do here
             if verbose:
                 print_("%s\nReplica not present at destination storage element %s."%(remotepath, dst.name,))
@@ -474,12 +474,17 @@ class GridBackend(object):
             raise BackendException("Only one replica of file left! Aborting.")
 
         destination_path = dst.get_replica(remotepath)
+        if destination_path is None:
+            destination_path = dst.get_storage_path(remotepath)
         lurl = self.get_lurl(remotepath)
 
         if deregister:
             return self.deregister(destination_path, remotepath)
         else:
-            return self._remove(destination_path, lurl, last=(nrep<=1), verbose=verbose, **kwargs)
+            # Only actually the last one if there is only one replica left
+            # And the se is the correct one
+            last = (nrep==0) or (nrep==1 and se.name==dst.name)
+            return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
 class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
