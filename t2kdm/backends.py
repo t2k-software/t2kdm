@@ -30,6 +30,7 @@ import posixpath
 import os, sys
 import uuid
 import time
+import re
 from t2kdm import storage
 from t2kdm.cache import Cache
 from six import print_
@@ -555,6 +556,11 @@ class GridBackend(object):
             return self.remove(remotepath, se, final=True, verbose=verbose)
         else:
             return False
+
+    def rename(self, remotepath, re_from, re_to, **kwargs):
+        """Rename a file using regular expressions."""
+        new_remotepath = re.sub(re_from, re_to, remotepath)
+        return self.move(remotepath, new_remotepath, **kwargs)
 
 class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""

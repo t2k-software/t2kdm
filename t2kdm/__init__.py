@@ -36,6 +36,7 @@ else:
     replicate = backend.replicate
     remove = backend.remove
     move = backend.move
+    rename = backend.rename
     get = backend.get
     put = backend.put
 

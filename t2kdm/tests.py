@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import sys, os, sh
 import tempfile
 import posixpath
+import re
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
@@ -213,6 +214,17 @@ def run_read_write_tests():
         pass
     else:
         raise Exception("Moving to existing file names should not be possible.")
+
+    print_("Testing rename...")
+    # Make sure the file does not exist
+    renamed = re.sub('txt', 'TXT', remotename)
+    try:
+        for SE in storage.SEs:
+            t2kdm.remove(renamed, SE.name, final=True)
+    except backends.DoesNotExistException:
+        pass
+    assert(t2kdm.rename(remotename, 'txt', 'TXT'))
+    assert(t2kdm.rename(renamed, 'TXT', 'txt'))
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work
