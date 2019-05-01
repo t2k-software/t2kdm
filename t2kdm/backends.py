@@ -409,8 +409,8 @@ class GridBackend(object):
         # Split the local path in dir and file
         path, base = posixpath.split(localpath)
 
-        # If the remotepath ends with '/', append the filename to it
-        if remotepath.endswith('/'):
+        # If the remotepath is a directory, append the filename to it
+        if remotepath[-1]==posixpath.sep or self.is_dir(remotepath):
             remotepath += base
 
         # Get the destination
