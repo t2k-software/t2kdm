@@ -162,6 +162,20 @@ class GridBackend(object):
         se = storage.get_SE(se)
         return self._is_dir_se(se.get_storage_path(remotepath))
 
+    def _is_file(self, lurl, **kwargs):
+        raise NotImplementedError()
+
+    @cache.cached
+    def is_file(self, remotepath, **kwargs):
+        """Chcek whether a file catalogue entry exists."""
+        return self._is_file(self.get_lurl(remotepath), **kwargs)
+
+    @cache.cached
+    def is_file_se(self, remotepath, se, **kwargs):
+        """Chcek whether a replica actually exists on a storage element."""
+        se = storage.get_SE(se)
+        return self._exists(se.get_storage_path(remotepath), **kwargs)
+
     def _exists(self, surl, **kwargs):
         raise NotImplementedError()
 
@@ -529,6 +543,11 @@ class DIRACBackend(GridBackend):
         isdir = self.fc.isDirectory(lurl)
         self._check_return_value(isdir)
         return isdir['Value']['Successful'][lurl]
+
+    def _is_file(self, lurl):
+        isfile = self.fc.isFile(lurl)
+        self._check_return_value(isfile)
+        return isfile['Value']['Successful'][lurl]
 
     def _get_dir_entry(self, lurl):
         """Take a lurl and return a DirEntry."""

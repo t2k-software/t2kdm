@@ -81,6 +81,14 @@ def run_read_only_tests():
     else:
         raise Exception("Did not find expected replica.")
 
+    print_("Testing is_file...")
+    assert(t2kdm.backend.is_file('/test/t2kdm/test1.txt'))
+    assert(not t2kdm.backend.is_file('/test/t2kdm/test666.txt'))
+
+    print_("Testing is_file_se...")
+    assert(t2kdm.backend.is_file_se('/test/t2kdm/test1.txt', testSEs[0]))
+    assert(not t2kdm.backend.is_file_se('/test/t2kdm/test666.txt', testSEs[0]))
+
     print_("Testing exists...")
     assert(t2kdm.backend.exists(rep))
     assert(not t2kdm.backend.exists(posixpath.dirname(rep)))
