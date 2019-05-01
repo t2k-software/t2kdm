@@ -480,9 +480,9 @@ class GridBackend(object):
         replicas = self.replicas(remotepath)
         nrep = 0
         for rep in replicas:
-            # Only count non-blacklisted replicas
+            # Only count non-blacklisted replicas that actually exist
             se = storage.get_SE(rep)
-            if se is not None and not se.is_blacklisted():
+            if se is not None and not se.is_blacklisted() and self.exists(rep):
                 nrep += 1
 
         if not final and nrep <= 1:
@@ -498,6 +498,7 @@ class GridBackend(object):
         else:
             # Only actually the last one if there is only one replica left
             # And the se is the correct one
+            # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
             last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
