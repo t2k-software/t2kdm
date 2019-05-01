@@ -13,6 +13,7 @@ from contextlib import contextmanager
 import sys, os, sh
 import tempfile
 import posixpath
+import re
 
 testdir = '/test/t2kdm'
 testfiles = ['test1.txt', 'test2.txt']
@@ -80,6 +81,14 @@ def run_read_only_tests():
             break
     else:
         raise Exception("Did not find expected replica.")
+
+    print_("Testing is_file...")
+    assert(t2kdm.backend.is_file('/test/t2kdm/test1.txt'))
+    assert(not t2kdm.backend.is_file('/test/t2kdm/test666.txt'))
+
+    print_("Testing is_file_se...")
+    assert(t2kdm.backend.is_file_se('/test/t2kdm/test1.txt', testSEs[0]))
+    assert(not t2kdm.backend.is_file_se('/test/t2kdm/test666.txt', testSEs[0]))
 
     print_("Testing exists...")
     assert(t2kdm.backend.exists(rep))
@@ -195,7 +204,28 @@ def run_read_write_tests():
         # Prepare something to upload
         with open(filename, 'wt') as f:
             f.write("This is testfile #3.\n")
-        t2kdm.put(filename, testdir+'/', destination=testSEs[0])
+        assert(t2kdm.put(filename, testdir+'/', destination=testSEs[0]))
+
+    print_("Testing move...")
+    assert(t2kdm.move(remotename, remotename+'2'))
+    assert(t2kdm.move(remotename+'2', remotename))
+    try:
+        t2kdm.move(remotename, remotename)
+    except backends.BackendException as e:
+        pass
+    else:
+        raise Exception("Moving to existing file names should not be possible.")
+
+    print_("Testing rename...")
+    # Make sure the file does not exist
+    renamed = re.sub('txt', 'TXT', remotename)
+    try:
+        for SE in storage.SEs:
+            t2kdm.remove(renamed, SE.name, final=True)
+    except backends.DoesNotExistException:
+        pass
+    assert(t2kdm.rename(remotename, 'txt', 'TXT'))
+    assert(t2kdm.rename(renamed, 'TXT', 'txt'))
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work

@@ -73,7 +73,7 @@ class StorageElement(object):
         if not check_dark:
             return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
         else:
-            return t2kdm.exists(self.get_storage_path(remotepath), cached=cached)
+            return t2kdm.is_file_se(remotepath, self, cached=cached)
 
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.

@@ -10,7 +10,7 @@ experiment.
 """
 
 setup(name='t2kdm',
-    version='1.4.0',
+    version='1.5.0',
     description=description,
     long_description=long_description,
     url='https://github.com/t2k-software/t2kdm',
@@ -58,6 +58,8 @@ setup(name='t2kdm',
             't2kdm-put=t2kdm.commands:put.run_from_console',
             't2kdm-check=t2kdm.commands:check.run_from_console',
             't2kdm-fix=t2kdm.commands:fix.run_from_console',
+            't2kdm-move=t2kdm.commands:move.run_from_console',
+            't2kdm-rename=t2kdm.commands:rename.run_from_console',
             't2kdm-cli=t2kdm.cli:run_cli',
             't2kdm-tests=t2kdm.tests:run_tests',
             't2kdm-config=t2kdm.configuration:run_configuration_wizard',

@@ -32,14 +32,14 @@ class Command(object):
     `remotedir` is specified repectively.
     """
 
-    def __init__(self, name, function, description=""):
+    def __init__(self, name, function, description="", **kwargs):
         self.name = name
         self.function = function
         # Set prog to command name, iff we are running in the CLI
         if "t2kdm-cli" in sys.argv[0]:
-            self.parser = argparse.ArgumentParser(prog=name, description=description)
+            self.parser = argparse.ArgumentParser(prog=name, description=description, **kwargs)
         else:
-            self.parser = argparse.ArgumentParser(description=description)
+            self.parser = argparse.ArgumentParser(description=description, **kwargs)
         self.positional_arguments = []
         self.keyword_arguments = []
 
@@ -300,7 +300,37 @@ fix.add_argument('remotepath', type=str,
 fix.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
-    help="recursively remove all files and subdirectories [that match REGEX] of a directory")
+    help="recursively fix all files and subdirectories [that match REGEX] of a directory")
 fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
+
+move = Command('move', t2kdm.interactive.move, "Move a file to a new position.",
+    epilog="A recursive move only makes sense if the newremotepath is a directory (signified by a '/' at the end).")
+move.add_argument('oldremotepath', type=str,
+    help="the old remote logical path, e.g. '/nd280/file.txt'")
+move.add_argument('newremotepath', type=str,
+    help="the new remote logical path, e.g. '/nd280/new_file.txt' or '/new_folder/'")
+move.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
+move.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively move all files and subdirectories [that match REGEX] of a directory")
+move.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
+all_commands.append(move)
+
+rename = Command('rename', t2kdm.interactive.rename, "Rename a file using regular expressions",
+    epilog="The regular expression is applied to the full path of the file!")
+rename.add_argument('remotepath', type=str,
+    help="the old remote logical path, e.g. '/nd280/file.txt'")
+rename.add_argument('regex_from', type=str,
+    help="the regular expression to be replaced, e.g. 't(.)t'")
+rename.add_argument('regex_to', type=str,
+    help="the regular expression to be put inplace, e.g. 'T\\1T'")
+rename.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
+rename.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
+    help="recursively rename all files and subdirectories [that match REGEX] of a directory")
+rename.add_argument('-l', '--list', metavar='FILENAME',
+    help="save a list of failed files to FILENAME")
+all_commands.append(rename)
