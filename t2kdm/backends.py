@@ -502,6 +502,20 @@ class GridBackend(object):
             last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
+    def _rmdir(self, lurl, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        raise NotImplementedError()
+
+    def rmdir(self, remotepath, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        if not self.is_dir(remotepath):
+            raise DoesNotExistException("No such directory.")
+
+        if len(self.ls(remotepath)) != 0:
+            raise BackendException("Directory is not empty!")
+
+        return self._rmdir(self.get_lurl(remotepath), verbose=verbose)
+
     def _move_replica(self, surl, new_surl, verbose=False):
         """Rename a replica on disk."""
         raise NotImplementedError()
@@ -887,6 +901,12 @@ class DIRACBackend(GridBackend):
             else:
                 raise BackendException(error)
 
+        return True
+
+    def _rmdir(self, lurl, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        rep = self.fc.removeDirectory(lurl)
+        self._check_return_value(rep)
         return True
 
     def _move_replica(self, surl, new_surl, verbose=False, **kwargs):

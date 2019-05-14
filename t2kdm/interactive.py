@@ -198,10 +198,17 @@ def remove(remotepath, *args, **kwargs):
     """Remove a file from a given SE."""
     _check_path(remotepath)
 
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
-
     ret = t2kdm.remove(remotepath, *args, **kwargs)
+    if ret == True:
+        return 0
+    else:
+        return 1
+
+def rmdir(remotepath, *args, **kwargs):
+    """Remove a directory from the catalogue."""
+    _check_path(remotepath)
+
+    ret = t2kdm.rmdir(remotepath, *args, **kwargs)
     if ret == True:
         return 0
     else:

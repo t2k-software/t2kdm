@@ -294,6 +294,11 @@ remove.add_argument('-x', '--deregister', action='store_true',
     help="deregister only, do NOT try to delete the actual replica (EXPERT OPTION)")
 all_commands.append(remove)
 
+rmdir = Command('rmdir', t2kdm.interactive.rmdir, "Remove empty directory from the catalogue.")
+rmdir.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/dir/'")
+all_commands.append(rmdir)
+
 fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")
 fix.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
