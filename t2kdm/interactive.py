@@ -149,8 +149,6 @@ def replicate(remotepath, *args, **kwargs):
     _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
 
     if bringonline:
         timeout = 2
@@ -169,8 +167,6 @@ def get(remotepath, *args, **kwargs):
     _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
 
     if bringonline:
         timeout = 2
