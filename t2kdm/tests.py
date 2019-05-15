@@ -147,6 +147,11 @@ def run_read_only_tests():
         with no_output(True):
             assert(t2kdm.interactive.check(testdir, se=testSEs[0:1], recursivese=testSEs[0], quiet=False, verbose=True) == 0)
 
+    print_("Testing HTML index...")
+    with temp_dir() as tempdir:
+        utils.html_index("/test/", tempdir)
+        utils.html_index("/test/", tempdir, recursive=True)
+
     print_("Testing Commands...")
     with no_output(True):
         assert(cmd.ls.run_from_cli('-l /') == False)

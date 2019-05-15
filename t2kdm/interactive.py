@@ -294,3 +294,11 @@ def print_storage_elements():
     for se in storage.SEs:
         print_(se)
     return 0
+
+def html_index(remotepath, localpath, **kwargs):
+    """Create a static html index of the catalogue."""
+    ret = utils.html_index(remotepath, localpath, **kwargs)
+    if ret >= 0: # html_index returns the size of directory contents
+        return 0
+    else:
+        return 1
