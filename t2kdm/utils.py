@@ -314,6 +314,9 @@ def fix_all(remotepath, verbose=False):
     success = success and fix_checksum_errors(remotepath, verbose=verbose)
     return success
 
+def _bgstyle(size):
+    return "background:linear-gradient(to left,#8888FF 0%%, #8888FF calc(100%% * %d / var(--maxsize)), #FFFFFF calc(100%% * %d / var(--maxsize)), #FFFFFF 100%%);"%(size,size)
+
 def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=False):
     """Generate a HTML index of the remote path in the local directory.
 
@@ -334,7 +337,7 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
         f.write("<tr><th>size</th><th>name</th></tr>\n")
         if topdir:
             # link to dir one level up
-            f.write("<tr><td>-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
+            f.write("<tr><td style=\"text-align:right;\">-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
         for entry in t2kdm.iter_ls(remotepath):
             path = posixpath.join(remotepath, entry.name)
             if t2kdm.is_dir(path):
@@ -346,14 +349,14 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
                         # directory probably exists
                         pass
                     sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
-                    f.write("<tr><td style=\"background:linear-gradient(to right,#8888FF 0%%, #8888FF calc(100%% * %d / var(--maxsize)), #FFFFFF calc(100%% * %d / var(--maxsize)), #FFFFFF 100%%);\">%d</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(sub_size, sub_size, sub_size, entry.name, entry.name))
+                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.name, entry.name))
                     size += sub_size
                     maxsize = max(maxsize, sub_size)
                 else:
-                    f.write("<tr><td>%d</td><td>%s/</td></tr>\n"%(entry.size, entry.name))
+                    f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s/</td></tr>\n"%(entry.size, entry.name))
             else:
                 # Not a dir
-                f.write("<tr><td style=\"background:linear-gradient(to right,#8888FF 0%%, #8888FF calc(100%% * %d / var(--maxsize)), #FFFFFF calc(100%% * %d / var(--maxsize)), #FFFFFF 100%%);\">%d</td><td>%s</td></tr>\n"%(entry.size, entry.size, entry.size, entry.name))
+                f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.name))
                 if entry.size > 0:
                     size += entry.size
                     maxsize = max(maxsize, entry.size)
