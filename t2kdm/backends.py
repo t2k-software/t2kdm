@@ -628,43 +628,48 @@ class DIRACBackend(GridBackend):
         self._check_return_value(isfile)
         return isfile['Value']['Successful'][lurl]
 
-    def _get_dir_entry(self, lurl):
+    def _get_dir_entry(self, lurl, infodict=None):
         """Take a lurl and return a DirEntry."""
-        md = self.fc.getFileMetadata(lurl)
-        if not md['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
-        for path, error in md['Value']['Failed'].items():
-            if 'No such file' in error:
-                # File does not exist, maybe a directory?
-                md = self.fc.getDirectoryMetadata(lurl)
-                for path, error in md['Value']['Failed'].items():
-                    raise DoesNotExistException("No such file or directory.")
-            else:
-                raise BackendException(md['Value']['Failed'][lurl])
-        md = md['Value']['Successful'][lurl]
+        # If no dctionary with the information is specified, get it from the catalogue
+        try:
+            md = infodict['MetaData']
+        except TypeError:
+            md = self.fc.getFileMetadata(lurl)
+            if not md['OK']:
+                raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
+            for path, error in md['Value']['Failed'].items():
+                if 'No such file' in error:
+                    # File does not exist, maybe a directory?
+                    md = self.fc.getDirectoryMetadata(lurl)
+                    for path, error in md['Value']['Failed'].items():
+                        raise DoesNotExistException("No such file or directory.")
+                else:
+                    raise BackendException(md['Value']['Failed'][lurl])
+            md = md['Value']['Successful'][lurl]
         return DirEntry(posixpath.basename(lurl), mode=oct(md['Mode']), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md['ModificationDate']))
 
     def _iter_directory(self, lurl):
         """Iterate over entries in a directory."""
 
-        lst = self.fc.listDirectory(lurl)
-        if not lst['OK']:
+        ret = self.fc.listDirectory(lurl)
+        if not ret['OK']:
             raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
-        for path, error in lst['Value']['Failed'].items():
+        for path, error in ret['Value']['Failed'].items():
             if 'Directory does not' in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
-                    lst = [lurl]
+                    lst = [(lurl, None)]
                     break
                 else:
                     raise DoesNotExistException("No such file or Directory.")
             else:
-                raise BackendException(lst['Value']['Failed'][lurl])
+                raise BackendException(ret['Value']['Failed'][lurl])
         else:
-            lst = sorted(lst['Value']['Successful'][lurl]['Files'].keys() + lst['Value']['Successful'][lurl]['SubDirs'].keys())
+            # Sort items by keys, i.e. paths
+            lst = sorted(ret['Value']['Successful'][lurl]['Files'].items() + ret['Value']['Successful'][lurl]['SubDirs'].items())
 
-        for path in lst:
-            yield path
+        for item in lst:
+            yield item # = path, dict
 
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
@@ -675,9 +680,8 @@ class DIRACBackend(GridBackend):
             yield self._get_dir_entry(lurl)
             return
 
-        for path in self._iter_directory(lurl):
-            # TODO: Possible optimisation, listDirectory already conatins all information, is it cached?
-            yield self._get_dir_entry(path)
+        for path, info in self._iter_directory(lurl):
+            yield self._get_dir_entry(path, info)
 
     def _ls_se(self, surl, **kwargs):
         # Translate keyword arguments
