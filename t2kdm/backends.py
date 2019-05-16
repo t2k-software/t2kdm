@@ -494,7 +494,7 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
 
         if deregister:
-            return self.deregister(destination_path, remotepath)
+            return self.deregister(destination_path, remotepath, verbose=verbose)
         else:
             # Only actually the last one if there is only one replica left
             # And the se is the correct one
