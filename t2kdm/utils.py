@@ -334,7 +334,7 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
     maxsize = 1
     with open(index_name, 'wt') as f:
         f.write("<html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
-        f.write("<tr><th>size</th><th>name</th></tr>\n")
+        f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
         if topdir:
             # link to dir one level up
             f.write("<tr><td style=\"text-align:right;\">-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
@@ -349,17 +349,17 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
                         # directory probably exists
                         pass
                     sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
-                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.name, entry.name))
+                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.modified, entry.name, entry.name))
                     size += sub_size
                     maxsize = max(maxsize, sub_size)
                 else:
-                    f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s/</td></tr>\n"%(entry.size, entry.name))
+                    f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s</td><td>%s/</td></tr>\n"%(entry.size, entry.modified, entry.name))
             else:
                 # Not a dir
-                f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.name))
+                f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.modified, entry.name))
                 if entry.size > 0:
                     size += entry.size
                     maxsize = max(maxsize, entry.size)
-        f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d}</style></body></html>\n"%(size,maxsize))
+        f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(size,maxsize))
 
     return size
