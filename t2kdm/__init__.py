@@ -35,6 +35,7 @@ else:
     state = backend.state
     replicate = backend.replicate
     remove = backend.remove
+    rmdir = backend.rmdir
     move = backend.move
     rename = backend.rename
     get = backend.get

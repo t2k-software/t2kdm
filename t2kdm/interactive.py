@@ -149,8 +149,6 @@ def replicate(remotepath, *args, **kwargs):
     _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
 
     if bringonline:
         timeout = 2
@@ -169,8 +167,6 @@ def get(remotepath, *args, **kwargs):
     _check_path(remotepath)
 
     bringonline = kwargs.pop('bringonline', False)
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
 
     if bringonline:
         timeout = 2
@@ -198,10 +194,17 @@ def remove(remotepath, *args, **kwargs):
     """Remove a file from a given SE."""
     _check_path(remotepath)
 
-    verbose = kwargs.pop('verbose', False)
-    kwargs['verbose'] = verbose
-
     ret = t2kdm.remove(remotepath, *args, **kwargs)
+    if ret == True:
+        return 0
+    else:
+        return 1
+
+def rmdir(remotepath, *args, **kwargs):
+    """Remove a directory from the catalogue."""
+    _check_path(remotepath)
+
+    ret = t2kdm.rmdir(remotepath, *args, **kwargs)
     if ret == True:
         return 0
     else:
@@ -291,3 +294,11 @@ def print_storage_elements():
     for se in storage.SEs:
         print_(se)
     return 0
+
+def html_index(remotepath, localpath, **kwargs):
+    """Create a static html index of the catalogue."""
+    ret = utils.html_index(remotepath, localpath, **kwargs)
+    if ret >= 0: # html_index returns the size of directory contents
+        return 0
+    else:
+        return 1

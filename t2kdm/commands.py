@@ -294,6 +294,11 @@ remove.add_argument('-x', '--deregister', action='store_true',
     help="deregister only, do NOT try to delete the actual replica (EXPERT OPTION)")
 all_commands.append(remove)
 
+rmdir = Command('rmdir', t2kdm.interactive.rmdir, "Remove empty directory from the catalogue.")
+rmdir.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/dir/'")
+all_commands.append(rmdir)
+
 fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")
 fix.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
@@ -304,6 +309,17 @@ fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False,
 fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
+
+html_index = Command('html_index', t2kdm.interactive.html_index, "Generate HTML index of a catalogue directory.")
+html_index.add_argument('remotepath', type=str,
+    help="the remote logical path, e.g. '/nd280/'")
+html_index.add_argument('localpath', type=str,
+    help="the local directory to create the index in, e.g. './html/'")
+html_index.add_argument('-v', '--verbose', action='store_true',
+    help="print status messages to the screen")
+html_index.add_argument('-r', '--recursive', action='store_true',
+    help="recursively create index of all subdirectories")
+all_commands.append(html_index)
 
 move = Command('move', t2kdm.interactive.move, "Move a file to a new position.",
     epilog="A recursive move only makes sense if the newremotepath is a directory (signified by a '/' at the end).")

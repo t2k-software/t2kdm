@@ -313,3 +313,53 @@ def fix_all(remotepath, verbose=False):
     success = success and fix_missing_files(remotepath, verbose=verbose)
     success = success and fix_checksum_errors(remotepath, verbose=verbose)
     return success
+
+def _bgstyle(size):
+    return "background:linear-gradient(to left,#8888FF 0%%, #8888FF calc(100%% * %d / var(--maxsize)), #FFFFFF calc(100%% * %d / var(--maxsize)), #FFFFFF 100%%);"%(size,size)
+
+def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=False):
+    """Generate a HTML index of the remote path in the local directory.
+
+    Returns the sum of the file sizes in the directory.
+    """
+
+    if not os.path.isdir(localdir):
+        raise IOError("No such directory.")
+
+    if verbose:
+        print_("Creating index for %s..."%(remotepath,))
+
+    index_name = os.path.join(localdir, "index.html")
+    size = 0
+    maxsize = 1
+    with open(index_name, 'wt') as f:
+        f.write("<html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
+        f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
+        if topdir:
+            # link to dir one level up
+            f.write("<tr><td style=\"text-align:right;\">-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
+        for entry in t2kdm.iter_ls(remotepath):
+            path = posixpath.join(remotepath, entry.name)
+            if t2kdm.is_dir(path):
+                if recursive:
+                    newdir = os.path.join(localdir, entry.name)
+                    try:
+                        os.mkdir(newdir)
+                    except OSError:
+                        # directory probably exists
+                        pass
+                    sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
+                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.modified, entry.name, entry.name))
+                    size += sub_size
+                    maxsize = max(maxsize, sub_size)
+                else:
+                    f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s</td><td>%s/</td></tr>\n"%(entry.size, entry.modified, entry.name))
+            else:
+                # Not a dir
+                f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.modified, entry.name))
+                if entry.size > 0:
+                    size += entry.size
+                    maxsize = max(maxsize, entry.size)
+        f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(size,maxsize))
+
+    return size

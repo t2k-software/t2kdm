@@ -147,6 +147,11 @@ def run_read_only_tests():
         with no_output(True):
             assert(t2kdm.interactive.check(testdir, se=testSEs[0:1], recursivese=testSEs[0], quiet=False, verbose=True) == 0)
 
+    print_("Testing HTML index...")
+    with temp_dir() as tempdir:
+        utils.html_index("/test/", tempdir)
+        utils.html_index("/test/", tempdir, recursive=True)
+
     print_("Testing Commands...")
     with no_output(True):
         assert(cmd.ls.run_from_cli('-l /') == False)
@@ -207,8 +212,8 @@ def run_read_write_tests():
         assert(t2kdm.put(filename, testdir+'/', destination=testSEs[0]))
 
     print_("Testing move...")
-    assert(t2kdm.move(remotename, remotename+'2'))
-    assert(t2kdm.move(remotename+'2', remotename))
+    assert(t2kdm.move(remotename, remotename+'dir/test.txt'))
+    assert(t2kdm.move(remotename+'dir/test.txt', remotename))
     try:
         t2kdm.move(remotename, remotename)
     except backends.BackendException as e:
@@ -226,6 +231,15 @@ def run_read_write_tests():
         pass
     assert(t2kdm.rename(remotename, 'txt', 'TXT'))
     assert(t2kdm.rename(renamed, 'TXT', 'txt'))
+
+    print_("Testing rmdir...")
+    assert(t2kdm.rmdir(remotename+'dir/'))
+    try:
+        t2kdm.rmdir(remotename+'dir/')
+    except backends.DoesNotExistException:
+        pass
+    else:
+        raise Exception("Should have failed to delete a dir that is not there.")
 
     print_("Testing disk SEs...")
     # Replicate test file to all SEs, to see if they all work

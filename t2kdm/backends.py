@@ -480,9 +480,9 @@ class GridBackend(object):
         replicas = self.replicas(remotepath)
         nrep = 0
         for rep in replicas:
-            # Only count non-blacklisted replicas
+            # Only count non-blacklisted replicas that actually exist
             se = storage.get_SE(rep)
-            if se is not None and not se.is_blacklisted():
+            if se is not None and not se.is_blacklisted() and self.exists(rep):
                 nrep += 1
 
         if not final and nrep <= 1:
@@ -494,12 +494,27 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
 
         if deregister:
-            return self.deregister(destination_path, remotepath)
+            return self.deregister(destination_path, remotepath, verbose=verbose)
         else:
             # Only actually the last one if there is only one replica left
             # And the se is the correct one
+            # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
             last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
+
+    def _rmdir(self, lurl, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        raise NotImplementedError()
+
+    def rmdir(self, remotepath, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        if not self.is_dir(remotepath):
+            raise DoesNotExistException("No such directory.")
+
+        if len(self.ls(remotepath)) != 0:
+            raise BackendException("Directory is not empty!")
+
+        return self._rmdir(self.get_lurl(remotepath), verbose=verbose)
 
     def _move_replica(self, surl, new_surl, verbose=False):
         """Rename a replica on disk."""
@@ -613,43 +628,48 @@ class DIRACBackend(GridBackend):
         self._check_return_value(isfile)
         return isfile['Value']['Successful'][lurl]
 
-    def _get_dir_entry(self, lurl):
+    def _get_dir_entry(self, lurl, infodict=None):
         """Take a lurl and return a DirEntry."""
-        md = self.fc.getFileMetadata(lurl)
-        if not md['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
-        for path, error in md['Value']['Failed'].items():
-            if 'No such file' in error:
-                # File does not exist, maybe a directory?
-                md = self.fc.getDirectoryMetadata(lurl)
-                for path, error in md['Value']['Failed'].items():
-                    raise DoesNotExistException("No such file or directory.")
-            else:
-                raise BackendException(md['Value']['Failed'][lurl])
-        md = md['Value']['Successful'][lurl]
+        # If no dctionary with the information is specified, get it from the catalogue
+        try:
+            md = infodict['MetaData']
+        except TypeError:
+            md = self.fc.getFileMetadata(lurl)
+            if not md['OK']:
+                raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
+            for path, error in md['Value']['Failed'].items():
+                if 'No such file' in error:
+                    # File does not exist, maybe a directory?
+                    md = self.fc.getDirectoryMetadata(lurl)
+                    for path, error in md['Value']['Failed'].items():
+                        raise DoesNotExistException("No such file or directory.")
+                else:
+                    raise BackendException(md['Value']['Failed'][lurl])
+            md = md['Value']['Successful'][lurl]
         return DirEntry(posixpath.basename(lurl), mode=oct(md['Mode']), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md['ModificationDate']))
 
     def _iter_directory(self, lurl):
         """Iterate over entries in a directory."""
 
-        lst = self.fc.listDirectory(lurl)
-        if not lst['OK']:
+        ret = self.fc.listDirectory(lurl)
+        if not ret['OK']:
             raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
-        for path, error in lst['Value']['Failed'].items():
+        for path, error in ret['Value']['Failed'].items():
             if 'Directory does not' in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
-                    lst = [lurl]
+                    lst = [(lurl, None)]
                     break
                 else:
                     raise DoesNotExistException("No such file or Directory.")
             else:
-                raise BackendException(lst['Value']['Failed'][lurl])
+                raise BackendException(ret['Value']['Failed'][lurl])
         else:
-            lst = sorted(lst['Value']['Successful'][lurl]['Files'].keys() + lst['Value']['Successful'][lurl]['SubDirs'].keys())
+            # Sort items by keys, i.e. paths
+            lst = sorted(ret['Value']['Successful'][lurl]['Files'].items() + ret['Value']['Successful'][lurl]['SubDirs'].items())
 
-        for path in lst:
-            yield path
+        for item in lst:
+            yield item # = path, dict
 
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
@@ -660,9 +680,8 @@ class DIRACBackend(GridBackend):
             yield self._get_dir_entry(lurl)
             return
 
-        for path in self._iter_directory(lurl):
-            # TODO: Possible optimisation, listDirectory already conatins all information, is it cached?
-            yield self._get_dir_entry(path)
+        for path, info in self._iter_directory(lurl):
+            yield self._get_dir_entry(path, info)
 
     def _ls_se(self, surl, **kwargs):
         # Translate keyword arguments
@@ -886,6 +905,12 @@ class DIRACBackend(GridBackend):
             else:
                 raise BackendException(error)
 
+        return True
+
+    def _rmdir(self, lurl, verbose=False):
+        """Remove the an empty directory from the catalogue."""
+        rep = self.fc.removeDirectory(lurl)
+        self._check_return_value(rep)
         return True
 
     def _move_replica(self, surl, new_surl, verbose=False, **kwargs):
