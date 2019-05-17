@@ -4,8 +4,8 @@ from six import print_
 import sh
 import shlex
 import argparse
-import t2kdm as dm
-import t2kdm.interactive as interactive
+import hkdm as dm
+import hkdm.interactive as interactive
 import sys
 from os import path
 import posixpath

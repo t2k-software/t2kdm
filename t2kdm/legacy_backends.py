@@ -3,7 +3,7 @@
 These might or might not work.
 """
 
-from t2kdm.backends import *
+from hkdm.backends import *
 
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""

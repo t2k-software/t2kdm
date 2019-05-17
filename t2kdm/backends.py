@@ -31,8 +31,8 @@ import os, sys
 import uuid
 import time
 import re
-from t2kdm import storage
-from t2kdm.cache import Cache
+from hkdm import storage
+from hkdm.cache import Cache
 from six import print_
 
 # Add the option to cache the output of functions for 60 seconds.
@@ -70,12 +70,12 @@ class GridBackend(object):
 
         Accepts the follwoing keyword arguments:
 
-        basedir: String. Default: '/t2k.org'
+        basedir: String. Default: '/hyperk.org'
             Sets the base directory of the backend.
             All paths are specified relative to that position.
         """
 
-        self.baseurl = kwargs.pop('catalogue_prefix', '') + kwargs.pop('basedir', '/t2k.org')
+        self.baseurl = kwargs.pop('catalogue_prefix', '') + kwargs.pop('basedir', '/hyperk.org')
         if len(kwargs) > 0:
             raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
 
@@ -937,10 +937,10 @@ def get_backend(config):
     """Return the backend according to the provided configuration."""
 
     if config.backend == 'lcg':
-        from t2kdm.legacy_backends import LCGBackend
+        from hkdm.legacy_backends import LCGBackend
         return LCGBackend(basedir = config.basedir)
     if config.backend == 'gfal':
-        from t2kdm.legacy_backends import GFALBackend
+        from hkdm.legacy_backends import GFALBackend
         return GFALBackend(basedir = config.basedir)
     if config.backend == 'dirac':
         return DIRACBackend(basedir = config.basedir)

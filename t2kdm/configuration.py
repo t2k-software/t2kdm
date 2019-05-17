@@ -8,7 +8,7 @@ from os import path
 
 # The software can be modified for use with other experiments
 # The "branding" is used to make this easier
-_branding = "t2kdm"
+_branding = "hkdm"
 app_dirs = AppDirs(_branding, _branding)
 
 default_values = {
@@ -94,9 +94,9 @@ def load_config():
 
     # Try different paths to find the configuration file
     for testpath in [
-            path.join(os.getcwd(), '.%s.conf'%(_branding,)), # 1. ./.t2kdm.conf
-            path.join(app_dirs.user_config_dir, '%s.conf'%(_branding,)), # 2. user_config_dir, on linux: ~/.config/t2kdm/t2kdm.conf
-            path.join(app_dirs.site_config_dir, '%s.conf'%(_branding,)), # 2. site_config_dir, on linux: /etc/t2kdm/t2kdm.conf
+            path.join(os.getcwd(), '.%s.conf'%(_branding,)), # 1. ./.hkdm.conf
+            path.join(app_dirs.user_config_dir, '%s.conf'%(_branding,)), # 2. user_config_dir, on linux: ~/.config/hkdm/hkdm.conf
+            path.join(app_dirs.site_config_dir, '%s.conf'%(_branding,)), # 2. site_config_dir, on linux: /etc/hkdm/hkdm.conf
             ]:
         if path.isfile(testpath):
             return Configuration(testpath, defaults=default_values)
@@ -108,7 +108,7 @@ def run_configuration_wizard():
     """Run a configuration wizard to create a valid configuration file."""
 
     import argparse # import here because it is usually not needed by this module
-    parser = argparse.ArgumentParser(description="Configure the T2K Data Manager")
+    parser = argparse.ArgumentParser(description="Configure the HyperK Data Manager")
     parser.add_argument('-l', '--local', action='store_true',
         help="save the configuration file in the current diractory as '.%s.conf'"%(_branding,))
 

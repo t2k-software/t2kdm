@@ -7,9 +7,9 @@ import os, sys, sh
 import tempfile
 from contextlib import contextmanager
 import re
-import t2kdm as dm
-from t2kdm import backends
-from t2kdm import storage
+import hkdm as dm
+from hkdm import backends
+from hkdm import storage
 
 def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=False):
     """Iter over remote paths recursively.

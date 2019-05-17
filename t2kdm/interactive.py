@@ -5,10 +5,10 @@ See 'commands' module for descriptions of the parameters.
 
 from six import print_
 import re
-import t2kdm as dm
-from t2kdm import storage
-from t2kdm import utils
-from t2kdm import backends
+import hkdm as dm
+from hkdm import storage
+from hkdm import utils
+from hkdm import backends
 
 class InteractiveException(Exception):
     """Exception to be raised for interactive errors, e.g. an illegal user argument."""

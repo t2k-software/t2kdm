@@ -4,8 +4,8 @@ import argparse
 from six.moves import configparser, html_entities
 import base64
 from six import print_
-import t2kdm as dm
-import t2kdm.commands as commands
+import hkdm as dm
+import hkdm.commands as commands
 from contextlib import contextmanager
 import sys, os
 import sh
@@ -195,7 +195,7 @@ class Task(object):
         return '%s_Task'%(self.frequency,)
 
 class CommandTask(Task):
-    """General task based on the commands in t2kdm.commands."""
+    """General task based on the commands in hkdm.commands."""
 
     def __init__(self, **kwargs):
         self.commandline = kwargs.pop('commandline')
@@ -489,10 +489,10 @@ class Maid(object):
                 <html lang="en">
                   <head>
                     <meta charset="utf-8">
-                    <title>T2K Data Manager - Maid Report</title>
+                    <title>HyperK Data Manager - Maid Report</title>
                   </head>
                   <body>
-                    <h1>T2K Data Manager - Maid Report</h1>
+                    <h1>HyperK Data Manager - Maid Report</h1>
                     <h2>{timestamp}</h2>
                     <table>
                       {taskrows}
@@ -631,7 +631,7 @@ def run_maid():
     Intended to be run multiple times per day, but at least daily.
     """
 
-    parser = argparse.ArgumentParser(description="Regular housekeeping for the T2K data. Run at least daily!")
+    parser = argparse.ArgumentParser(description="Regular housekeeping for the HyperK data. Run at least daily!")
     parser.add_argument('-e', '--eager', action='store_true',
                         help="do a task, even if it is not due yet")
     parser.add_argument('-r', '--report', metavar='FOLDER', default=None,

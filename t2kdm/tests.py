@@ -1,11 +1,11 @@
-"""Tests for the T2K data Manager."""
+"""Tests for the HyperK data Manager."""
 
-import t2kdm as dm
-import t2kdm.commands as cmd
-import t2kdm.cli as cli
-from  t2kdm import backends
-from  t2kdm import storage
-from  t2kdm import utils
+import hkdm as dm
+import hkdm.commands as cmd
+import hkdm.cli as cli
+from  hkdm import backends
+from  hkdm import storage
+from  hkdm import utils
 
 import argparse
 from six import print_
@@ -173,7 +173,7 @@ def run_read_only_tests():
             assert(com.run_from_cli('') == False)
 
     print_("Testing CLI...")
-    cli = dm.cli.T2KDmCli()
+    cli = dm.cli.HyperKDmCli()
     with no_output(True):
         cli.onecmd('help ls')
         cli.onecmd('ls .')
@@ -281,7 +281,7 @@ def run_read_write_tests():
 def run_tests():
     """Test the functions of the data manager."""
 
-    parser = argparse.ArgumentParser(description="Run tests for the T2K Data Manager.")
+    parser = argparse.ArgumentParser(description="Run tests for the HyperK Data Manager.")
     parser.add_argument('-w', '--write', action='store_true',
         help="do write tests. Default: read only")
     parser.add_argument('-b', '--backend', default=None,

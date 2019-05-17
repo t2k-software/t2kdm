@@ -7,14 +7,14 @@ import shlex
 import argparse
 import os
 import posixpath
-import t2kdm as dm
-from t2kdm.commands import all_commands
+import hkdm as dm
+from hkdm.commands import all_commands
 
 def ls(*args, **kwargs):
     return [x.name for x in dm.iter_ls(*args, cached=True, **kwargs)]
 
-class T2KDmCli(cmd.Cmd):
-    """T2K Data Manager Command Line Interface (CLI)
+class HyperKDmCli(cmd.Cmd):
+    """HyperK Data Manager Command Line Interface (CLI)
 
     The CLI makes it possible to comfortably browse the grid files. All commands
     that are exposed as stand-alone scripts are also available in the CLI. This is
@@ -22,7 +22,8 @@ class T2KDmCli(cmd.Cmd):
     `commands` module.
     """
 
-    intro = """Welcome to the T2K Data Manager CLI.
+    intro = """Welcome to the HyperK Data Manager CLI.
+A fork of the T2K Data Manager.
   ____  ___   _  _  ____  __  __       ___  __    ____
  (_  _)(__ \ ( )/ )(  _ \(  \/  )___  / __)(  )  (_  _)
    )(   / _/ |   (  )(_) ))    ((___)( (__  )(__  _)(_
@@ -192,23 +193,23 @@ for command in all_commands:
     # Also need to pass the command as default value of argument,
     # so it does not change when the variable `command` changes.
     do_cmd = lambda cli, arg, com=command: com.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir)
-    setattr(T2KDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
+    setattr(HyperKDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
 
     help_name = 'help_'+command.name
     # Since this is a method, the first argument will be the CLI instance
     # Also need to pass the command as default value of argument,
     # so it does not change when the variable `command` changes.
     help_cmd = lambda cli, com=command: com.run_from_cli('-h')
-    setattr(T2KDmCli, help_name, help_cmd) # Set the `help_X` attribute of the class
+    setattr(HyperKDmCli, help_name, help_cmd) # Set the `help_X` attribute of the class
 
 def run_cli():
-    """ Start the T2K Data Manager - Command Line Interface."""
+    """ Start the HyperK Data Manager - Command Line Interface."""
 
-    parser = argparse.ArgumentParser(description="Starts the T2K Data Manager - Command Line Interface.")
+    parser = argparse.ArgumentParser(description="Starts the HyperK Data Manager - Command Line Interface.")
     args = parser.parse_args()
 
     try:
-        T2KDmCli().cmdloop()
+        HyperKDmCli().cmdloop()
     except KeyboardInterrupt: # Exit gracefully on CTRL-C
         print_('')
 

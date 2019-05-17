@@ -1,15 +1,15 @@
 from setuptools import setup
 
 # Todo: Parse this from a proper readme file in the future
-description='T2K Data Manager'
-long_description = """t2kdm - T2K Data Manager
+description='HyperK Data Manager'
+long_description = """hkdm - HyperK Data Manager
 
-Provides functions for a smoother handling of grid data within the T2K
-experiment.
+Provides functions for a smoother handling of grid data within the HyperK
+experiment. A fork of the T2K Data Manager t2kdm.
 
 """
 
-setup(name='t2kdm',
+setup(name='hkdm',
     version='1.6.1-dev',
     description=description,
     long_description=long_description,
@@ -17,7 +17,7 @@ setup(name='t2kdm',
     author='Lukas Koch',
     author_email='lukas.koch@mailbox.org',
     license='MIT',
-    packages=['t2kdm'],
+    packages=['hkdm'],
     install_requires=[
         'sh>=1.12.14',
         'six>=1.10.0',
@@ -49,23 +49,23 @@ setup(name='t2kdm',
     ],
     entry_points = {
         'console_scripts': [
-            't2kdm-ls=t2kdm.commands:ls.run_from_console',
-            't2kdm-replicas=t2kdm.commands:replicas.run_from_console',
-            't2kdm-replicate=t2kdm.commands:replicate.run_from_console',
-            't2kdm-remove=t2kdm.commands:remove.run_from_console',
-            't2kdm-rmdir=t2kdm.commands:rmdir.run_from_console',
-            't2kdm-SEs=t2kdm.commands:SEs.run_from_console',
-            't2kdm-get=t2kdm.commands:get.run_from_console',
-            't2kdm-put=t2kdm.commands:put.run_from_console',
-            't2kdm-check=t2kdm.commands:check.run_from_console',
-            't2kdm-fix=t2kdm.commands:fix.run_from_console',
-            't2kdm-html-index=t2kdm.commands:html_index.run_from_console',
-            't2kdm-move=t2kdm.commands:move.run_from_console',
-            't2kdm-rename=t2kdm.commands:rename.run_from_console',
-            't2kdm-cli=t2kdm.cli:run_cli',
-            't2kdm-tests=t2kdm.tests:run_tests',
-            't2kdm-config=t2kdm.configuration:run_configuration_wizard',
-            't2kdm-maid=t2kdm.maid:run_maid',
+            'hkdm-ls=hkdm.commands:ls.run_from_console',
+            'hkdm-replicas=hkdm.commands:replicas.run_from_console',
+            'hkdm-replicate=hkdm.commands:replicate.run_from_console',
+            'hkdm-remove=hkdm.commands:remove.run_from_console',
+            'hkdm-rmdir=hkdm.commands:rmdir.run_from_console',
+            'hkdm-SEs=hkdm.commands:SEs.run_from_console',
+            'hkdm-get=hkdm.commands:get.run_from_console',
+            'hkdm-put=hkdm.commands:put.run_from_console',
+            'hkdm-check=hkdm.commands:check.run_from_console',
+            'hkdm-fix=hkdm.commands:fix.run_from_console',
+            'hkdm-html-index=hkdm.commands:html_index.run_from_console',
+            'hkdm-move=hkdm.commands:move.run_from_console',
+            'hkdm-rename=hkdm.commands:rename.run_from_console',
+            'hkdm-cli=hkdm.cli:run_cli',
+            'hkdm-tests=hkdm.tests:run_tests',
+            'hkdm-config=hkdm.configuration:run_configuration_wizard',
+            'hkdm-maid=hkdm.maid:run_maid',
         ],
     },
     zip_safe=True)

@@ -1,6 +1,6 @@
-"""T2K Data Manager
+"""HyperK Data Manager
 
-Helpful tools to manage the T2K data on the grid.
+Helpful tools to manage the HyperK data on the grid.
 """
 
 import configuration
