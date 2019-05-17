@@ -1,7 +1,7 @@
 """Module to organise storage elements."""
 
 import posixpath
-import t2kdm
+import t2kdm as dm
 from six import print_
 
 class StorageElement(object):
@@ -27,21 +27,21 @@ class StorageElement(object):
 
     def is_blacklisted(self):
         """Is the SE blacklisted?"""
-        return self.broken or self.name in t2kdm.config.blacklist
+        return self.broken or self.name in dm.config.blacklist
 
     def get_storage_path(self, remotepath):
         """Generate the standard storage path for this SE from a logical file name."""
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return (self.basepath + t2kdm.config.basedir + remotepath).strip()
+        return (self.basepath + dm.config.basedir + remotepath).strip()
 
     def get_logical_path(self, surl):
         """Try to get the logical remotepath from a surl."""
         remotepath = None
         if surl.startswith(self.basepath):
             remotepath = surl[len(self.basepath):]
-        if remotepath.startswith(t2kdm.config.basedir):
-            remotepath = remotepath[len(t2kdm.config.basedir):]
+        if remotepath.startswith(dm.config.basedir):
+            remotepath = remotepath[len(dm.config.basedir):]
         return remotepath
 
     def get_distance(self, other):
@@ -59,7 +59,7 @@ class StorageElement(object):
 
     def get_replica(self, remotepath, cached=False):
         """Return the replica of the file on this SM."""
-        for rep in t2kdm.replicas(remotepath, cached=cached):
+        for rep in dm.replicas(remotepath, cached=cached):
             if self.host in rep:
                 return rep.strip()
         # Replica not found
@@ -71,9 +71,9 @@ class StorageElement(object):
         If `check_dark` is `True`, check the physical file location, instead of relying on the catalogue.
         """
         if not check_dark:
-            return any(self.host in replica for replica in t2kdm.replicas(remotepath, cached=cached))
+            return any(self.host in replica for replica in dm.replicas(remotepath, cached=cached))
         else:
-            return t2kdm.is_file_se(remotepath, self, cached=cached)
+            return dm.is_file_se(remotepath, self, cached=cached)
 
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
@@ -100,7 +100,7 @@ class StorageElement(object):
             candidates = SEs
         else:
             candidates = []
-            for rep in t2kdm.replicas(remotepath, cached=cached):
+            for rep in dm.replicas(remotepath, cached=cached):
                 cand = get_SE_by_path(rep)
                 if cand is not None:
                     candidates.append(cand)
@@ -238,9 +238,9 @@ def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
     """
 
     if location is None:
-        location = t2kdm.config.location
+        location = dm.config.location
         if location == '/':
-            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `t2kdm-config`?\nWARNING:")
+            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `%s-config`?\nWARNING:"%(_branding,))
 
     # Create a pseudo SE with the correct location
     SE = StorageElement('local',

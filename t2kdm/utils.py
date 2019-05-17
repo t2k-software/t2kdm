@@ -7,7 +7,7 @@ import os, sys, sh
 import tempfile
 from contextlib import contextmanager
 import re
-import t2kdm
+import t2kdm as dm
 from t2kdm import backends
 from t2kdm import storage
 
@@ -26,7 +26,7 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
     # Check both in the file catalogue and on the storage element,
     # because the directory might not yet exist in the catalogue.
     try:
-        isdir = t2kdm.is_dir(remotepath, cached=True) or (se is not None and t2kdm.is_dir_se(remotepath, se, cached=True))
+        isdir = dm.is_dir(remotepath, cached=True) or (se is not None and dm.is_dir_se(remotepath, se, cached=True))
     except Exception as e:
         print_("Recursion failure!")
         if ignore_exceptions:
@@ -38,9 +38,9 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
     if isdir:
         try:
             if se is None:
-                entries = t2kdm.iter_ls(remotepath)
+                entries = dm.iter_ls(remotepath)
             else:
-                entries = t2kdm.iter_ls_se(remotepath, se)
+                entries = dm.iter_ls_se(remotepath, se)
         except Exception as e:
             print_("Recursion failure!")
             if ignore_exceptions:
@@ -59,14 +59,14 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
 def check_checksums(remotepath, cached=False):
     """Check if the checksums of all replicas are identical."""
 
-    replicas = t2kdm.replicas(remotepath, cached=cached)
-    checksum = t2kdm.checksum(replicas[0], cached=cached)
+    replicas = dm.replicas(remotepath, cached=cached)
+    checksum = dm.checksum(replicas[0], cached=cached)
 
     if '?' in checksum:
         return False
 
     for rep in replicas[1:]:
-        if t2kdm.checksum(rep, cached=cached) != checksum:
+        if dm.checksum(rep, cached=cached) != checksum:
             return False
 
     return True
@@ -74,10 +74,10 @@ def check_checksums(remotepath, cached=False):
 def check_replica_states(remotepath, cached=False):
     """Check if the state of all replicas."""
 
-    replicas = t2kdm.replicas(remotepath, cached=cached)
+    replicas = dm.replicas(remotepath, cached=cached)
 
     for rep in replicas:
-        if t2kdm.state(rep, cached=cached) not in ['ONLINE', 'NEARLINE', 'ONLINE_AND_NEARLINE']:
+        if dm.state(rep, cached=cached) not in ['ONLINE', 'NEARLINE', 'ONLINE_AND_NEARLINE']:
             return False
 
     return True
@@ -112,7 +112,7 @@ def fix_known_bad_SEs(remotepath, verbose=False):
 
     success = True
 
-    replicas = t2kdm.replicas(remotepath)
+    replicas = dm.replicas(remotepath)
     for replica in replicas:
         se = storage.get_SE(replica)
         if se is None:
@@ -122,7 +122,7 @@ def fix_known_bad_SEs(remotepath, verbose=False):
             if verbose:
                 print_("Found replica on bad storage element. Unregistering replica: "+replica)
             try:
-                t2kdm.backend.deregister(replica, remotepath, verbose=verbose)
+                dm.backend.deregister(replica, remotepath, verbose=verbose)
             except backends.BackendException():
                 if verbose:
                     print_("Failed to deregister replica.")
@@ -138,7 +138,7 @@ def fix_missing_files(remotepath, verbose=False):
 
     success = True
 
-    replicas = t2kdm.replicas(remotepath)
+    replicas = dm.replicas(remotepath)
     existing = []
     for rep in replicas:
         se = storage.get_SE(rep)
@@ -150,7 +150,7 @@ def fix_missing_files(remotepath, verbose=False):
             success = False
         else:
             try:
-                exists = t2kdm.exists(rep)
+                exists = dm.exists(rep)
             except backends.BackendException:
                 if verbose:
                     print_("WARNING: Could not check whether replica exists: "+rep)
@@ -176,7 +176,7 @@ def fix_missing_files(remotepath, verbose=False):
             if se is not None:
                 ses.append(se)
                 try:
-                    t2kdm.backend.deregister(replica, remotepath, verbose=verbose)
+                    dm.backend.deregister(replica, remotepath, verbose=verbose)
                 except backends.BackendException():
                     if verbose:
                         print_("Failed to deregister replica.")
@@ -190,7 +190,7 @@ def fix_missing_files(remotepath, verbose=False):
         if verbose:
             print_("Replicating missing replica on " + se.name)
         try:
-            t2kdm.replicate(remotepath, se, verbose=verbose)
+            dm.replicate(remotepath, se, verbose=verbose)
         except backends.BackendException():
             if verbose:
                 print_("Failed to replicate File.")
@@ -207,9 +207,9 @@ def _test_replica(replica, verbose=False):
     try:
         if verbose:
             print_("Downloading and checking replica: "+replica)
-        t2kdm.backend._get(replica, tempf, verbose=verbose)
+        dm.backend._get(replica, tempf, verbose=verbose)
 
-        remote_checksum = t2kdm.checksum(replica)
+        remote_checksum = dm.checksum(replica)
         local_checksum = sh.adler32(tempf).strip()
 
         if local_checksum != remote_checksum:
@@ -239,8 +239,8 @@ def fix_checksum_errors(remotepath, verbose=False):
     Otherwise there is no way to decide which file is actually the correct one.
     """
 
-    replicas = t2kdm.replicas(remotepath)
-    checksums = [t2kdm.checksum(r) for r in replicas]
+    replicas = dm.replicas(remotepath)
+    checksums = [dm.checksum(r) for r in replicas]
 
     if len(set(checksums)) == 1 and '?' not in checksums[0]:
         # Nothing to do here
@@ -291,7 +291,7 @@ def fix_checksum_errors(remotepath, verbose=False):
         if verbose:
             print_("Removing bad replica from %s."%(SE.name,))
         try:
-            t2kdm.remove(remotepath, SE, verbose=verbose)
+            dm.remove(remotepath, SE, verbose=verbose)
         except:
             success = False
 
@@ -299,7 +299,7 @@ def fix_checksum_errors(remotepath, verbose=False):
         if verbose:
             print_("Re-replicating file on %s."%(SE.name,))
         try:
-            t2kdm.replicate(remotepath, SE, verbose=verbose)
+            dm.replicate(remotepath, SE, verbose=verbose)
         except:
             success = False
 
@@ -338,9 +338,9 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
         if topdir:
             # link to dir one level up
             f.write("<tr><td style=\"text-align:right;\">-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
-        for entry in t2kdm.iter_ls(remotepath):
+        for entry in dm.iter_ls(remotepath):
             path = posixpath.join(remotepath, entry.name)
-            if t2kdm.is_dir(path):
+            if dm.is_dir(path):
                 if recursive:
                     newdir = os.path.join(localdir, entry.name)
                     try:

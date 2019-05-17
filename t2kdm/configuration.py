@@ -3,9 +3,13 @@
 from six.moves import configparser, input
 from six import print_
 from appdirs import AppDirs
-app_dirs = AppDirs('t2kdm', 't2k.org')
 import os
 from os import path
+
+# The software can be modified for use with other experiments
+# The "branding" is used to make this easier
+_branding = "t2kdm"
+app_dirs = AppDirs(_branding, _branding)
 
 default_values = {
     'backend':      'dirac',
@@ -26,9 +30,9 @@ descriptions = {
                     "Examples: /europe/uk/ral\n"\
                     "          /americas/ca/triumf\n"\
                     "          /asia/jp/kek\n"\
-                    "You can see the locations of all available SEs by running `t2kdm-SEs`.",
-    'maid_config':  "Where the configuration file for the `t2kdm-maid` command is stored.\n"\
-                    "If you do not deal with raw data replication, don't worry about it.\n",
+                    "You can see the locations of all available SEs by running `%s-SEs`."%(_branding,),
+    'maid_config':  "Where the configuration file for the `%s-maid` command is stored.\n"\
+                    "If you do not deal with raw data replication, don't worry about it.\n"%(_branding,),
     'blacklist':    "Blacklist storage elements from being used automatically.\n"\
                     "They can still be specified explicitly.\n"\
                     "Provide the list as whitespace-separated list of SE names.\n"\
@@ -90,9 +94,9 @@ def load_config():
 
     # Try different paths to find the configuration file
     for testpath in [
-            path.join(os.getcwd(), '.t2kdm.conf'), # 1. ./.t2kdm.conf
-            path.join(app_dirs.user_config_dir, 't2kdm.conf'), # 2. user_config_dir, on linux: ~/.config/t2kdm/t2kdm.conf
-            path.join(app_dirs.site_config_dir, 't2kdm.conf'), # 2. site_config_dir, on linux: /etc/t2kdm/t2kdm.conf
+            path.join(os.getcwd(), '.%s.conf'%(_branding,)), # 1. ./.t2kdm.conf
+            path.join(app_dirs.user_config_dir, '%s.conf'%(_branding,)), # 2. user_config_dir, on linux: ~/.config/t2kdm/t2kdm.conf
+            path.join(app_dirs.site_config_dir, '%s.conf'%(_branding,)), # 2. site_config_dir, on linux: /etc/t2kdm/t2kdm.conf
             ]:
         if path.isfile(testpath):
             return Configuration(testpath, defaults=default_values)
@@ -106,7 +110,7 @@ def run_configuration_wizard():
     import argparse # import here because it is usually not needed by this module
     parser = argparse.ArgumentParser(description="Configure the T2K Data Manager")
     parser.add_argument('-l', '--local', action='store_true',
-        help="save the configuration file in the current diractory as '.t2kdm.conf'")
+        help="save the configuration file in the current diractory as '.%s.conf'"%(_branding,))
 
     args = parser.parse_args()
 
@@ -132,9 +136,9 @@ def run_configuration_wizard():
             setattr(conf, key, new_value)
 
     if args.local:
-        outf = path.join(os.getcwd(), '.t2kdm.conf')
+        outf = path.join(os.getcwd(), '.%s.conf'%(_branding,))
     else:
-        outf = path.join(app_dirs.user_config_dir, 't2kdm.conf')
+        outf = path.join(app_dirs.user_config_dir, '%s.conf'%(_branding,))
 
     print_("Saving configuration in %s"%(outf,))
     try:

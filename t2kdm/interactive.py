@@ -5,7 +5,7 @@ See 'commands' module for descriptions of the parameters.
 
 from six import print_
 import re
-import t2kdm
+import t2kdm as dm
 from t2kdm import storage
 from t2kdm import utils
 from t2kdm import backends
@@ -101,9 +101,9 @@ def ls(remotepath, *args, **kwargs):
     long = kwargs.pop('long', False)
     se = kwargs.pop('se', None)
     if se is None:
-        entries = t2kdm.iter_ls(remotepath, *args, **kwargs)
+        entries = dm.iter_ls(remotepath, *args, **kwargs)
     else:
-        entries = t2kdm.iter_ls_se(remotepath, *args, se=se, **kwargs)
+        entries = dm.iter_ls_se(remotepath, *args, se=se, **kwargs)
     if long:
         # Detailed listing
         for e in entries:
@@ -128,14 +128,14 @@ def replicas(remotepath, *args, **kwargs):
     checksum = kwargs.pop('checksum', False)
     state = kwargs.pop('state', False)
     name = kwargs.pop('name', False)
-    reps = t2kdm.replicas(remotepath, *args, **kwargs)
+    reps = dm.replicas(remotepath, *args, **kwargs)
     for r in reps:
         if checksum:
-            print_(t2kdm.checksum(r), end=' ')
+            print_(dm.checksum(r), end=' ')
         if state:
-            print_(t2kdm.state(r), end=' ')
+            print_(dm.state(r), end=' ')
         if name:
-            se = t2kdm.storage.get_SE(r)
+            se = dm.storage.get_SE(r)
             if se is None:
                 print_('?', end=' ')
             else:
@@ -155,7 +155,7 @@ def replicate(remotepath, *args, **kwargs):
     else:
         timeout = 60*60*6
 
-    ret = t2kdm.replicate(remotepath, *args, bringonline_timeout=timeout, **kwargs)
+    ret = dm.replicate(remotepath, *args, bringonline_timeout=timeout, **kwargs)
     if ret is False:
         return 1
     else:
@@ -173,7 +173,7 @@ def get(remotepath, *args, **kwargs):
     else:
         timeout = 60*60*6
 
-    ret = t2kdm.get(remotepath, *args, bringonline_timeout=timeout, **kwargs)
+    ret = dm.get(remotepath, *args, bringonline_timeout=timeout, **kwargs)
     if ret is False:
         return 1
     else:
@@ -183,7 +183,7 @@ def put(localpath, remotepath, *args, **kwargs):
     """Upload a file to the grid."""
     _check_path(remotepath)
 
-    ret = t2kdm.put(localpath, remotepath, *args, **kwargs)
+    ret = dm.put(localpath, remotepath, *args, **kwargs)
     if ret:
         return 0
     else:
@@ -194,7 +194,7 @@ def remove(remotepath, *args, **kwargs):
     """Remove a file from a given SE."""
     _check_path(remotepath)
 
-    ret = t2kdm.remove(remotepath, *args, **kwargs)
+    ret = dm.remove(remotepath, *args, **kwargs)
     if ret == True:
         return 0
     else:
@@ -204,7 +204,7 @@ def rmdir(remotepath, *args, **kwargs):
     """Remove a directory from the catalogue."""
     _check_path(remotepath)
 
-    ret = t2kdm.rmdir(remotepath, *args, **kwargs)
+    ret = dm.rmdir(remotepath, *args, **kwargs)
     if ret == True:
         return 0
     else:
@@ -216,7 +216,7 @@ def move(oldremotepath, newremotepath, *args, **kwargs):
     _check_path(oldremotepath)
     _check_path(newremotepath)
 
-    ret = t2kdm.move(oldremotepath, newremotepath, *args, **kwargs)
+    ret = dm.move(oldremotepath, newremotepath, *args, **kwargs)
     if ret == True:
         return 0
     else:
@@ -227,7 +227,7 @@ def rename(remotepath, regex_from, regex_to, *args, **kwargs):
     """Rename a file."""
     _check_path(remotepath)
 
-    ret = t2kdm.rename(remotepath, regex_from, regex_to, *args, **kwargs)
+    ret = dm.rename(remotepath, regex_from, regex_to, *args, **kwargs)
     if ret == True:
         return 0
     else:
@@ -247,7 +247,7 @@ def check(remotepath, *args, **kwargs):
     if checksum == False and len(ses) == 0 and states == False:
         raise InteractiveException("No check specified.")
 
-    if t2kdm.is_dir(remotepath, cached=True):
+    if dm.is_dir(remotepath, cached=True):
         raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
     ret = True
@@ -255,14 +255,14 @@ def check(remotepath, *args, **kwargs):
     if len(ses) > 0:
         if verbose:
             print_("Checking replicas...")
-        ret = ret and t2kdm.check_replicas(remotepath, ses, cached=True)
+        ret = ret and dm.check_replicas(remotepath, ses, cached=True)
         if not ret and not quiet:
             print_("%s is not replicated on all SEs!"%(remotepath))
 
     if checksum:
         if verbose:
             print_("Checking checksums...")
-        chk = t2kdm.check_checksums(remotepath, cached=True)
+        chk = dm.check_checksums(remotepath, cached=True)
         if not chk and not quiet:
             print_("%s has faulty checksums!"%(remotepath))
         ret = ret and chk
@@ -270,7 +270,7 @@ def check(remotepath, *args, **kwargs):
     if states:
         if verbose:
             print_("Checking replica states...")
-        stat = t2kdm.check_replica_states(remotepath, cached=True)
+        stat = dm.check_replica_states(remotepath, cached=True)
         if not stat and not quiet:
             print_("%s has faulty replica states!"%(remotepath))
         ret = ret and stat
