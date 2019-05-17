@@ -7,11 +7,11 @@ import shlex
 import argparse
 import os
 import posixpath
-import t2kdm
+import t2kdm as dm
 from t2kdm.commands import all_commands
 
 def ls(*args, **kwargs):
-    return [x.name for x in t2kdm.iter_ls(*args, cached=True, **kwargs)]
+    return [x.name for x in dm.iter_ls(*args, cached=True, **kwargs)]
 
 class T2KDmCli(cmd.Cmd):
     """T2K Data Manager Command Line Interface (CLI)
@@ -30,7 +30,7 @@ class T2KDmCli(cmd.Cmd):
 
 Type 'help' or '?' to list commands.
 """
-    prompt = '(t2kdm) '
+    prompt = '(%s) '%(dm._branding)
 
     def __init__(self, *args, **kwargs):
         cmd.Cmd.__init__(self, *args, **kwargs)
@@ -76,11 +76,11 @@ Type 'help' or '?' to list commands.
         # Let us see whether the path exists
         try:
             ls(pwd)
-        except t2kdm.backends.DoesNotExistException as e:
+        except dm.backends.DoesNotExistException as e:
             print_(e)
         else:
             # And whether it is a directory
-            if t2kdm.is_dir(pwd, cached=True):
+            if dm.is_dir(pwd, cached=True):
                 self.remotedir = pwd
             else:
                 print_("ERROR, not a directory: %s"%(pwd,))
@@ -177,7 +177,7 @@ Type 'help' or '?' to list commands.
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = posixpath.join(searchdir, l)
-                    if t2kdm.is_dir(posixpath.join(abs_searchdir, l), cached=True):
+                    if dm.is_dir(posixpath.join(abs_searchdir, l), cached=True):
                         cand += posixpath.sep
                     candidates.append(cand[text_offset:])
 

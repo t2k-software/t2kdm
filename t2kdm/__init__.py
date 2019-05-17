@@ -4,13 +4,14 @@ Helpful tools to manage the T2K data on the grid.
 """
 
 import configuration
+from configuration import _branding
 import backends
 import storage
 import utils
 import sys
 
-if sys.argv[0].endswith('t2kdm-config'):
-    # Someone is calling t2kdm-config.
+if sys.argv[0].endswith('%s-config'%(_branding,)):
+    # Someone is calling <brandname>-config.
     # Do not try to load any configuration, as that is what they might be trying to fix!
     pass
 else:

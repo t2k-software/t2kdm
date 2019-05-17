@@ -4,8 +4,8 @@ from six import print_
 import sh
 import shlex
 import argparse
-import t2kdm
-import t2kdm.interactive
+import t2kdm as dm
+import t2kdm.interactive as interactive
 import sys
 from os import path
 import posixpath
@@ -21,7 +21,7 @@ class Command(object):
 
     Example:
 
-        ls = Command('ls', t2kdm.interactive.ls, "List contents of a remote logical path.")
+        ls = Command('ls', interactive.ls, "List contents of a remote logical path.")
         ls.add_argument('remotepath', type=str,
             help="the logical path, e.g. '/nd280'")
         ls.add_argument('-l', '--long', action='store_true',
@@ -36,7 +36,7 @@ class Command(object):
         self.name = name
         self.function = function
         # Set prog to command name, iff we are running in the CLI
-        if "t2kdm-cli" in sys.argv[0]:
+        if '%s-cli'%(dm._branding) in sys.argv[0]:
             self.parser = argparse.ArgumentParser(prog=name, description=description, **kwargs)
         else:
             self.parser = argparse.ArgumentParser(description=description, **kwargs)
@@ -74,10 +74,10 @@ class Command(object):
 
         try:
             ret = self.run(self.parser.parse_args(), **kwargs)
-        except t2kdm.backends.BackendException as e:
+        except dm.backends.BackendException as e:
             print_(e, file=sys.stderr)
             return 1
-        except t2kdm.interactive.InteractiveException as e:
+        except interactive.InteractiveException as e:
             print_(e, file=sys.stderr)
             return 1
         except IOError as e:
@@ -108,9 +108,9 @@ class Command(object):
         ret = False
         try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
             ret = self.run_from_arglist(args, **kwargs)
-        except t2kdm.backends.BackendException as e:
+        except dm.backends.BackendException as e:
             print_(e)
-        except t2kdm.interactive.InteractiveException as e:
+        except interactive.InteractiveException as e:
             print_(e)
         except Exception as e:
             print_(e)
@@ -144,7 +144,7 @@ class Command(object):
             # Get all entries in the directory and replace the @ with the (lexigraphically) last one
             dirname, basename = posixpath.split(value)
             if basename == '@':
-                entries = [x.name for x in t2kdm.ls(dirname)]
+                entries = [x.name for x in dm.ls(dirname)]
                 entries.sort()
                 value = posixpath.join(dirname, entries[-1])
 
@@ -176,7 +176,7 @@ class Command(object):
         """Call the underlying function directly."""
         return self.function(*args, **kwargs)
 
-ls = Command('ls', t2kdm.interactive.ls, "List contents of a remote logical path.")
+ls = Command('ls', interactive.ls, "List contents of a remote logical path.")
 ls.add_argument('remotepath', type=str, nargs='?', default='',
     help="the remote logical path, e.g. '/nd280'")
 ls.add_argument('-l', '--long', action='store_true',
@@ -187,7 +187,7 @@ ls.add_argument('-s', '--se', type=str, default=None,
     help="list physical contents on this SE rather than the file catalogue")
 all_commands.append(ls)
 
-replicas = Command('replicas', t2kdm.interactive.replicas, "List replicas of a remote logical path.")
+replicas = Command('replicas', interactive.replicas, "List replicas of a remote logical path.")
 replicas.add_argument('remotepath', type=str, nargs='?', default='',
     help="the remote logical path, e.g. '/nd280/file.txt'")
 replicas.add_argument('-c', '--checksum', action='store_true',
@@ -198,7 +198,7 @@ replicas.add_argument('-n', '--name', action='store_true',
     help="display the name of the storage element")
 all_commands.append(replicas)
 
-check = Command('check', t2kdm.interactive.check, "Check the replicas of a given file/directory.")
+check = Command('check', interactive.check, "Check the replicas of a given file/directory.")
 check.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280'")
 check.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False, const=True,
@@ -219,7 +219,7 @@ check.add_argument('-S', '--states', action='store_true',
     help="checl whether all replicas are in a resonable state ('ONLINE', 'NEARLINE', or 'ONLINE_AND_NEARLINE')")
 all_commands.append(check)
 
-replicate = Command('replicate', t2kdm.interactive.replicate, "Replicate file to a storage element.")
+replicate = Command('replicate', interactive.replicate, "Replicate file to a storage element.")
 replicate.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 replicate.add_argument('destination', type=str,
@@ -240,7 +240,7 @@ replicate.add_argument('-x', '--bringonline', action='store_true',
     help="do not wait for tape replicas to come online (EXPERT OPTION)")
 all_commands.append(replicate)
 
-get = Command('get', t2kdm.interactive.get, "Download file from grid.")
+get = Command('get', interactive.get, "Download file from grid.")
 get.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 get.add_argument('localpath', type=str, nargs='?', default='./',
@@ -261,7 +261,7 @@ get.add_argument('-x', '--bringonline', action='store_true',
     help="do not wait for tape replicas to come online (EXPERT OPTION)")
 all_commands.append(get)
 
-put = Command('put', t2kdm.interactive.put, "Upload file to the grid.")
+put = Command('put', interactive.put, "Upload file to the grid.")
 put.add_argument('localpath', type=str,
     help="the file to be uploaded")
 put.add_argument('remotepath', type=str,
@@ -274,10 +274,10 @@ put.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 all_commands.append(put)
 
-SEs = Command('SEs', t2kdm.interactive.print_storage_elements, "Print all available storage elements on screen.")
+SEs = Command('SEs', interactive.print_storage_elements, "Print all available storage elements on screen.")
 all_commands.append(SEs)
 
-remove = Command('remove', t2kdm.interactive.remove, "Remove file replica from a storage element, if it is not the last one.")
+remove = Command('remove', interactive.remove, "Remove file replica from a storage element, if it is not the last one.")
 remove.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 remove.add_argument('destination', type=str,
@@ -294,12 +294,12 @@ remove.add_argument('-x', '--deregister', action='store_true',
     help="deregister only, do NOT try to delete the actual replica (EXPERT OPTION)")
 all_commands.append(remove)
 
-rmdir = Command('rmdir', t2kdm.interactive.rmdir, "Remove empty directory from the catalogue.")
+rmdir = Command('rmdir', interactive.rmdir, "Remove empty directory from the catalogue.")
 rmdir.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/dir/'")
 all_commands.append(rmdir)
 
-fix = Command('fix', t2kdm.interactive.fix, "Try to fix some common issues with a file.")
+fix = Command('fix', interactive.fix, "Try to fix some common issues with a file.")
 fix.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/file.txt'")
 fix.add_argument('-v', '--verbose', action='store_true',
@@ -310,7 +310,7 @@ fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
 
-html_index = Command('html_index', t2kdm.interactive.html_index, "Generate HTML index of a catalogue directory.")
+html_index = Command('html_index', interactive.html_index, "Generate HTML index of a catalogue directory.")
 html_index.add_argument('remotepath', type=str,
     help="the remote logical path, e.g. '/nd280/'")
 html_index.add_argument('localpath', type=str,
@@ -321,7 +321,7 @@ html_index.add_argument('-r', '--recursive', action='store_true',
     help="recursively create index of all subdirectories")
 all_commands.append(html_index)
 
-move = Command('move', t2kdm.interactive.move, "Move a file to a new position.",
+move = Command('move', interactive.move, "Move a file to a new position.",
     epilog="A recursive move only makes sense if the newremotepath is a directory (signified by a '/' at the end).")
 move.add_argument('oldremotepath', type=str,
     help="the old remote logical path, e.g. '/nd280/file.txt'")
@@ -335,7 +335,7 @@ move.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(move)
 
-rename = Command('rename', t2kdm.interactive.rename, "Rename a file using regular expressions",
+rename = Command('rename', interactive.rename, "Rename a file using regular expressions",
     epilog="The regular expression is applied to the full path of the file!")
 rename.add_argument('remotepath', type=str,
     help="the old remote logical path, e.g. '/nd280/file.txt'")

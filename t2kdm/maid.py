@@ -4,9 +4,8 @@ import argparse
 from six.moves import configparser, html_entities
 import base64
 from six import print_
-import t2kdm
-import t2kdm.cli
-import t2kdm.commands
+import t2kdm as dm
+import t2kdm.commands as commands
 from contextlib import contextmanager
 import sys, os
 import sh
@@ -201,7 +200,7 @@ class CommandTask(Task):
     def __init__(self, **kwargs):
         self.commandline = kwargs.pop('commandline')
         command, argstr = self.commandline.split(' ', 1)
-        for cmd in t2kdm.commands.all_commands:
+        for cmd in commands.all_commands:
             if cmd.name == command:
                 self.command = cmd
                 self.argstr = argstr
@@ -639,7 +638,7 @@ def run_maid():
                         help="generate an html report in the given folder")
     args = parser.parse_args()
 
-    maid = Maid(t2kdm.config.maid_config, report=args.report)
+    maid = Maid(dm.config.maid_config, report=args.report)
     maid.do_something(eager=args.eager)
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-"""Backends to be used by the t2kdm.
+"""Backends to be used by the data manager.
 
 Backends do the actual work on the grid and provide the API to do stuff more conveniently.
 User output for itneractive commands is handled in the 'interactive' module.
