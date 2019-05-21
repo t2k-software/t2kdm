@@ -331,37 +331,41 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
     if verbose:
         print_("Creating index for %s..."%(remotepath,))
 
-    index_name = os.path.join(localdir, "index.html")
-    size = 0
-    maxsize = 1
-    with open(index_name, 'wt') as f:
-        f.write("<html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
-        f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
-        if topdir:
-            # link to dir one level up
-            f.write("<tr><td style=\"text-align:right;\">-</td><td>-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
-        for entry in dm.iter_ls(remotepath):
-            path = posixpath.join(remotepath, entry.name)
-            if dm.is_dir(path):
-                if recursive:
-                    newdir = os.path.join(localdir, entry.name)
-                    try:
-                        os.mkdir(newdir)
-                    except OSError:
-                        # directory probably exists
-                        pass
-                    sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
-                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.modified, entry.name, entry.name))
-                    size += sub_size
-                    maxsize = max(maxsize, sub_size)
+    with temp_dir() as tempdir:
+        index_name = os.path.join(tempdir, "index.html")
+        size = 0
+        maxsize = 1
+        with open(index_name, 'wt') as f:
+            f.write("<html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
+            f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
+            if topdir:
+                # link to dir one level up
+                f.write("<tr><td style=\"text-align:right;\">-</td><td>-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
+            for entry in dm.iter_ls(remotepath):
+                path = posixpath.join(remotepath, entry.name)
+                if dm.is_dir(path):
+                    if recursive:
+                        newdir = os.path.join(localdir, entry.name)
+                        try:
+                            os.mkdir(newdir)
+                        except OSError:
+                            # directory probably exists
+                            pass
+                        sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
+                        f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.modified, entry.name, entry.name))
+                        size += sub_size
+                        maxsize = max(maxsize, sub_size)
+                    else:
+                        f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s</td><td>%s/</td></tr>\n"%(entry.size, entry.modified, entry.name))
                 else:
-                    f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s</td><td>%s/</td></tr>\n"%(entry.size, entry.modified, entry.name))
-            else:
-                # Not a dir
-                f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.modified, entry.name))
-                if entry.size > 0:
-                    size += entry.size
-                    maxsize = max(maxsize, entry.size)
-        f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(size,maxsize))
+                    # Not a dir
+                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.modified, entry.name))
+                    if entry.size > 0:
+                        size += entry.size
+                        maxsize = max(maxsize, entry.size)
+            f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(size,maxsize))
+
+        # Move file over
+        sh.mv(index_name, localdir)
 
     return size
