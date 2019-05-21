@@ -10,7 +10,7 @@ experiment. A fork of the T2K Data Manager t2kdm.
 """
 
 setup(name='hkdm',
-    version='1.6.1-dev',
+    version='1.6.1',
     description=description,
     long_description=long_description,
     url='https://github.com/t2k-software/t2kdm',
