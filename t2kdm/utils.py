@@ -11,6 +11,14 @@ import t2kdm as dm
 from t2kdm import backends
 from t2kdm import storage
 
+@contextmanager
+def temp_dir():
+    tempdir = tempfile.mkdtemp()
+    try:
+        yield tempdir
+    finally:
+        sh.rm('-r', tempdir)
+
 def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=False):
     """Iter over remote paths recursively.
 
@@ -201,10 +209,8 @@ def fix_missing_files(remotepath, verbose=False):
 def _test_replica(replica, verbose=False):
     """Test whether a replica has the checksum it reports and whether it passes the gzip test."""
 
-    tempdir = tempfile.mkdtemp()
-    tempf = os.path.join(tempdir, 'temp.gz')
-
-    try:
+    with temp_dir() as tempdir:
+        tempf = os.path.join(tempdir, 'temp.gz')
         if verbose:
             print_("Downloading and checking replica: "+replica)
         dm.backend._get(replica, tempf, verbose=verbose)
@@ -227,10 +233,6 @@ def _test_replica(replica, verbose=False):
             return False
         else:
             return True
-
-    finally:
-        sh.rm('-f', tempf)
-        sh.rmdir(tempdir)
 
 def fix_checksum_errors(remotepath, verbose=False):
     """Fix replicas with differing checksums.
