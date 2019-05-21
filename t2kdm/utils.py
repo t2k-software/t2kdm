@@ -337,7 +337,7 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
         f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
         if topdir:
             # link to dir one level up
-            f.write("<tr><td style=\"text-align:right;\">-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
+            f.write("<tr><td style=\"text-align:right;\">-</td><td>-</td><td><a href=\"../index.html\">../</a></td></tr>\n")
         for entry in dm.iter_ls(remotepath):
             path = posixpath.join(remotepath, entry.name)
             if dm.is_dir(path):
