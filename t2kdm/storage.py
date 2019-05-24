@@ -7,7 +7,7 @@ from six import print_
 class StorageElement(object):
     """Representation of a grid storage element"""
 
-    def __init__(self, name, host, type, location, basepath, broken=False):
+    def __init__(self, name, host, type, location, basepath, directpath=None, broken=False):
         """Initialise StorageElement.
 
         `name`: Identifier for element
@@ -15,12 +15,17 @@ class StorageElement(object):
         `type`: Storage type of element ('tape' or 'disk')
         `location`: Location of the SE, e.g. '/europe/uk/ral'
         `basepath`: Base path for standard storage paths on element
+        `directpath`: Base path for direct access of data on the storage element (optional)
         `broken`: Is the SE broken and should not be used? Equivalent to a forced blacklisting.
         """
 
         self.name = name
         self.host = host
         self.basepath = basepath
+        if directpath is None:
+            self.directpath = basepath
+        else:
+            self.directpath = directpath
         self.location = location
         self.type = type
         self.broken = broken
@@ -29,11 +34,17 @@ class StorageElement(object):
         """Is the SE blacklisted?"""
         return self.broken or self.name in dm.config.blacklist
 
-    def get_storage_path(self, remotepath):
-        """Generate the standard storage path for this SE from a logical file name."""
+    def get_storage_path(self, remotepath, direct=False):
+        """Generate the standard storage path for this SE from a logical file name.
+
+        Use the "directpath" instead of the basepath if `direct` is `True`.
+        """
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return (self.basepath + dm.config.basedir + remotepath).strip()
+        if direct:
+            return (self.directpath + dm.config.basedir + remotepath).strip()
+        else:
+            return (self.basepath + dm.config.basedir + remotepath).strip()
 
     def get_logical_path(self, surl):
         """Try to get the logical remotepath from a surl."""
@@ -175,6 +186,7 @@ SEs = [
         host = 'se03.esc.qmul.ac.uk',
         type = 'disk',
         location = '/europe/uk/london/qmul',
+        directpath = 'root://xrootd.esc.qmul.ac.uk/t2k.org',
         basepath = 'srm://se03.esc.qmul.ac.uk:8444/srm/managerv2?SFN=/t2k.org'),
     StorageElement('IN2P3-CC-disk',
         broken = True,
