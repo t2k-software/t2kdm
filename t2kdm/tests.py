@@ -157,10 +157,10 @@ def run_read_only_tests():
     print_("Testing Commands...")
     with no_output(True):
         assert(cmd.ls.run_from_cli('-l /') == False)
-        assert(cmd.ls.run_from_cli('.') == False)
+        assert(cmd.ls.run_from_cli('/', _return=True) == 0)
 
-        cmd.ls.run_from_cli('abc') # This should not work, but not throw exception
-        cmd.ls.run_from_cli('"abc') # This should not work, but not throw exception
+        assert(cmd.ls.run_from_cli('abc') == False) # This should not work, but not throw exception
+        assert(cmd.ls.run_from_cli('"abc', _return=True) != 0) # This should not work, but not throw exception
         with fake_argv(['%s-ls'%(dm._branding,), '/']):
             assert(cmd.ls.run_from_console() == 0) # This should work
         with fake_argv(['%s-cli'%(dm._branding), '/']):

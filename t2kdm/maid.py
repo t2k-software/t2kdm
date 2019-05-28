@@ -210,6 +210,7 @@ class CommandTask(Task):
         super(CommandTask, self).__init__(**kwargs)
 
     def _do(self):
+        # Check interactive command for success return code
         return self.command.run_from_cli(self.argstr, _return=True) == 0
 
     def __str__(self):
