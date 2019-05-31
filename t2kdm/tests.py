@@ -194,7 +194,7 @@ def run_read_write_tests():
     print_("Testing replicate...")
     with no_output():
         assert(dm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
-        assert(dm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[2], verbose=True) == 0)
+        assert(dm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[2]\.t.t$', source=testSEs[0], verbose=True) == 0)
 
     print_("Testing put...")
     with temp_dir() as tempdir:
