@@ -319,6 +319,20 @@ def fix_all(remotepath, verbose=False):
 def _bgstyle(size):
     return "background:linear-gradient(to left,#8888FF 0%%, #8888FF calc(100%% * %d / var(--maxsize)), #FFFFFF calc(100%% * %d / var(--maxsize)), #FFFFFF 100%%);"%(size,size)
 
+def _number_chunks(number):
+    number = str(number)
+    n = len(number)
+    while n > 0:
+        x = n % 3
+        if x == 0:
+            x = 3
+        yield number[0:x]
+        number = number[x:]
+        n = len(number)
+
+def _format_number(number):
+    return '<span style="margin-left:3pt"></span>'.join(_number_chunks(number))
+
 def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=False):
     """Generate a HTML index of the remote path in the local directory.
 
@@ -352,18 +366,18 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
                             # directory probably exists
                             pass
                         sub_size = html_index(path, newdir, recursive=True, topdir=True, verbose=verbose)
-                        f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), sub_size, entry.modified, entry.name, entry.name))
+                        f.write("<tr><td style=\"text-align:right;%s\">%s</td><td>%s</td><td><a href=\"%s/index.html\">%s/</a></td></tr>\n"%(_bgstyle(sub_size), _format_number(sub_size), entry.modified, entry.name, entry.name))
                         size += sub_size
                         maxsize = max(maxsize, sub_size)
                     else:
-                        f.write("<tr><td style=\"text-align:right;\">%d</td><td>%s</td><td>%s/</td></tr>\n"%(entry.size, entry.modified, entry.name))
+                        f.write("<tr><td style=\"text-align:right;\">%s</td><td>%s</td><td>%s/</td></tr>\n"%(_format_number(entry.size), entry.modified, entry.name))
                 else:
                     # Not a dir
-                    f.write("<tr><td style=\"text-align:right;%s\">%d</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), entry.size, entry.modified, entry.name))
+                    f.write("<tr><td style=\"text-align:right;%s\">%s</td><td>%s</td><td>%s</td></tr>\n"%(_bgstyle(entry.size), _format_number(entry.size), entry.modified, entry.name))
                     if entry.size > 0:
                         size += entry.size
                         maxsize = max(maxsize, entry.size)
-            f.write("</table><p>Total size: %d</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(size,maxsize))
+            f.write("</table><p>Total size: %s</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(_format_number(size),maxsize))
 
         # Move file over
         sh.mv(index_name, localdir)
