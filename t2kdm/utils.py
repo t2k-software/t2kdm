@@ -350,7 +350,7 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
         size = 0
         maxsize = 1
         with open(index_name, 'wt') as f:
-            f.write("<html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
+            f.write("<!DOCTYPE html><html><head><title>%s</title></head><body><h3>%s</h3><table>\n"%(remotepath,remotepath))
             f.write("<tr><th>size</th><th>modified</th><th>name</th></tr>\n")
             if topdir:
                 # link to dir one level up
