@@ -15,16 +15,9 @@ to it:
     unset REQUESTS_CA_BUNDLE SSL_CERT_DIR # These upset pip
     export PYTHONNOUSERSITE=1
 
-    # Fix the broken gfal bundle
-    export PYTHONPATH=${PYTHONPATH}:${DIRAC}/Linux_x86_64_glibc-2.12/lib/python2.6/site-packages
-
     # Re-enable Python "assert" statements
     # Only needed for the `t2kdm-tests` command
     unset PYTHONOPTIMIZE
-    
-    # User configuration files for "voms-*" commands when no "/etc/vomses"
-    # Uncomment if needed
-    #export VOMS_USERCONF=${DIRAC}/etc/grid-security/vomses
 
 Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
 environment. Within this environment you can install t2kdm releases directly
