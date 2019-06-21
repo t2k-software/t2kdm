@@ -5,7 +5,8 @@ Install
 -------
 
 You will need a working setup of the DIRAC UI to access the grid data.
-Follow the instructions here: https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac
+Follow the instructions here:
+https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
 
 DIRAC comes with its own Python interpreter. To make it work with other Python
 software, we need to modify DIRAC's `bashrc` file. Append the following lines
