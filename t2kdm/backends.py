@@ -141,7 +141,7 @@ class GridBackend(object):
         ses = storage.get_SE(se)
         if ses is None:
             raise BackendException("Could not find storage element %s."%(se,))
-        surl = ses.get_storage_path(remotepath)
+        surl = ses.get_storage_path(remotepath, direct=True)
         return self._ls_se(surl, **kwargs)
 
     def _is_dir(self, lurl):
@@ -161,7 +161,7 @@ class GridBackend(object):
     def is_dir_se(self, remotepath, se):
         """Is the storage path a directory?"""
         se = storage.get_SE(se)
-        return self._is_dir_se(se.get_storage_path(remotepath))
+        return self._is_dir_se(se.get_storage_path(remotepath, direct=True))
 
     def _is_file(self, lurl, **kwargs):
         raise NotImplementedError()
@@ -175,7 +175,7 @@ class GridBackend(object):
     def is_file_se(self, remotepath, se, **kwargs):
         """Chcek whether a replica actually exists on a storage element."""
         se = storage.get_SE(se)
-        return self._exists(se.get_storage_path(remotepath), **kwargs)
+        return self._exists(se.get_storage_path(remotepath, direct=True), **kwargs)
 
     def _exists(self, surl, **kwargs):
         raise NotImplementedError()

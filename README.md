@@ -5,7 +5,8 @@ Install
 -------
 
 You will need a working setup of the DIRAC UI to access the grid data.
-Follow the instructions here: https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac
+Follow the instructions here:
+https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
 
 DIRAC comes with its own Python interpreter. To make it work with other Python
 software, we need to modify DIRAC's `bashrc` file. Append the following lines
@@ -15,16 +16,9 @@ to it:
     unset REQUESTS_CA_BUNDLE SSL_CERT_DIR # These upset pip
     export PYTHONNOUSERSITE=1
 
-    # Fix the broken gfal bundle
-    export PYTHONPATH=${PYTHONPATH}:${DIRAC}/Linux_x86_64_glibc-2.12/lib/python2.6/site-packages
-
     # Re-enable Python "assert" statements
     # Only needed for the `hkdm-tests` command
     unset PYTHONOPTIMIZE
-
-    # User configuration files for "voms-*" commands when no "/etc/vomses"
-    # Uncomment if needed
-    #export VOMS_USERCONF=${DIRAC}/etc/grid-security/vomses
 
 Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
 environment. Within this environment you can install hkdm releases directly

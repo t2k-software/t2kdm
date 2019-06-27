@@ -9,8 +9,17 @@ experiment. A fork of the T2K Data Manager t2kdm.
 
 """
 
+def get_version():
+    """Get the version number by parsing the package's __init__.py."""
+    with open("hkdm/__init__.py", 'rt') as f:
+        for line in f:
+            if line.startswith("__version__ = "):
+                return eval(line[14:])
+        else:
+            raise RuntimeError("Could not determine package version!")
+
 setup(name='hkdm',
-    version='1.6.2',
+    version=get_version(),
     description=description,
     long_description=long_description,
     url='https://github.com/t2k-software/t2kdm',

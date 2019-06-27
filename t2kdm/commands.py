@@ -99,19 +99,19 @@ class Command(object):
         Then it returns the actual return value.
         """
 
+        ret = 1 # Arbitrary error code
+
         try:
             args = shlex.split(argstring)
         except ValueError as e: # Catch errors from bad bash syntax
             print_(e)
-            return False
+            if _return:
+                return ret
+            else:
+                return False
 
-        ret = False
         try: # We do *not* want to exit after printing a help message or erroring, so we have to catch that.
             ret = self.run_from_arglist(args, **kwargs)
-        except dm.backends.BackendException as e:
-            print_(e)
-        except interactive.InteractiveException as e:
-            print_(e)
         except Exception as e:
             print_(e)
         except SystemExit:

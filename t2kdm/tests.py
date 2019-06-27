@@ -117,12 +117,20 @@ def run_read_only_tests():
 
     print_("Testing get...")
     with temp_dir() as tempdir:
-        path = posixpath.join(testdir, testfiles[0])
+        path = testpaths[0]
         filename = os.path.join(tempdir, testfiles[0])
 
         # Test choosing source SE automatically
         assert(dm.backend.get(path, tempdir) == True)
         assert(os.path.isfile(filename))
+
+        # Test tape refusal (No tape SE in hyperk.org at the moment)
+        #try:
+        #    dm.backend.get(testpaths[2], tempdir)
+        #except backends.BackendException as e:
+        #    assert("Could not find" in e.args[0])
+        #else:
+        #    raise Exception("Should have refused to download from tape!")
 
         # Test providing the source SE
         try:
@@ -136,7 +144,7 @@ def run_read_only_tests():
         os.remove(filename)
 
         # Test recursive get
-        assert(dm.interactive.get(testdir, tempdir, recursive=True) == 0)
+        assert(dm.interactive.get(testdir, tempdir, recursive='test[12]\.txt') == 0)
         assert(os.path.isfile(filename))
 
     print_("Testing check...")
@@ -157,10 +165,10 @@ def run_read_only_tests():
     print_("Testing Commands...")
     with no_output(True):
         assert(cmd.ls.run_from_cli('-l /') == False)
-        assert(cmd.ls.run_from_cli('.') == False)
+        assert(cmd.ls.run_from_cli('/', _return=True) == 0)
 
-        cmd.ls.run_from_cli('abc') # This should not work, but not throw exception
-        cmd.ls.run_from_cli('"abc') # This should not work, but not throw exception
+        assert(cmd.ls.run_from_cli('abc') == False) # This should not work, but not throw exception
+        assert(cmd.ls.run_from_cli('"abc', _return=True) != 0) # This should not work, but not throw exception
         with fake_argv(['%s-ls'%(dm._branding,), '/']):
             assert(cmd.ls.run_from_console() == 0) # This should work
         with fake_argv(['%s-cli'%(dm._branding), '/']):

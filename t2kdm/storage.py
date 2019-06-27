@@ -7,7 +7,7 @@ from six import print_
 class StorageElement(object):
     """Representation of a grid storage element"""
 
-    def __init__(self, name, host, type, location, basepath, broken=False):
+    def __init__(self, name, host, type, location, basepath, directpath=None, broken=False):
         """Initialise StorageElement.
 
         `name`: Identifier for element
@@ -15,12 +15,17 @@ class StorageElement(object):
         `type`: Storage type of element ('tape' or 'disk')
         `location`: Location of the SE, e.g. '/europe/uk/ral'
         `basepath`: Base path for standard storage paths on element
+        `directpath`: Base path for direct access of data on the storage element (optional)
         `broken`: Is the SE broken and should not be used? Equivalent to a forced blacklisting.
         """
 
         self.name = name
         self.host = host
         self.basepath = basepath
+        if directpath is None:
+            self.directpath = basepath
+        else:
+            self.directpath = directpath
         self.location = location
         self.type = type
         self.broken = broken
@@ -29,11 +34,17 @@ class StorageElement(object):
         """Is the SE blacklisted?"""
         return self.broken or self.name in dm.config.blacklist
 
-    def get_storage_path(self, remotepath):
-        """Generate the standard storage path for this SE from a logical file name."""
+    def get_storage_path(self, remotepath, direct=False):
+        """Generate the standard storage path for this SE from a logical file name.
+
+        Use the "directpath" instead of the basepath if `direct` is `True`.
+        """
         if remotepath[0] != '/':
             raise ValueError("Remote path needs to be absolute, not relative!")
-        return (self.basepath + dm.config.basedir + remotepath).strip()
+        if direct:
+            return (self.directpath + dm.config.basedir + remotepath).strip()
+        else:
+            return (self.basepath + dm.config.basedir + remotepath).strip()
 
     def get_logical_path(self, surl):
         """Try to get the logical remotepath from a surl."""
@@ -78,7 +89,7 @@ class StorageElement(object):
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
 
-        If `tape` is False (default), prefer disk SEs over tape SEs.
+        If `tape` is False (default), do not return any tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
         SEs = self.get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
@@ -90,7 +101,7 @@ class StorageElement(object):
     def get_closest_SEs(self, remotepath=None, tape=False, cached=False):
         """Get a list of the storage element with the closest replicas.
 
-        If `tape` is False (default), prefer disk SEs over tape SEs.
+        If `tape` is False (default), do not return any tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
         closest_SE = None
@@ -102,19 +113,21 @@ class StorageElement(object):
             candidates = []
             for rep in dm.replicas(remotepath, cached=cached):
                 cand = get_SE_by_path(rep)
-                if cand is not None:
-                    candidates.append(cand)
+                if cand is None:
+                    continue
+                if (cand.type == 'tape') and (tape == False):
+                    continue
+                candidates.append(cand)
 
         def sorter(SE):
             if SE is None:
                 return 1000
             distance = self.get_distance(SE)
             if SE.type == 'tape':
-                if tape:
-                    distance += 0.5
-                else:
-                    distance += 10
+                # Prefer disks over tape, even if the tape is closer by
+                distance += 10
             if SE.is_blacklisted():
+                # Try blacklisted SEs only as a last resort
                 distance += 100
             return distance
 
@@ -146,6 +159,7 @@ SEs = [
         host = 'se03.esc.qmul.ac.uk',
         type = 'disk',
         location = '/europe/uk/london/qmul',
+        directpath = 'root://xrootd.esc.qmul.ac.uk/hyperk.org',
         basepath = 'srm://se03.esc.qmul.ac.uk:8444/srm/managerv2?SFN=/hyperk.org'),
     ]
 
@@ -177,7 +191,7 @@ def get_SE(SE):
 def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
     """Get a list of the storage element with the closest replicas.
 
-    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If `tape` is False (default), do not return any tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
     """
 
@@ -198,7 +212,7 @@ def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
 def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
     """Get the storage element with the closest replica.
 
-    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If `tape` is False (default), do not return any tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
     """
     SEs = get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
