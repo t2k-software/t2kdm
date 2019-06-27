@@ -89,7 +89,7 @@ class StorageElement(object):
     def get_closest_SE(self, remotepath=None, tape=False, cached=False):
         """Get the storage element with the closest replica.
 
-        If `tape` is False (default), prefer disk SEs over tape SEs.
+        If `tape` is False (default), do not return any tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
         SEs = self.get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
@@ -101,7 +101,7 @@ class StorageElement(object):
     def get_closest_SEs(self, remotepath=None, tape=False, cached=False):
         """Get a list of the storage element with the closest replicas.
 
-        If `tape` is False (default), prefer disk SEs over tape SEs.
+        If `tape` is False (default), do not return any tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
         closest_SE = None
@@ -113,19 +113,21 @@ class StorageElement(object):
             candidates = []
             for rep in dm.replicas(remotepath, cached=cached):
                 cand = get_SE_by_path(rep)
-                if cand is not None:
-                    candidates.append(cand)
+                if cand is None:
+                    continue
+                if (cand.type == 'tape') and (tape == False):
+                    continue
+                candidates.append(cand)
 
         def sorter(SE):
             if SE is None:
                 return 1000
             distance = self.get_distance(SE)
             if SE.type == 'tape':
-                if tape:
-                    distance += 0.5
-                else:
-                    distance += 10
+                # Prefer disks over tape, even if the tape is closer by
+                distance += 10
             if SE.is_blacklisted():
+                # Try blacklisted SEs only as a last resort
                 distance += 100
             return distance
 
@@ -245,7 +247,7 @@ def get_SE(SE):
 def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
     """Get a list of the storage element with the closest replicas.
 
-    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If `tape` is False (default), do not return any tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
     """
 
@@ -266,7 +268,7 @@ def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
 def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
     """Get the storage element with the closest replica.
 
-    If `tape` is False (default), prefer disk SEs over tape SEs.
+    If `tape` is False (default), do not return any tape SEs.
     If no `rempotepath` is provided, just return the closest SE over all.
     """
     SEs = get_closest_SEs(remotepath=remotepath, tape=tape, cached=cached)
