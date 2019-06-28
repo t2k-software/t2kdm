@@ -40,6 +40,10 @@ class Command(object):
             self.parser = argparse.ArgumentParser(prog=name, description=description, **kwargs)
         else:
             self.parser = argparse.ArgumentParser(description=description, **kwargs)
+
+        # Add universal argument to print version
+        self.parser.add_argument('--version', action='version', version='{brand} {version}'.format(brand=dm._branding, version=dm.__version__))
+
         self.positional_arguments = []
         self.keyword_arguments = []
 
