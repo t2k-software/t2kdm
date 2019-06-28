@@ -80,7 +80,7 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
                 for path in remote_iter_recursively(new_path, regex, se=se, ignore_exceptions=ignore_exceptions):
                     yield path
     else:
-        yield remotepath
+        yield str(remotepath)
 
 def check_checksums(remotepath, cached=False):
     """Check if the checksums of all replicas are identical."""
