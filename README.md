@@ -16,6 +16,9 @@ to it:
     unset REQUESTS_CA_BUNDLE SSL_CERT_DIR # These upset pip
     export PYTHONNOUSERSITE=1
 
+    # Fix the broken gfal bundle with SL6
+    export PYTHONPATH=${PYTHONPATH}:${DIRAC}/Linux_x86_64_glibc-2.12/lib/python2.6/site-packages
+
     # Re-enable Python "assert" statements
     # Only needed for the `t2kdm-tests` command
     unset PYTHONOPTIMIZE
