@@ -126,7 +126,8 @@ def run_read_only_tests():
 
         # Test tape refusal
         try:
-            dm.backend.get(testpaths[2], tempdir)
+            with no_output():
+                dm.backend.get(testpaths[2], tempdir)
         except backends.BackendException as e:
             assert("Could not find" in e.args[0])
         else:

@@ -104,8 +104,7 @@ class StorageElement(object):
         If `tape` is False (default), do not return any tape SEs.
         If no `rempotepath` is provided, just return the closest SE over all.
         """
-        closest_SE = None
-        closest_distance = None
+        on_tape = False
 
         if remotepath is None:
             candidates = SEs
@@ -116,8 +115,12 @@ class StorageElement(object):
                 if cand is None:
                     continue
                 if (cand.type == 'tape') and (tape == False):
+                    on_tape = True
                     continue
                 candidates.append(cand)
+
+        if len(candidates) == 0 and on_tape:
+            print_("WARNING: Replica only found on tape, but tape sources are not accepted!")
 
         def sorter(SE):
             if SE is None:
