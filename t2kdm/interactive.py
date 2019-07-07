@@ -55,7 +55,7 @@ class _recursive(object):
                     if not verbose:
                         # Tell the user which file failed.
                         # Only necessary if they have not already been told.
-                        print_(self.iterating + " " + path + "failed.")
+                        print_(self.iterating + " " + path + " failed.")
                     else:
                         print_("Failed.")
                     print_(e)

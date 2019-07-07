@@ -10,6 +10,7 @@ import re
 import hkdm as dm
 from hkdm import backends
 from hkdm import storage
+from time import sleep
 
 @contextmanager
 def temp_dir():
@@ -33,28 +34,45 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
     # Check whther the path is a directory.
     # Check both in the file catalogue and on the storage element,
     # because the directory might not yet exist in the catalogue.
-    try:
-        isdir = dm.is_dir(remotepath, cached=True) or (se is not None and dm.is_dir_se(remotepath, se, cached=True))
-    except Exception as e:
-        print_("Recursion failure!")
-        if ignore_exceptions:
-            print_(e)
-        else:
-            raise
-        return
-
-    if isdir:
+    for i in range(3):
+        # Try three times
         try:
-            if se is None:
-                entries = dm.iter_ls(remotepath)
-            else:
-                entries = dm.iter_ls_se(remotepath, se)
+            isdir = dm.is_dir(remotepath, cached=True) or (se is not None and dm.is_dir_se(remotepath, se, cached=True))
         except Exception as e:
-            print_("Recursion failure!")
+            print_("Recursion failure! (%d)"%(i,))
             if ignore_exceptions:
                 print_(e)
             else:
                 raise
+        else:
+            # Break loop if no exception was raised (success)
+            break
+        sleep(10)
+    else:
+        # Return if loop was not broken
+        return
+
+    if isdir:
+        for i in range(3):
+            # Try three times
+            try:
+                if se is None:
+                    entries = dm.iter_ls(remotepath)
+                else:
+                    entries = dm.iter_ls_se(remotepath, se)
+            except Exception as e:
+                print_("Recursion failure! (%d)"%(i,))
+                if ignore_exceptions:
+                    print_(e)
+                else:
+                    raise
+                return
+            else:
+                # Break loop if no exception was raised (success)
+                break
+            sleep(10)
+        else:
+            # Return if loop was not broken
             return
         for entry in entries:
             if regex is None or regex.search(entry.name):
@@ -62,7 +80,7 @@ def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=F
                 for path in remote_iter_recursively(new_path, regex, se=se, ignore_exceptions=ignore_exceptions):
                     yield path
     else:
-        yield remotepath
+        yield str(remotepath)
 
 def check_checksums(remotepath, cached=False):
     """Check if the checksums of all replicas are identical."""
