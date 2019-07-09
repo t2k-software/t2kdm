@@ -653,7 +653,7 @@ class DIRACBackend(GridBackend):
 
         ret = self.fc.listDirectory(lurl)
         if not ret['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
+            raise BackendException("Failed to list path '%s': %s", lurl, ret['Message'])
         for path, error in ret['Value']['Failed'].items():
             if 'Directory does not' in error:
                 # Dir does not exist, maybe a File?
