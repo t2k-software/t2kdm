@@ -646,7 +646,7 @@ class DIRACBackend(GridBackend):
                 else:
                     raise BackendException(md['Value']['Failed'][lurl])
             md = md['Value']['Successful'][lurl]
-        return DirEntry(posixpath.basename(lurl), mode=oct(md['Mode']), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md['ModificationDate']))
+        return DirEntry(posixpath.basename(lurl), mode=oct(md.get('Mode', -1)), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md.get('ModificationDate', '?')))
 
     def _iter_directory(self, lurl):
         """Iterate over entries in a directory."""
