@@ -34,6 +34,7 @@ import re
 from t2kdm import storage
 from t2kdm.cache import Cache
 from six import print_
+from time import sleep
 
 # Add the option to cache the output of functions for 60 seconds.
 # This is enabled by providing the `cached=True` argument.
@@ -151,7 +152,22 @@ class GridBackend(object):
     @cache.cached
     def is_dir(self, remotepath):
         """Is the remote path a directory?"""
-        return self._is_dir(self.get_lurl(remotepath))
+        lurl = self.get_lurl(remotepath)
+        for i in range(3):
+            # Try three times
+            try:
+                isdir = self._is_dir(lurl)
+            except Exception as e:
+                print_("`is_dir` failed! (%d/3)"%(i+1,))
+                ex = e
+            else:
+                # Break loop if no exception was raised (success)
+                break
+            sleep(10)
+        else:
+            # Raise if loop was not broken
+            raise ex
+        return isdir
 
     def _is_dir_se(self, surl):
         entry = next(self._ls_se(surl, directory=True))
