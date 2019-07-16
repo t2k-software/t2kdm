@@ -145,14 +145,14 @@ def run_read_only_tests():
         os.remove(filename)
 
         # Test recursive get
-        assert(dm.interactive.get(testdir, tempdir, recursive='test[12]\.txt') == 0)
+        assert(dm.interactive.get(testdir, tempdir, recursive='test[12]\.txt', parallel=2) == 0)
         assert(os.path.isfile(filename))
 
     print_("Testing check...")
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')
         with no_output(True):
-            assert(dm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename) != 0) # There are some deliberate failures here
+            assert(dm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename, parallel=2) != 0) # There are some deliberate failures here
         assert os.path.isfile(filename)
         assert os.path.getsize(filename) > 0
         with no_output(True):

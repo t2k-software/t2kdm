@@ -211,6 +211,8 @@ check.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
 check.add_argument('-q', '--quiet', action='store_true',
     help="do not print problematic files to screen")
+check.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 check.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 check.add_argument('-l', '--list', metavar='FILENAME',
@@ -232,6 +234,8 @@ replicate.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=
     help="recursively replicate all files and subdirectories [that match REGEX] of a directory")
 replicate.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+replicate.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 replicate.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 replicate.add_argument('-s', '--source', type=str, default=None,
@@ -255,6 +259,8 @@ get.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False,
     help="recursively get all files and subdirectories [that match REGEX] of a directory")
 get.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+get.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 get.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 get.add_argument('-s', '--source', type=str, default=None,
@@ -294,6 +300,8 @@ remove.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=Fal
     help="recursively remove all files and subdirectories [that match REGEX] of a directory")
 remove.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+remove.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 remove.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 remove.add_argument('-v', '--verbose', action='store_true',
@@ -316,6 +324,8 @@ fix.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False,
     help="recursively fix all files and subdirectories [that match REGEX] of a directory")
 fix.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+fix.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 fix.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(fix)
@@ -343,6 +353,8 @@ move.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=False
     help="recursively move all files and subdirectories [that match REGEX] of a directory")
 move.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+move.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 move.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(move)
@@ -361,6 +373,8 @@ rename.add_argument('-r', '--recursive', nargs='?', metavar="REGEX", default=Fal
     help="recursively rename all files and subdirectories [that match REGEX] of a directory")
 rename.add_argument('-R', '--recursivese', default=None,
     help="use listing of physical files on this SE for recursion")
+rename.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
+    help="When recursing over multiple files, handle P in parallel.")
 rename.add_argument('-l', '--list', metavar='FILENAME',
     help="save a list of failed files to FILENAME")
 all_commands.append(rename)
