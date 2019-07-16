@@ -31,6 +31,7 @@ setup(name='t2kdm',
         'sh>=1.12.14',
         'six>=1.10.0',
         'appdirs>=1.4.3',
+        'multiprocess>=0.70.8',
     ],
     extras_require = {
     },
