@@ -365,6 +365,9 @@ class GridBackend(object):
                     if verbose:
                         print_("Failed to bring replica online.")
                     continue
+                else:
+                    if verbose:
+                        print_("File online. Copying...")
 
             try:
                 ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
