@@ -98,7 +98,24 @@ class GridBackend(object):
             List directory entries instead of contents.
         """
 
-        return list(self.iter_ls(remotepath, **kwargs))
+        for i in range(3):
+            # Try three times
+            try:
+                lst = list(self.iter_ls(remotepath, **kwargs))
+            except DoesNotExistException as e:
+                # Do not try egain if target does not exist.
+                raise e
+            except Exception as e:
+                print_("`iter_ls` failed! (%d/3)"%(i+1,))
+                ex = e
+            else:
+                # Break loop if no exception was raised (success)
+                break
+            sleep(10)
+        else:
+            # Raise if loop was not broken
+            raise ex
+        return lst
 
     def iter_ls(self, remotepath, **kwargs):
         """List contents of a remote logical path.
