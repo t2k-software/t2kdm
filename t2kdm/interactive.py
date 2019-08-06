@@ -49,22 +49,22 @@ class _recursive(object):
 
         good = 0
         bad = 0
-        if recursive is True:
-            def is_good(path):
-                if verbose:
-                    print_(self.iterating + " " + path)
-                try:
-                    ret = self.function(path, *args, **kwargs)
-                except Exception as e:
-                    print_(self.iterating + " " + path + " failed.")
-                    print_(e)
-                    return False, path
+        def is_good(path):
+            if verbose:
+                print_(self.iterating + " " + path)
+            try:
+                ret = self.function(path, *args, **kwargs)
+            except Exception as e:
+                print_(self.iterating + " " + path + " failed.")
+                print_(e)
+                return False, path
+            else:
+                if ret == 0:
+                    return True, path
                 else:
-                    if ret == 0:
-                        return True, path
-                    else:
-                        return False, path
+                    return False, path
 
+        if recursive is True:
             if parallel > 1:
                 # Deal with signal weirdness when using a Pool
                 # Otherwise we won't be able to kill things with CTRL-C
@@ -113,12 +113,15 @@ class _recursive(object):
             else:
                 return 1
         else:
-            ret = self.function(remotepath, *args, **kwargs)
+            g, path = is_good(remotepath)
             if list_file is not None:
-                if ret != 0:
+                if not g:
                     list_file.write(remotepath + '\n')
                 list_file.close()
-            return ret
+            if g:
+                return 0
+            else:
+                return 1
 
     def __call__(self, function):
         self.function = function
