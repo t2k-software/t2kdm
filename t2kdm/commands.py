@@ -216,7 +216,7 @@ check.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
 check.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 check.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 check.add_argument('-c', '--checksum', action='store_true',
     help="check whether the checksums of all replicas is identical, takes longer than just the se tests")
 check.add_argument('-s', '--se', action='append', default=[],
@@ -237,7 +237,7 @@ replicate.add_argument('-R', '--recursivese', default=None,
 replicate.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 replicate.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 replicate.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 replicate.add_argument('-t', '--tape', action='store_true',
@@ -262,7 +262,7 @@ get.add_argument('-R', '--recursivese', default=None,
 get.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 get.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 get.add_argument('-s', '--source', type=str, default=None,
     help="the source storage element by name, e.g. 'UKI-SOUTHGRID-RALPP-disk', or by host, e.g. 't2ksrm.nd280.org'. If no source is provided, the replica closest to the destination is chosen")
 get.add_argument('-t', '--tape', action='store_true',
@@ -303,7 +303,7 @@ remove.add_argument('-R', '--recursivese', default=None,
 remove.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 remove.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 remove.add_argument('-v', '--verbose', action='store_true',
     help="print status messages to the screen")
 remove.add_argument('-x', '--deregister', action='store_true',
@@ -327,7 +327,7 @@ fix.add_argument('-R', '--recursivese', default=None,
 fix.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 fix.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 all_commands.append(fix)
 
 html_index = Command('html_index', interactive.html_index, "Generate HTML index of a catalogue directory.")
@@ -356,7 +356,7 @@ move.add_argument('-R', '--recursivese', default=None,
 move.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 move.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 all_commands.append(move)
 
 rename = Command('rename', interactive.rename, "Rename a file using regular expressions",
@@ -376,5 +376,5 @@ rename.add_argument('-R', '--recursivese', default=None,
 rename.add_argument('-p', '--parallel', metavar="P", default=1, type=int,
     help="When recursing over multiple files, handle P in parallel.")
 rename.add_argument('-l', '--list', metavar='FILENAME',
-    help="save a list of failed files to FILENAME")
+    help="save a list of failed files to FILENAME (will be overwritten)")
 all_commands.append(rename)
