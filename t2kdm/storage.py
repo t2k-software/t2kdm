@@ -162,6 +162,7 @@ SEs = [
         location = '/europe/uk/ox',
         basepath = 'srm://t2se01.physics.ox.ac.uk:8446/srm/managerv2?SFN=/dpm/physics.ox.ac.uk/home/t2k.org'),
     StorageElement('UKI-NORTHGRID-SHEF-HEP-disk',
+        broken = True,
         host = 'lcgse0.shef.ac.uk',
         type = 'disk',
         location = '/europe/uk/shef',
