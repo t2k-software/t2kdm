@@ -498,7 +498,15 @@ class GridBackend(object):
         unless the `final` argument is `True`!
         If `deregister` is `True`, the replica will be removed from the catalogue,
         but the physicalcopy will not be deleted.
+        If `destination` is `'any'` and there are no replicas of the file and `final` is `True`,
+        it will be removed from the file catalogue.
         """
+
+        lurl = self.get_lurl(remotepath)
+        if final and destination == 'any' and len(self.replicas(remotepath)) == 0:
+            # Delete file catalogue entry
+            # Needs dummy storage element
+            return self._remove(storage.SEs[0], lurl, last=True, verbose=verbose, **kwargs)
 
         # Get destination SE and check if file is already not present
         dst = storage.get_SE(destination)
@@ -527,7 +535,6 @@ class GridBackend(object):
         destination_path = dst.get_replica(remotepath)
         if destination_path is None:
             destination_path = dst.get_storage_path(remotepath)
-        lurl = self.get_lurl(remotepath)
 
         # Only actually the last one if there is only one replica left
         # And the se is the correct one
@@ -609,7 +616,7 @@ class GridBackend(object):
         if success:
             if verbose:
                 print_("Removing old catalogue entry...")
-            return self.remove(remotepath, se, final=True, verbose=verbose)
+            return self.remove(remotepath, 'any', final=True, verbose=verbose)
         else:
             return False
 
