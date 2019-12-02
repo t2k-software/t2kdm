@@ -505,7 +505,7 @@ class GridBackend(object):
         if dst is None:
             raise BackendException("Could not find storage element %s.\n"%(destination,))
 
-        if not final and not dst.has_replica(remotepath):
+        if not dst.has_replica(remotepath, check_dark=False):
             # Replica already not present at destination, nothing to do here
             if verbose:
                 print_("%s\nReplica not present at destination storage element %s."%(remotepath, dst.name,))
@@ -529,13 +529,18 @@ class GridBackend(object):
             destination_path = dst.get_storage_path(remotepath)
         lurl = self.get_lurl(remotepath)
 
+        # Only actually the last one if there is only one replica left
+        # And the se is the correct one
+        # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
+        last = (nrep==0) or (nrep==1 and se.name==dst.name)
         if deregister:
-            return self.deregister(destination_path, remotepath, verbose=verbose)
+            ret = self.deregister(destination_path, remotepath, verbose=verbose)
+            if ret and last:
+                # Delete file catalogue entry
+                return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
+            else:
+                return ret
         else:
-            # Only actually the last one if there is only one replica left
-            # And the se is the correct one
-            # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
-            last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
     def _rmdir(self, lurl, verbose=False):
