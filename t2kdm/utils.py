@@ -18,7 +18,7 @@ def temp_dir():
     try:
         yield tempdir
     finally:
-        sh.rm('-r', tempdir)
+        sh.rm('-r', tempdir, _tty_out=False)
 
 def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=False):
     """Iter over remote paths recursively.
@@ -234,7 +234,7 @@ def _test_replica(replica, verbose=False):
         dm.backend._get(replica, tempf, verbose=verbose)
 
         remote_checksum = dm.checksum(replica)
-        local_checksum = sh.adler32(tempf).strip()
+        local_checksum = sh.adler32(tempf, _tty_out=False).strip()
 
         if local_checksum != remote_checksum:
             if verbose:
@@ -243,7 +243,7 @@ def _test_replica(replica, verbose=False):
             return False
 
         try:
-            sh.gzip(tempf, test=True)
+            sh.gzip(tempf, test=True, _tty_out=False)
         except sh.ErrorReturnCode:
             if verbose:
                 print_(replica)
@@ -398,6 +398,6 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
             f.write("</table><p>Total size: %s</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(_format_number(size),maxsize))
 
         # Move file over
-        sh.mv(index_name, localdir)
+        sh.mv(index_name, localdir, _tty_out=False)
 
     return size

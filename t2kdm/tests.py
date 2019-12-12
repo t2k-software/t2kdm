@@ -49,7 +49,7 @@ def temp_dir():
     try:
         yield tempdir
     finally:
-        sh.rm('-r', tempdir)
+        sh.rm('-r', tempdir, _tty_out=False)
 
 def run_read_only_tests():
     print_("Testing ls...")

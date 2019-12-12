@@ -645,16 +645,16 @@ class DIRACBackend(GridBackend):
         from DIRAC.DataManagementSystem.Client.DataManager import DataManager
         self.dm = DataManager()
 
-        self._xattr_cmd = sh.Command('gfal-xattr')
-        self._replica_checksum_cmd = sh.Command('gfal-sum')
-        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
-        self._cp_cmd = sh.Command('gfal-copy')
-        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
-        self._move_cmd = sh.Command('gfal-rename')
-        self._mkdir_cmd = sh.Command('gfal-mkdir')
+        self._xattr_cmd = sh.Command('gfal-xattr').bake(_tty_out=False)
+        self._replica_checksum_cmd = sh.Command('gfal-sum').bake(_tty_out=False)
+        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline').bake(_tty_out=False)
+        self._cp_cmd = sh.Command('gfal-copy').bake(_tty_out=False)
+        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never', _tty_out=False)
+        self._move_cmd = sh.Command('gfal-rename').bake(_tty_out=False)
+        self._mkdir_cmd = sh.Command('gfal-mkdir').bake(_tty_out=False)
 
-        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
-        self._add_cmd = sh.Command('dirac-dms-add-file')
+        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn').bake(_tty_out=False)
+        self._add_cmd = sh.Command('dirac-dms-add-file').bake(_tty_out=False)
 
     @staticmethod
     def _check_return_value(ret):

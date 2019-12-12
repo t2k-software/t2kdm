@@ -112,7 +112,7 @@ Type 'help' or '?' to list commands.
             return False
 
         try:
-            print_(sh.ls('-1', *argv, _bg_exc=False), end='')
+            print_(sh.ls('-1', *argv, _bg_exc=False, _tty_out=False), end='')
         except sh.ErrorReturnCode as e:
             print_(e.stderr, end='')
 
@@ -158,7 +158,7 @@ Type 'help' or '?' to list commands.
             if not os.path.isabs(abs_searchdir):
                 abs_searchdir = os.path.join(self.localdir, abs_searchdir)
             # Get contents of dir
-            for l in sh.ls(abs_searchdir, '-1', _iter=True):
+            for l in sh.ls(abs_searchdir, '-1', _iter=True, _tty_out=False):
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = os.path.join(searchdir, l)
