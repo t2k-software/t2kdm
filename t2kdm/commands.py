@@ -1,6 +1,7 @@
 """Module handling the CLI and stand-alone script commands."""
 
 from six import print_
+import sh
 import shlex
 import argparse
 import t2kdm as dm

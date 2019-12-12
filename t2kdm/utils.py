@@ -3,9 +3,7 @@
 import posixpath
 from copy import deepcopy
 from six import print_
-import os, sys
-import sh
-sh2 = sh(_tty_in=False, _tty_out=False)
+import os, sys, sh
 import tempfile
 from contextlib import contextmanager
 import re
@@ -20,7 +18,7 @@ def temp_dir():
     try:
         yield tempdir
     finally:
-        sh2.rm('-r', tempdir)
+        sh.rm('-r', tempdir)
 
 def remote_iter_recursively(remotepath, regex=None, se=None, ignore_exceptions=False):
     """Iter over remote paths recursively.
@@ -236,7 +234,7 @@ def _test_replica(replica, verbose=False):
         dm.backend._get(replica, tempf, verbose=verbose)
 
         remote_checksum = dm.checksum(replica)
-        local_checksum = sh2.adler32(tempf).strip()
+        local_checksum = sh.adler32(tempf).strip()
 
         if local_checksum != remote_checksum:
             if verbose:
@@ -245,8 +243,8 @@ def _test_replica(replica, verbose=False):
             return False
 
         try:
-            sh2.gzip(tempf, test=True)
-        except sh2.ErrorReturnCode:
+            sh.gzip(tempf, test=True)
+        except sh.ErrorReturnCode:
             if verbose:
                 print_(replica)
                 print_("Failed the gzip integrity test.")
@@ -400,6 +398,6 @@ def html_index(remotepath, localdir, recursive=False, topdir=False, verbose=Fals
             f.write("</table><p>Total size: %s</p><style>:root{--maxsize: %d} td,th{padding-left:3pt; padding-right:3pt;}</style></body></html>\n"%(_format_number(size),maxsize))
 
         # Move file over
-        sh2.mv(index_name, localdir)
+        sh.mv(index_name, localdir)
 
     return size

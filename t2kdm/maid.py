@@ -9,7 +9,6 @@ import t2kdm.commands as commands
 from contextlib import contextmanager
 import sys, os
 import sh
-sh2 = sh(_tty_in=False, _tty_out=False)
 from datetime import datetime, timedelta, tzinfo
 import posixpath
 import tempfile
@@ -121,7 +120,7 @@ class Task(object):
             print_(self)
             print_("TASK STARTED")
             # Add a timestamp to the beginning of the output
-            sh2.date(_out=sys.stdout)
+            sh.date(_out=sys.stdout)
 
             try:
                 success = self._do()
@@ -130,7 +129,7 @@ class Task(object):
                 self._post_do(state='FAILED', id=id)
                 print_("TASK FAILED")
                 # Add a timestamp to the end of the output
-                sh2.date(_out=sys.stdout)
+                sh.date(_out=sys.stdout)
                 print_(e)
                 raise
 
@@ -141,7 +140,7 @@ class Task(object):
                 self._post_do(state='FAILED', id=id)
                 print_("TASK FAILED")
             # Add a timestamp to the end of the output
-            sh2.date(_out=sys.stdout)
+            sh.date(_out=sys.stdout)
 
         return success
 
@@ -242,11 +241,11 @@ class TrimLogTask(Task):
     def _do(self):
         with tempfile.TemporaryFile('w+t') as tf:
             # Write tail of logfile into temporary file
-            sh2.tail(self.path, lines=self.nlines, _in=self.path, _out=tf)
+            sh.tail(self.path, lines=self.nlines, _in=self.path, _out=tf)
             # Rewind temporary file
             tf.seek(0)
             # Overwrite old file
-            sh2.cat(_in=tf, _out=self.path)
+            sh.cat(_in=tf, _out=self.path)
         return True
 
     def __str__(self):

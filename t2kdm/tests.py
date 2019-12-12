@@ -10,9 +10,7 @@ from  t2kdm import utils
 import argparse
 from six import print_
 from contextlib import contextmanager
-import sys, os
-import sh
-sh2 = sh(_tty_in=False, _tty_out=False)
+import sys, os, sh
 import tempfile
 import posixpath
 import re
@@ -51,7 +49,7 @@ def temp_dir():
     try:
         yield tempdir
     finally:
-        sh2.rm('-r', tempdir)
+        sh.rm('-r', tempdir)
 
 def run_read_only_tests():
     print_("Testing ls...")

@@ -3,7 +3,6 @@
 from six import print_
 import cmd
 import sh
-sh2 = sh(_tty_in=False, _tty_out=False)
 import shlex
 import argparse
 import os
@@ -113,8 +112,8 @@ Type 'help' or '?' to list commands.
             return False
 
         try:
-            print_(sh2.ls('-1', *argv, _bg_exc=False), end='')
-        except sh2.ErrorReturnCode as e:
+            print_(sh.ls('-1', *argv, _bg_exc=False), end='')
+        except sh.ErrorReturnCode as e:
             print_(e.stderr, end='')
 
     def do_exit(self, arg):
@@ -159,7 +158,7 @@ Type 'help' or '?' to list commands.
             if not os.path.isabs(abs_searchdir):
                 abs_searchdir = os.path.join(self.localdir, abs_searchdir)
             # Get contents of dir
-            for l in sh2.ls(abs_searchdir, '-1', _iter=True):
+            for l in sh.ls(abs_searchdir, '-1', _iter=True):
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = os.path.join(searchdir, l)

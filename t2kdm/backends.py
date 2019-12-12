@@ -25,7 +25,6 @@ localpath
 """
 
 import sh
-sh2 = sh(_tty_in=False, _tty_out=False)
 import itertools
 import posixpath
 import os, sys
@@ -266,7 +265,7 @@ class GridBackend(object):
         """Return `True` if the replica is online."""
         try:
             state = self.state(surl, cached=False)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             # Raise backend failures
             if len(e.stderr) == 0:
                 raise BackendException(e.stdout)
@@ -646,16 +645,16 @@ class DIRACBackend(GridBackend):
         from DIRAC.DataManagementSystem.Client.DataManager import DataManager
         self.dm = DataManager()
 
-        self._xattr_cmd = sh2.Command('gfal-xattr')
-        self._replica_checksum_cmd = sh2.Command('gfal-sum')
-        self._bringonline_cmd = sh2.Command('gfal-legacy-bringonline')
-        self._cp_cmd = sh2.Command('gfal-copy')
-        self._ls_se_cmd = sh2.Command('gfal-ls').bake(color='never')
-        self._move_cmd = sh2.Command('gfal-rename')
-        self._mkdir_cmd = sh2.Command('gfal-mkdir')
+        self._xattr_cmd = sh.Command('gfal-xattr')
+        self._replica_checksum_cmd = sh.Command('gfal-sum')
+        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
+        self._cp_cmd = sh.Command('gfal-copy')
+        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
+        self._move_cmd = sh.Command('gfal-rename')
+        self._mkdir_cmd = sh.Command('gfal-mkdir')
 
-        self._replicate_cmd = sh2.Command('dirac-dms-replicate-lfn')
-        self._add_cmd = sh2.Command('dirac-dms-add-file')
+        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
+        self._add_cmd = sh.Command('dirac-dms-add-file')
 
     @staticmethod
     def _check_return_value(ret):
@@ -742,7 +741,7 @@ class DIRACBackend(GridBackend):
         args.append(surl)
         try:
             output = self._ls_se_cmd(*args, **kwargs)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
@@ -767,7 +766,7 @@ class DIRACBackend(GridBackend):
     def _exists(self, surl, **kwargs):
         try:
             ret = self._ls_se_cmd(surl, '-d', '-l', **kwargs).strip()
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 return False
             else:
@@ -812,18 +811,18 @@ class DIRACBackend(GridBackend):
     def _state(self, surl, **kwargs):
         try:
             state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
-        except sh2.ErrorReturnCode:
+        except sh.ErrorReturnCode:
             state = '?'
-        except sh2.SignalException_SIGSEGV:
+        except sh.SignalException_SIGSEGV:
             state = '?'
         return state
 
     def _checksum(self, surl, **kwargs):
         try:
             checksum = self._replica_checksum_cmd(surl, 'ADLER32', **kwargs).split()[1]
-        except sh2.ErrorReturnCode:
+        except sh.ErrorReturnCode:
             checksum = '?'
-        except sh2.SignalException_SIGSEGV:
+        except sh.SignalException_SIGSEGV:
             checksum = '?'
         except IndexError:
             checksum = '?'
@@ -846,7 +845,7 @@ class DIRACBackend(GridBackend):
 
         try:
             self._bringonline_cmd('-t', 10, surl, _out=out, **kwargs)
-        except sh2.ErrorReturnCode:
+        except sh.ErrorReturnCode:
             # The command fails if the file is not online
             # To be expected after 10 seconds
             pass
@@ -885,7 +884,7 @@ class DIRACBackend(GridBackend):
         destination = storage.get_SE(destination_surl).name
         try:
             self._replicate_cmd(lurl, destination, source, _out=out, **kwargs)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
@@ -903,7 +902,7 @@ class DIRACBackend(GridBackend):
             out = None
         try:
             self._cp_cmd('-f', '--checksum', 'ADLER32', surl, localpath, _out=out, **kwargs)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
@@ -922,7 +921,7 @@ class DIRACBackend(GridBackend):
 
         try:
             self._add_cmd(lurl, localpath, se, _out=out, **kwargs)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
@@ -972,7 +971,7 @@ class DIRACBackend(GridBackend):
             folder = posixpath.dirname(new_surl)
             self._mkdir_cmd(folder, '-p', _out=out, **kwargs)
             self._move_cmd(surl, new_surl, _out=out, **kwargs)
-        except sh2.ErrorReturnCode as e:
+        except sh.ErrorReturnCode as e:
             if 'No such file' in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
