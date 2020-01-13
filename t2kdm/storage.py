@@ -263,7 +263,7 @@ def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
     if location is None:
         location = dm.config.location
         if location == '/':
-            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `%s-config`?\nWARNING:"%(_branding,))
+            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `%s-config`?\nWARNING:"%(dm._branding,))
 
     # Create a pseudo SE with the correct location
     SE = StorageElement('local',
