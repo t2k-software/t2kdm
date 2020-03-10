@@ -34,6 +34,7 @@ import re
 from hkdm import storage
 from hkdm.cache import Cache
 from six import print_
+from time import sleep
 
 # Add the option to cache the output of functions for 60 seconds.
 # This is enabled by providing the `cached=True` argument.
@@ -97,7 +98,24 @@ class GridBackend(object):
             List directory entries instead of contents.
         """
 
-        return list(self.iter_ls(remotepath, **kwargs))
+        for i in range(3):
+            # Try three times
+            try:
+                lst = list(self.iter_ls(remotepath, **kwargs))
+            except DoesNotExistException as e:
+                # Do not try egain if target does not exist.
+                raise e
+            except Exception as e:
+                print_("`iter_ls` failed! (%d/3)"%(i+1,))
+                ex = e
+            else:
+                # Break loop if no exception was raised (success)
+                break
+            sleep(10)
+        else:
+            # Raise if loop was not broken
+            raise ex
+        return lst
 
     def iter_ls(self, remotepath, **kwargs):
         """List contents of a remote logical path.
@@ -151,7 +169,22 @@ class GridBackend(object):
     @cache.cached
     def is_dir(self, remotepath):
         """Is the remote path a directory?"""
-        return self._is_dir(self.get_lurl(remotepath))
+        lurl = self.get_lurl(remotepath)
+        for i in range(3):
+            # Try three times
+            try:
+                isdir = self._is_dir(lurl)
+            except Exception as e:
+                print_("`is_dir` failed! (%d/3)"%(i+1,))
+                ex = e
+            else:
+                # Break loop if no exception was raised (success)
+                break
+            sleep(10)
+        else:
+            # Raise if loop was not broken
+            raise ex
+        return isdir
 
     def _is_dir_se(self, surl):
         entry = next(self._ls_se(surl, directory=True))
@@ -349,6 +382,9 @@ class GridBackend(object):
                     if verbose:
                         print_("Failed to bring replica online.")
                     continue
+                else:
+                    if verbose:
+                        print_("File online. Copying...")
 
             try:
                 ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
@@ -462,14 +498,22 @@ class GridBackend(object):
         unless the `final` argument is `True`!
         If `deregister` is `True`, the replica will be removed from the catalogue,
         but the physicalcopy will not be deleted.
+        If `destination` is `'any'` and there are no replicas of the file and `final` is `True`,
+        it will be removed from the file catalogue.
         """
+
+        lurl = self.get_lurl(remotepath)
+        if final and destination == 'any' and len(self.replicas(remotepath)) == 0:
+            # Delete file catalogue entry
+            # Needs dummy storage element
+            return self._remove(storage.SEs[0], lurl, last=True, verbose=verbose, **kwargs)
 
         # Get destination SE and check if file is already not present
         dst = storage.get_SE(destination)
         if dst is None:
             raise BackendException("Could not find storage element %s.\n"%(destination,))
 
-        if not final and not dst.has_replica(remotepath):
+        if not dst.has_replica(remotepath, check_dark=False):
             # Replica already not present at destination, nothing to do here
             if verbose:
                 print_("%s\nReplica not present at destination storage element %s."%(remotepath, dst.name,))
@@ -491,15 +535,19 @@ class GridBackend(object):
         destination_path = dst.get_replica(remotepath)
         if destination_path is None:
             destination_path = dst.get_storage_path(remotepath)
-        lurl = self.get_lurl(remotepath)
 
+        # Only actually the last one if there is only one replica left
+        # And the se is the correct one
+        # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
+        last = (nrep==0) or (nrep==1 and se.name==dst.name)
         if deregister:
-            return self.deregister(destination_path, remotepath, verbose=verbose)
+            ret = self.deregister(destination_path, remotepath, verbose=verbose)
+            if ret and last:
+                # Delete file catalogue entry
+                return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
+            else:
+                return ret
         else:
-            # Only actually the last one if there is only one replica left
-            # And the se is the correct one
-            # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
-            last = (nrep==0) or (nrep==1 and se.name==dst.name)
             return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
 
     def _rmdir(self, lurl, verbose=False):
@@ -568,7 +616,7 @@ class GridBackend(object):
         if success:
             if verbose:
                 print_("Removing old catalogue entry...")
-            return self.remove(remotepath, se, final=True, verbose=verbose)
+            return self.remove(remotepath, 'any', final=True, verbose=verbose)
         else:
             return False
 
@@ -597,16 +645,16 @@ class DIRACBackend(GridBackend):
         from DIRAC.DataManagementSystem.Client.DataManager import DataManager
         self.dm = DataManager()
 
-        self._xattr_cmd = sh.Command('gfal-xattr')
-        self._replica_checksum_cmd = sh.Command('gfal-sum')
-        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
-        self._cp_cmd = sh.Command('gfal-copy')
-        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never')
-        self._move_cmd = sh.Command('gfal-rename')
-        self._mkdir_cmd = sh.Command('gfal-mkdir')
+        self._xattr_cmd = sh.Command('gfal-xattr').bake(_tty_out=False)
+        self._replica_checksum_cmd = sh.Command('gfal-sum').bake(_tty_out=False)
+        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline').bake(_tty_out=False)
+        self._cp_cmd = sh.Command('gfal-copy').bake(_tty_out=False)
+        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never', _tty_out=False)
+        self._move_cmd = sh.Command('gfal-rename').bake(_tty_out=False)
+        self._mkdir_cmd = sh.Command('gfal-mkdir').bake(_tty_out=False)
 
-        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn')
-        self._add_cmd = sh.Command('dirac-dms-add-file')
+        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn').bake(_tty_out=False)
+        self._add_cmd = sh.Command('dirac-dms-add-file').bake(_tty_out=False)
 
     @staticmethod
     def _check_return_value(ret):
@@ -646,14 +694,14 @@ class DIRACBackend(GridBackend):
                 else:
                     raise BackendException(md['Value']['Failed'][lurl])
             md = md['Value']['Successful'][lurl]
-        return DirEntry(posixpath.basename(lurl), mode=oct(md['Mode']), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md['ModificationDate']))
+        return DirEntry(posixpath.basename(lurl), mode=oct(md.get('Mode', -1)), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md.get('ModificationDate', '?')))
 
     def _iter_directory(self, lurl):
         """Iterate over entries in a directory."""
 
         ret = self.fc.listDirectory(lurl)
         if not ret['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, lst['Message'])
+            raise BackendException("Failed to list path '%s': %s", lurl, ret['Message'])
         for path, error in ret['Value']['Failed'].items():
             if 'Directory does not' in error:
                 # Dir does not exist, maybe a File?
@@ -763,7 +811,9 @@ class DIRACBackend(GridBackend):
     def _state(self, surl, **kwargs):
         try:
             state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
-        except sh.ErrorReturnCode:
+        except sh.ErrorReturnCode as e:
+            if "No such file" in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
             state = '?'
         except sh.SignalException_SIGSEGV:
             state = '?'
@@ -797,10 +847,12 @@ class DIRACBackend(GridBackend):
 
         try:
             self._bringonline_cmd('-t', 10, surl, _out=out, **kwargs)
-        except sh.ErrorReturnCode:
+        except sh.ErrorReturnCode as e:
             # The command fails if the file is not online
             # To be expected after 10 seconds
-            pass
+            if "No such file" in e.stderr:
+                # Except when the file does not actually exist on the tape storage
+                raise DoesNotExistException("No such file or Directory.")
 
         wait = 5
         while(True):

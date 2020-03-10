@@ -4,7 +4,10 @@ See 'commands' module for descriptions of the parameters.
 """
 
 from six import print_
+from six.moves import map
 import re
+from multiprocess import Pool
+import os, signal
 import hkdm as dm
 from hkdm import storage
 from hkdm import utils
@@ -29,6 +32,7 @@ class _recursive(object):
         if recursive_se is not None and recursive == False:
             recursive = True
         list_file = kwargs.pop('list', None)
+        parallel = kwargs.pop('parallel', 1)
         if 'verbose' in kwargs:
             verbose = kwargs['verbose']
         else:
@@ -45,30 +49,61 @@ class _recursive(object):
 
         good = 0
         bad = 0
-        if recursive is True:
-            for path in utils.remote_iter_recursively(remotepath, regex, se=recursive_se, ignore_exceptions=True):
-                if verbose:
-                    print_(self.iterating + " " + path)
-                try:
-                    ret = self.function(path, *args, **kwargs)
-                except Exception as e:
-                    if not verbose:
-                        # Tell the user which file failed.
-                        # Only necessary if they have not already been told.
-                        print_(self.iterating + " " + path + " failed.")
-                    else:
-                        print_("Failed.")
-                    print_(e)
-                    bad += 1
-                    if list_file is not None:
-                        list_file.write(path + '\n')
+        def is_good(path):
+            if verbose:
+                print_(self.iterating + " " + path)
+            try:
+                ret = self.function(path, *args, **kwargs)
+            except Exception as e:
+                print_(self.iterating + " " + path + " failed.")
+                print_(e)
+                return False, path
+            else:
+                if ret == 0:
+                    return True, path
                 else:
-                    if ret == 0:
+                    return False, path
+
+        if recursive is True:
+            if parallel > 1:
+                # Deal with signal weirdness when using a Pool
+                # Otherwise we won't be able to kill things with CTRL-C
+                def abort(*args, **kwargs):
+                    print_("%d Aborting!"%(os.getpid(),))
+                    raise Exception("%d Aborting!"%(os.getpid(),))
+                orig_sigint = signal.getsignal(signal.SIGINT)
+                orig_sigterm = signal.getsignal(signal.SIGTERM)
+                signal.signal(signal.SIGINT, abort)
+                signal.signal(signal.SIGTERM, abort)
+                p = Pool(parallel)
+                mapper = p.imap
+            else:
+                mapper = map
+
+            try:
+                for g, path in mapper(is_good, utils.remote_iter_recursively(remotepath, regex, se=recursive_se, ignore_exceptions=True)):
+                    if g:
                         good += 1
                     else:
                         bad += 1
                         if list_file is not None:
                             list_file.write(path + '\n')
+            except Exception:
+                if parallel > 1:
+                    # Kill all child processes
+                    for proc in p._pool:
+                        os.kill(proc.pid, signal.SIGTERM)
+                raise
+            finally:
+                if parallel > 1:
+                    # Clean up processing pool
+                    p.terminate()
+                    p.join()
+                    del p
+                    # Resetting signal handlers
+                    signal.signal(signal.SIGINT, orig_sigint)
+                    signal.signal(signal.SIGTERM, orig_sigterm)
+
             if verbose:
                 print_("%s %d files. %d files failed."%(self.iterated, good, bad))
             if list_file is not None:
@@ -78,12 +113,15 @@ class _recursive(object):
             else:
                 return 1
         else:
-            ret = self.function(remotepath, *args, **kwargs)
+            g, path = is_good(remotepath)
             if list_file is not None:
-                if ret != 0:
+                if not g:
                     list_file.write(remotepath + '\n')
                 list_file.close()
-            return ret
+            if g:
+                return 0
+            else:
+                return 1
 
     def __call__(self, function):
         self.function = function
@@ -131,9 +169,17 @@ def replicas(remotepath, *args, **kwargs):
     reps = dm.replicas(remotepath, *args, **kwargs)
     for r in reps:
         if checksum:
-            print_(dm.checksum(r), end=' ')
+            try:
+                chk = dm.checksum(r)
+            except Exception as e:
+                chk = str(e)
+            print_(chk, end=' ')
         if state:
-            print_(dm.state(r), end=' ')
+            try:
+                stat = dm.state(r)
+            except Exception as e:
+                stat = str(e)
+            print_(stat, end=' ')
         if name:
             se = dm.storage.get_SE(r)
             if se is None:

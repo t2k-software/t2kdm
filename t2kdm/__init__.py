@@ -3,7 +3,7 @@
 Helpful tools to manage the HyperK data on the grid.
 """
 
-__version__ = '1.9.0'
+__version__ = '1.11.4-dev'
 
 import configuration
 from configuration import _branding

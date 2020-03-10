@@ -25,14 +25,17 @@ descriptions = {
                     "Legacy backends: gfal, lcg",
     'basedir':      "What base directory should be assumed for all files on the grid?",
     'location':     "What is your location?\n"\
-                    "This is used to determine the closest storage element when downloading files.\n"\
-                    "Must follow the general pattern of '/continent/country/site'.\n"\
+                    "It must follow the general pattern of '/continent/country/site'.\n"\
+                    "This is used to determine the closest storage element (SE) when downloading files.\n"\
                     "Examples: /europe/uk/ral\n"\
                     "          /americas/ca/triumf\n"\
                     "          /asia/jp/kek\n"\
-                    "You can see the locations of all available SEs by running `%s-SEs`."%(_branding,),
+                    "You can see the locations of all available SEs by running `%s-SEs`.\n"\
+                    "If your location is not one of the SEs and you don't know the name of your site,\n"\
+                    "you can use whatever name for the site. %s will check how many levels\n"\
+                    "of your location are the same to judge the distance of each SE."%(_branding,_branding),
     'maid_config':  "Where the configuration file for the `%s-maid` command is stored.\n"\
-                    "If you do not deal with raw data replication, don't worry about it.\n"%(_branding,),
+                    "If you do not deal with raw data replication, don't worry about it."%(_branding,),
     'blacklist':    "Blacklist storage elements from being used automatically.\n"\
                     "They can still be specified explicitly.\n"\
                     "Provide the list as whitespace-separated list of SE names.\n"\
