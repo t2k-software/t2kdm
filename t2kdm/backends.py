@@ -811,7 +811,9 @@ class DIRACBackend(GridBackend):
     def _state(self, surl, **kwargs):
         try:
             state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
-        except sh.ErrorReturnCode:
+        except sh.ErrorReturnCode as e:
+            if "No such file" in e.stderr:
+                raise DoesNotExistException("No such file or Directory.")
             state = '?'
         except sh.SignalException_SIGSEGV:
             state = '?'
@@ -845,10 +847,12 @@ class DIRACBackend(GridBackend):
 
         try:
             self._bringonline_cmd('-t', 10, surl, _out=out, **kwargs)
-        except sh.ErrorReturnCode:
+        except sh.ErrorReturnCode as e:
             # The command fails if the file is not online
             # To be expected after 10 seconds
-            pass
+            if "No such file" in e.stderr:
+                # Except when the file does not actually exist on the tape storage
+                raise DoesNotExistException("No such file or Directory.")
 
         wait = 5
         while(True):

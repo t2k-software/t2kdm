@@ -169,9 +169,17 @@ def replicas(remotepath, *args, **kwargs):
     reps = dm.replicas(remotepath, *args, **kwargs)
     for r in reps:
         if checksum:
-            print_(dm.checksum(r), end=' ')
+            try:
+                chk = dm.checksum(r)
+            except Exception as e:
+                chk = str(e)
+            print_(chk, end=' ')
         if state:
-            print_(dm.state(r), end=' ')
+            try:
+                stat = dm.state(r)
+            except Exception as e:
+                stat = str(e)
+            print_(stat, end=' ')
         if name:
             se = dm.storage.get_SE(r)
             if se is None:
