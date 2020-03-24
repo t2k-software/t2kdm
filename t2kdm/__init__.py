@@ -3,7 +3,7 @@
 Helpful tools to manage the T2K data on the grid.
 """
 
-__version__ = '1.11.4-dev'
+__version__ = '1.11.4'
 
 import configuration
 from configuration import _branding
