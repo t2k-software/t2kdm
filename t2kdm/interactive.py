@@ -166,7 +166,14 @@ def replicas(remotepath, *args, **kwargs):
     checksum = kwargs.pop('checksum', False)
     state = kwargs.pop('state', False)
     name = kwargs.pop('name', False)
-    reps = dm.replicas(remotepath, *args, **kwargs)
+    distance = kwargs.pop('distance', False)
+    if distance:
+        if isinstance(distance, str):
+            reps = [x[0] for x in dm.iter_file_sources(remotepath, destination=distance, tape=True)]
+        else:
+            reps = [x[0] for x in dm.iter_file_sources(remotepath, tape=True)]
+    else:
+        reps = dm.replicas(remotepath, *args, **kwargs)
     for r in reps:
         if checksum:
             try:

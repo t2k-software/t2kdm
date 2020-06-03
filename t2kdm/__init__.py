@@ -30,6 +30,8 @@ else:
     is_dir = backend.is_dir
     is_dir_se = backend.is_dir_se
     replicas = backend.replicas
+    get_file_source = backend.get_file_source
+    iter_file_sources = backend.iter_file_sources
     is_file = backend.is_file
     is_file_se = backend.is_file_se
     exists = backend.exists

@@ -199,6 +199,8 @@ replicas.add_argument('-s', '--state', action='store_true',
     help="display the state of all replicas, e.g. 'ONLINE'")
 replicas.add_argument('-n', '--name', action='store_true',
     help="display the name of the storage element")
+replicas.add_argument('-d', '--distance', nargs='?', metavar="SE", default=False, const=True,
+    help="sort replicas by distance from configured location or given storgae element")
 all_commands.append(replicas)
 
 check = Command('check', interactive.check, "Check the replicas of a given file/directory.")
