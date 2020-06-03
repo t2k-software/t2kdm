@@ -83,6 +83,13 @@ def run_read_only_tests(tape=False):
     else:
         raise Exception("Did not find expected replica.")
 
+    print_("Testing iter_file_sources...")
+    for rep, se in dm.iter_file_sources(testpaths[0]):
+        if 'heplnx204.pp.rl.ac.uk' in rep:
+            break
+    else:
+        raise Exception("Did not find expected replica.")
+
     print_("Testing is_file...")
     assert(dm.backend.is_file(testpaths[0]))
     assert(not dm.backend.is_file(testpaths[0]+"DNE"))
