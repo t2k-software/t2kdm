@@ -640,6 +640,9 @@ class DIRACBackend(GridBackend):
         if not proxy['OK']:
             raise BackendException("Proxy error.")
 
+        from DIRAC.Interfaces.API.Dirac import Dirac
+        self.dirac = Dirac()
+
         from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
         self.fc = FileCatalog()
         from DIRAC.DataManagementSystem.Client.DataManager import DataManager
@@ -757,7 +760,7 @@ class DIRACBackend(GridBackend):
         # Check the lurl actually exists
         self._ls(lurl, directory=True)
 
-        rep = self.fc.getReplicas(lurl)
+        rep = self.dirac.getReplicas(lurl)
         self._check_return_value(rep)
         rep = rep['Value']['Successful'][lurl]
 
