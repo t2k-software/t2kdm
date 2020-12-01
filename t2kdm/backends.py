@@ -714,6 +714,14 @@ class GridBackend(object):
         new_remotepath = re.sub(re_from, re_to, remotepath)
         return self.move(remotepath, new_remotepath, **kwargs)
 
+    @cache.cached
+    def free_space(self, se):
+        """Return the remaining free space on a storage element."""
+        se = storage.get_SE(se)
+        if se is None:
+            raise BackendException("Could not find storage element.")
+        return self._free_space(se)
+
 
 class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
@@ -727,6 +735,11 @@ class DIRACBackend(GridBackend):
         from DIRAC.Core.Base import Script
 
         Script.initialize()
+
+        from DIRAC.Resources.Storage.StorageElement import StorageElement
+
+        self._StorageElement = StorageElement
+
         from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
 
         self.pm = ProxyManagerClient()
@@ -1114,6 +1127,21 @@ class DIRACBackend(GridBackend):
                 else:
                     raise BackendException(e.stderr)
         return True
+
+    def _free_space(self, se):
+        """Return the remaining free space on a storage element."""
+
+        from DIRAC import gLogger
+
+        gLogger.setLevel("DEBUG")
+
+        print_(se.name)
+        print_(self._StorageElement(se.name))
+        try:
+            occ = self._StorageElement(se.name).getOccupancy()
+        except:
+            occ = "BAH"
+        return occ
 
 
 def get_backend(config):

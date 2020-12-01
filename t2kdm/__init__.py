@@ -44,6 +44,7 @@ else:
     rename = backend.rename
     get = backend.get
     put = backend.put
+    free_space = backend.free_space
 
     # And from utils
     check_checksums = utils.check_checksums

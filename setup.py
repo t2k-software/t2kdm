@@ -61,6 +61,7 @@ setup(
             "t2kdm-html-index=t2kdm.commands:html_index.run_from_console",
             "t2kdm-move=t2kdm.commands:move.run_from_console",
             "t2kdm-rename=t2kdm.commands:rename.run_from_console",
+            "t2kdm-df=t2kdm.commands:df.run_from_console",
             "t2kdm-cli=t2kdm.cli:run_cli",
             "t2kdm-tests=t2kdm.tests:run_tests",
             "t2kdm-config=t2kdm.configuration:run_configuration_wizard",
