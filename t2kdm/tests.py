@@ -51,7 +51,7 @@ def temp_dir():
     finally:
         sh.rm('-r', tempdir, _tty_out=False)
 
-def run_read_only_tests(tape=False):
+def run_read_only_tests(tape=False, parallel=2):
     print_("Testing ls...")
 
     entries = dm.backend.ls(testdir)
@@ -157,14 +157,14 @@ def run_read_only_tests(tape=False):
         os.remove(filename)
 
         # Test recursive get
-        assert(dm.interactive.get(testdir, tempdir, recursive='test[12]\.txt', parallel=2) == 0)
+        assert(dm.interactive.get(testdir, tempdir, recursive='test[12]\.txt', parallel=parallel) == 0)
         assert(os.path.isfile(filename))
 
     print_("Testing check...")
     with temp_dir() as tempdir:
         filename = os.path.join(tempdir, 'faulty.txt')
         with no_output(True):
-            assert(dm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename, parallel=2) != 0) # There are some deliberate failures here
+            assert(dm.interactive.check(testdir, checksum=True, se=testSEs, recursive=True, quiet=False, verbose=True, list=filename, parallel=parallel) != 0) # There are some deliberate failures here
         assert os.path.isfile(filename)
         assert os.path.getsize(filename) > 0
         with no_output(True):
@@ -211,7 +211,7 @@ def run_read_only_tests(tape=False):
         assert(cli.completedefault('s', 'lls us', 0, 0) == ['sr/'])
         assert(cli.completedefault('"us', 'lls "us', 0, 0) == [])
 
-def run_read_write_tests(tape=False):
+def run_read_write_tests(tape=False, parallel=2):
     print_("Testing replicate...")
     with no_output():
         assert(dm.interactive.replicate(testdir, testSEs[1], recursive=r'^test[1]\.t.t$', verbose=True) == 0)
@@ -306,6 +306,8 @@ def run_tests():
         help="do write tests. Default: read only")
     parser.add_argument('-t', '--tape', action='store_true',
         help="do write tape storage tests. Default: disks only")
+    parser.add_argument('-p', '--parallel', default=2, type=int,
+        help="specify how many parallel processes to test. Defaul: 2")
     parser.add_argument('-b', '--backend', default=None,
         help="specify which backend to use")
 
@@ -314,9 +316,9 @@ def run_tests():
         dm.config.backend = args.backend
         dm.backend = backends.get_backend(dm.config)
 
-    run_read_only_tests(tape=args.tape)
+    run_read_only_tests(tape=args.tape, parallel=args.parallel)
     if args.write:
-        run_read_write_tests(tape=args.tape)
+        run_read_write_tests(tape=args.tape, parallel=args.parallel)
 
     print_("All done.")
 
