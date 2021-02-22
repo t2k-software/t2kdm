@@ -27,6 +27,7 @@ Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
 environment. Within this environment you can install t2kdm releases directly
 with pip:
 
+    $ pip install --upgrade pip # Upgrade pip
     $ pip install t2kdm
 
 Or you can clone and install the HEAD version from the repository:

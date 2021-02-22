@@ -1,4 +1,6 @@
 from setuptools import setup
+import setuptools_scm  # noqa: F401
+import toml  # noqa: F401
 
 # Todo: Parse this from a proper readme file in the future
 description='T2K Data Manager'
@@ -9,17 +11,7 @@ experiment.
 
 """
 
-def get_version():
-    """Get the version number by parsing the package's __init__.py."""
-    with open("t2kdm/__init__.py", 'rt') as f:
-        for line in f:
-            if line.startswith("__version__ = "):
-                return eval(line[14:])
-        else:
-            raise RuntimeError("Could not determine package version!")
-
 setup(name='t2kdm',
-    version=get_version(),
     description=description,
     long_description=long_description,
     url='https://github.com/t2k-software/t2kdm',
