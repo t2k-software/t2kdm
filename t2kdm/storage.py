@@ -157,6 +157,7 @@ SEs = [
         location = '/europe/uk/ral',
         basepath = 'srm://heplnx204.pp.rl.ac.uk:8443/srm/managerv2?SFN=/pnfs/pp.rl.ac.uk/data/t2k'),
     StorageElement('UKI-SOUTHGRID-OX-HEP-disk',
+        broken = True,
         host = 't2se01.physics.ox.ac.uk',
         type = 'disk',
         location = '/europe/uk/ox',

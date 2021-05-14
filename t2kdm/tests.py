@@ -18,7 +18,7 @@ import re
 testdir = '/test/%s'%(dm._branding,)
 testfiles = ['test1.txt', 'test2.txt', 'test3.txt']
 testpaths = [posixpath.join(testdir, x) for x in testfiles]
-testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'UKI-SOUTHGRID-OX-HEP-disk', 'RAL-LCG2-T2K-tape']
+testSEs = ['UKI-SOUTHGRID-RALPP-disk', 'CA-SFU-T21-disk', 'RAL-LCG2-T2K-tape']
 
 @contextmanager
 def no_output(redirect=True):
