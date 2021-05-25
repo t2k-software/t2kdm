@@ -303,6 +303,10 @@ def check(remotepath, *args, **kwargs):
     if dm.is_dir(remotepath, cached=True):
         raise InteractiveException("%s is a directory. Maybe you want to use the `--recursive` option?"%(remotepath,))
 
+    if len(dm.replicas(remotepath)) == 0:
+        print_("%s has no replicas!"%(remotepath))
+        return 0
+
     ret = True
 
     if len(ses) > 0:

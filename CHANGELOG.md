@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Added `IN2P3-CC-XRD-disk` and `IN2P3-CC-XRD-tape`.
+- `check` will now check whether a file has no replicas at all.
 
 ## [1.14.0] - 2021-05-17
 ### Changed
