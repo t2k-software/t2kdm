@@ -631,6 +631,9 @@ class DIRACBackend(GridBackend):
     def __init__(self, **kwargs):
         GridBackend.__init__(self, catalogue_prefix='', **kwargs)
 
+        # Set environment variables, needed for in2p3
+        os.environ["XrdSecGSIDELEGPROXY"] = "1"
+
         from DIRAC.Core.Base import Script
         Script.initialize()
         from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
