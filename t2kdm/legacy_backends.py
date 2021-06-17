@@ -354,4 +354,3 @@ class GFALBackend(GridBackend):
             else:
                 raise BackendException(e.stderr)
         return True
-
