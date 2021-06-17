@@ -109,3 +109,19 @@ Check which files are replicated to a given storage element:
 Remove replicas of files from a specififc storage element:
 
     $ t2kdm-remove /test/t2kdm/test1.txt UKI-SOUTHGRID-OX-HEP-disk
+
+Contributing
+------------
+
+Please use `pre-commit <https://pre-commit.com/>`_ to check your code before
+checking in anything. To install pre-commit and the repository hooks just run
+these commands inside the repository:
+
+    $ pip3 install --user pre-commit
+    $ pre-commit install
+
+That's it. Now pre-commit should check your code for compliance whenever you
+try to check it in.
+
+Among other things, it will check that the code adheres to the `Black
+<https://black.readthedocs.io/en/stable/index.html>`_ code style.

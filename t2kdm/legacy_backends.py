@@ -5,35 +5,36 @@ These might or might not work.
 
 from t2kdm.backends import *
 
+
 class LCGBackend(GridBackend):
     """Grid backend using the LCG command line tools `lfc-*` and `lcg-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
+        GridBackend.__init__(self, catalogue_prefix="lfn:/grid", **kwargs)
 
-        #self._proxy_init_cmd = sh.Command('voms-proxy-init')
-        self._ls_cmd = sh.Command('lfc-ls')
-        self._replicas_cmd = sh.Command('lcg-lr')
-        self._replica_state_cmd = sh.Command('lcg-ls')
-        self._replica_checksum_cmd = sh.Command('lcg-get-checksum')
-        self._bringonline_cmd = sh.Command('lcg-bringonline')
-        self._replicate_cmd = sh.Command('lcg-rep')
-        self._cp_cmd = sh.Command('lcg-cp')
-        self._cr_cmd = sh.Command('lcg-cr')
-        self._del_cmd = sh.Command('lcg-del')
+        # self._proxy_init_cmd = sh.Command('voms-proxy-init')
+        self._ls_cmd = sh.Command("lfc-ls")
+        self._replicas_cmd = sh.Command("lcg-lr")
+        self._replica_state_cmd = sh.Command("lcg-ls")
+        self._replica_checksum_cmd = sh.Command("lcg-get-checksum")
+        self._bringonline_cmd = sh.Command("lcg-bringonline")
+        self._replicate_cmd = sh.Command("lcg-rep")
+        self._cp_cmd = sh.Command("lcg-cp")
+        self._cr_cmd = sh.Command("lcg-cr")
+        self._del_cmd = sh.Command("lcg-del")
 
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
-        d = kwargs.pop('directory', False)
+        d = kwargs.pop("directory", False)
         args = []
         if -d:
-            args.append('-d')
-        args.append('-l')
+            args.append("-d")
+        args.append("-l")
         args.append(lurl[4:])
         try:
             output = self._ls_cmd(*args, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise
@@ -41,15 +42,23 @@ class LCGBackend(GridBackend):
             fields = line.split()
             mode, links, uid, gid, size = fields[:5]
             name = fields[-1]
-            modified = ' '.join(fields[5:-1])
-            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
+            modified = " ".join(fields[5:-1])
+            yield DirEntry(
+                name,
+                mode=mode,
+                links=int(links),
+                gid=gid,
+                uid=uid,
+                size=int(size),
+                modified=modified,
+            )
 
     def _replicas(self, lurl, **kwargs):
         ret = []
         try:
             output = self._replicas_cmd(lurl, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
         for line in output:
             line = line.strip()
@@ -58,36 +67,48 @@ class LCGBackend(GridBackend):
         return ret
 
     def _state(self, surl, **kwargs):
-        it = kwargs.pop('_iter', None)
+        it = kwargs.pop("_iter", None)
         try:
-            listing = self._replica_state_cmd('-l', surl, **kwargs)
+            listing = self._replica_state_cmd("-l", surl, **kwargs)
         except sh.ErrorReturnCode:
-            listing = '- - - - - ?'
+            listing = "- - - - - ?"
         except sh.SignalException_SIGSEGV:
-            listing = '- - - - - ?'
+            listing = "- - - - - ?"
         return listing.split()[5]
 
     def _checksum(self, surl, **kwargs):
-        it = kwargs.pop('_iter', None)
+        it = kwargs.pop("_iter", None)
         try:
             listing = self._replica_checksum_cmd(surl, **kwargs)
         except sh.ErrorReturnCode:
-            listing = '? -'
+            listing = "? -"
         except sh.SignalException_SIGSEGV:
-            listing = '? -'
+            listing = "? -"
         try:
             checksum = listing.split()[0]
         except IndexError:
             # Something weird happened
-            checksum = '?'
+            checksum = "?"
         return checksum
 
     def _bringonline(self, surl, timeout, **kwargs):
-        kwargs['_err_to_out'] = True # Verbose output is on stderr
-        kwargs.pop('_err', None) # Cannot specify _err and _err_ro_out at same time
+        kwargs["_err_to_out"] = True  # Verbose output is on stderr
+        kwargs.pop("_err", None)  # Cannot specify _err and _err_ro_out at same time
 
         # Get original command output
-        return self._bringonline_cmd('-v', '--bdii-timeout', timeout, '--srm-timeout', timeout, '--sendreceive-timeout', timeout, '--connect-timeout', timeout, surl, **kwargs)
+        return self._bringonline_cmd(
+            "-v",
+            "--bdii-timeout",
+            timeout,
+            "--srm-timeout",
+            timeout,
+            "--sendreceive-timeout",
+            timeout,
+            "--connect-timeout",
+            timeout,
+            surl,
+            **kwargs
+        )
 
     def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
         if verbose:
@@ -95,9 +116,20 @@ class LCGBackend(GridBackend):
         else:
             out = None
         try:
-            self._replicate_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', destination_surl, source_surl, _out=out, _err_to_out=True, **kwargs)
+            self._replicate_cmd(
+                "-v",
+                "--sendreceive-timeout",
+                14400,
+                "--checksum",
+                "-d",
+                destination_surl,
+                source_surl,
+                _out=out,
+                _err_to_out=True,
+                **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
@@ -109,14 +141,23 @@ class LCGBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', surl, localpath, _out=out, _err_to_out=True, **kwargs)
+            self._cp_cmd(
+                "-v",
+                "--sendreceive-timeout",
+                14400,
+                "--checksum",
+                surl,
+                localpath,
+                _out=out,
+                _err_to_out=True,
+                **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
         return os.path.isfile(localpath)
-
 
     def _put(self, localpath, surl, lurl, verbose=False, **kwargs):
         if verbose:
@@ -124,9 +165,22 @@ class LCGBackend(GridBackend):
         else:
             out = None
         try:
-            self._cr_cmd('-v', '--sendreceive-timeout', 14400, '--checksum', '-d', surl, '-l', lurl, localpath, _out=out, _err_to_out=True, **kwargs)
+            self._cr_cmd(
+                "-v",
+                "--sendreceive-timeout",
+                14400,
+                "--checksum",
+                "-d",
+                surl,
+                "-l",
+                lurl,
+                localpath,
+                _out=out,
+                _err_to_out=True,
+                **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
@@ -141,42 +195,43 @@ class LCGBackend(GridBackend):
             if deregister:
                 raise BackendException("Operation not supported by LCG backend.")
             else:
-                self._del_cmd('-v', surl, _out=out, _err_to_out=True, **kwargs)
+                self._del_cmd("-v", surl, _out=out, _err_to_out=True, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
         return True
 
+
 class GFALBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, catalogue_prefix='lfn:/grid', **kwargs)
+        GridBackend.__init__(self, catalogue_prefix="lfn:/grid", **kwargs)
 
-        #self._proxy_init_cmd = sh.Command('voms-proxy-init')
-        self._ls_cmd = sh.Command('gfal-ls').bake(color='never')
-        self._replicas_cmd = sh.Command('gfal-xattr')
-        self._replica_checksum_cmd = sh.Command('gfal-sum')
-        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline')
-        self._cp_cmd = sh.Command('gfal-copy')
-        self._register_cmd = sh.Command('gfal-legacy-register')
-        self._deregister_cmd = sh.Command('gfal-legacy-unregister')
-        self._del_cmd = sh.Command('gfal-rm')
+        # self._proxy_init_cmd = sh.Command('voms-proxy-init')
+        self._ls_cmd = sh.Command("gfal-ls").bake(color="never")
+        self._replicas_cmd = sh.Command("gfal-xattr")
+        self._replica_checksum_cmd = sh.Command("gfal-sum")
+        self._bringonline_cmd = sh.Command("gfal-legacy-bringonline")
+        self._cp_cmd = sh.Command("gfal-copy")
+        self._register_cmd = sh.Command("gfal-legacy-register")
+        self._deregister_cmd = sh.Command("gfal-legacy-unregister")
+        self._del_cmd = sh.Command("gfal-rm")
 
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
-        d = kwargs.pop('directory', False)
+        d = kwargs.pop("directory", False)
         args = []
         if -d:
-            args.append('-d')
-        args.append('-l')
+            args.append("-d")
+        args.append("-l")
         args.append(lurl)
         try:
             output = self._ls_cmd(*args, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
@@ -184,8 +239,16 @@ class GFALBackend(GridBackend):
             fields = line.split()
             mode, links, gid, uid, size = fields[:5]
             name = fields[-1]
-            modified = ' '.join(fields[5:-1])
-            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
+            modified = " ".join(fields[5:-1])
+            yield DirEntry(
+                name,
+                mode=mode,
+                links=int(links),
+                gid=gid,
+                uid=uid,
+                size=int(size),
+                modified=modified,
+            )
 
     def _ls_se(self, surl, **kwargs):
         return self._ls(surl, **kwargs)
@@ -193,9 +256,9 @@ class GFALBackend(GridBackend):
     def _replicas(self, lurl, **kwargs):
         ret = []
         try:
-            output = self._replicas_cmd(lurl, 'user.replicas', **kwargs)
+            output = self._replicas_cmd(lurl, "user.replicas", **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
@@ -207,9 +270,9 @@ class GFALBackend(GridBackend):
 
     def _exists(self, surl, **kwargs):
         try:
-            state = self._replicas_cmd(surl, 'user.status', **kwargs).strip()
+            state = self._replicas_cmd(surl, "user.status", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 return False
             else:
                 raise BackendException(e.stderr)
@@ -224,7 +287,7 @@ class GFALBackend(GridBackend):
         try:
             self._deregister_cmd(lurl, surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
@@ -233,22 +296,22 @@ class GFALBackend(GridBackend):
 
     def _state(self, surl, **kwargs):
         try:
-            state = self._replicas_cmd(surl, 'user.status', **kwargs).strip()
+            state = self._replicas_cmd(surl, "user.status", **kwargs).strip()
         except sh.ErrorReturnCode:
-            state = '?'
+            state = "?"
         except sh.SignalException_SIGSEGV:
-            state = '?'
+            state = "?"
         return state
 
     def _checksum(self, surl, **kwargs):
         try:
-            checksum = self._replica_checksum_cmd(surl, 'ADLER32', **kwargs).split()[1]
+            checksum = self._replica_checksum_cmd(surl, "ADLER32", **kwargs).split()[1]
         except sh.ErrorReturnCode:
-            checksum = '?'
+            checksum = "?"
         except sh.SignalException_SIGSEGV:
-            checksum = '?'
+            checksum = "?"
         except IndexError:
-            checksum = '?'
+            checksum = "?"
         return checksum
 
     def _bringonline(self, surl, timeout, verbose=False, **kwargs):
@@ -263,14 +326,14 @@ class GFALBackend(GridBackend):
         else:
             out = None
         time_left = timeout
-        while(True):
+        while True:
             if time_left > 10:
                 timeout = 10
             else:
                 timeout = time_left
             time_left -= 10
             try:
-                self._bringonline_cmd('-t', timeout, surl, _out=out, **kwargs)
+                self._bringonline_cmd("-t", timeout, surl, _out=out, **kwargs)
             except sh.ErrorReturnCode:
                 # Not online yet.
                 if time_left > 0:
@@ -287,18 +350,30 @@ class GFALBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-p', '-T', '1800', '--checksum', 'ADLER32', source_surl, destination_surl, _out=out, **kwargs)
+            self._cp_cmd(
+                "-p",
+                "-T",
+                "1800",
+                "--checksum",
+                "ADLER32",
+                source_surl,
+                destination_surl,
+                _out=out,
+                **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
-            elif 'File exists' in e.stderr:
+            elif "File exists" in e.stderr:
                 if verbose:
                     print_("Replica already exists. Checking checksum...")
                 if self.checksum(destination_surl) == self.checksum(source_surl):
                     if verbose:
                         print_("Checksums match. Registering replica.")
                 else:
-                    raise BackendException("File with different checksum already present.")
+                    raise BackendException(
+                        "File with different checksum already present."
+                    )
             else:
                 raise BackendException(e.stderr)
 
@@ -315,9 +390,11 @@ class GFALBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-f', '--checksum', 'ADLER32', surl, localpath, _out=out, **kwargs)
+            self._cp_cmd(
+                "-f", "--checksum", "ADLER32", surl, localpath, _out=out, **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
@@ -329,9 +406,11 @@ class GFALBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-p', '--checksum', 'ADLER32', localpath, surl, lurl, _out=out, **kwargs)
+            self._cp_cmd(
+                "-p", "--checksum", "ADLER32", localpath, surl, lurl, _out=out, **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
@@ -349,9 +428,8 @@ class GFALBackend(GridBackend):
                 # Delete lfn
                 self._del_cmd(lurl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in e.stderr:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(e.stderr)
         return True
-

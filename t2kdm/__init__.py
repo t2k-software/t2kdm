@@ -11,7 +11,7 @@ import storage
 import utils
 import sys
 
-if sys.argv[0].endswith('%s-config'%(_branding,)):
+if sys.argv[0].endswith("%s-config" % (_branding,)):
     # Someone is calling <brandname>-config.
     # Do not try to load any configuration, as that is what they might be trying to fix!
     pass

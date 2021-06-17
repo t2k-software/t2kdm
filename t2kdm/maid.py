@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, tzinfo
 import posixpath
 import tempfile
 
+
 class UTC(tzinfo):
     """UTC class, because pytz would be overkill"""
 
@@ -24,7 +25,10 @@ class UTC(tzinfo):
 
     def dst(self, dt):
         return timedelta(0)
+
+
 utc = UTC()
+
 
 def pid_running(pid):
     """Return `True` is a process with the given PID is running."""
@@ -34,6 +38,7 @@ def pid_running(pid):
         return False
     else:
         return True
+
 
 class Task(object):
     """Class to organise what need to be done when."""
@@ -52,21 +57,21 @@ class Task(object):
         """
 
         # Handle basic keyword arguments
-        self.frequency = kwargs.pop('frequency', 'weekly')
-        if self.frequency not in ['daily', 'weekly', 'monthly']:
+        self.frequency = kwargs.pop("frequency", "weekly")
+        if self.frequency not in ["daily", "weekly", "monthly"]:
             raise ValueError("Illegal frequency!")
-        self.logfile = kwargs.pop('logfile', None)
+        self.logfile = kwargs.pop("logfile", None)
 
         self.last_done = None
         self.state = None
 
     def get_period(self):
         """Get the time period (1/frequency) of the task."""
-        if self.frequency  == 'daily':
+        if self.frequency == "daily":
             return timedelta(1)
-        elif self.frequency  == 'weekly':
+        elif self.frequency == "weekly":
             return timedelta(7)
-        elif self.frequency  == 'monthly':
+        elif self.frequency == "monthly":
             return timedelta(30)
         else:
             raise ValueError("Illegal frequency!")
@@ -79,17 +84,17 @@ class Task(object):
             stderr = sys.stderr
             # Open the file in line buffered mode, so we can read along
             if append:
-                mode = 'at'
+                mode = "at"
             else:
-                mode= 'wt'
+                mode = "wt"
             with open(self.logfile, mode, 1) as f:
                 sys.stdout = f
                 sys.stderr = f
                 try:
                     yield
                 finally:
-                   sys.stdout = stdout
-                   sys.stderr = stdout
+                    sys.stdout = stdout
+                    sys.stderr = stdout
         else:
             # Nothing to do
             yield
@@ -97,7 +102,7 @@ class Task(object):
     def _pre_do(self, id=None):
         """Bookkeeping when starting a task."""
         now = datetime.now(utc)
-        self.state = 'STARTED'
+        self.state = "STARTED"
         self.last_done = now
         if id is None:
             self.last_id = os.getpid()
@@ -126,7 +131,7 @@ class Task(object):
                 success = self._do()
             except Exception as e:
                 # Something went wrong
-                self._post_do(state='FAILED', id=id)
+                self._post_do(state="FAILED", id=id)
                 print_("TASK FAILED")
                 # Add a timestamp to the end of the output
                 sh.date(_out=sys.stdout, _tty_out=False)
@@ -134,17 +139,17 @@ class Task(object):
                 raise
 
             if success:
-                self._post_do(state='DONE', id=id)
+                self._post_do(state="DONE", id=id)
                 print_("TASK DONE")
             else:
-                self._post_do(state='FAILED', id=id)
+                self._post_do(state="FAILED", id=id)
                 print_("TASK FAILED")
             # Add a timestamp to the end of the output
             sh.date(_out=sys.stdout, _tty_out=False)
 
         return success
 
-    def _post_do(self, state='DONE', id=None):
+    def _post_do(self, state="DONE", id=None):
         """Bookkeeping when finishing a task."""
         self.state = state
         if id is None:
@@ -167,9 +172,9 @@ class Task(object):
         """
 
         now = datetime.now(utc)
-        day = 24*3600 # seconds per day
-        week = 7*day # seconds per week
-        month = 30*day # seconds per month
+        day = 24 * 3600  # seconds per day
+        week = 7 * day  # seconds per week
+        month = 30 * day  # seconds per month
         T = self.get_period()
 
         # Everything sucks on python 2.6...
@@ -184,7 +189,7 @@ class Task(object):
 
     def get_logname(self):
         """Get a valid filename that can be used to log the output of the task."""
-        return base64.b64encode(self.get_id(), altchars='+_')+'.txt'
+        return base64.b64encode(self.get_id(), altchars="+_") + ".txt"
 
     def get_id(self):
         """Return a string that identifies the task."""
@@ -192,21 +197,22 @@ class Task(object):
 
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_Task'%(self.frequency,)
+        return "%s_Task" % (self.frequency,)
+
 
 class CommandTask(Task):
     """General task based on the commands in t2kdm.commands."""
 
     def __init__(self, **kwargs):
-        self.commandline = kwargs.pop('commandline')
-        command, argstr = self.commandline.split(' ', 1)
+        self.commandline = kwargs.pop("commandline")
+        command, argstr = self.commandline.split(" ", 1)
         for cmd in commands.all_commands:
             if cmd.name == command:
                 self.command = cmd
                 self.argstr = argstr
                 break
         else:
-            raise ValueError("Unknown command: %s"%(command,))
+            raise ValueError("Unknown command: %s" % (command,))
         super(CommandTask, self).__init__(**kwargs)
 
     def _do(self):
@@ -215,7 +221,8 @@ class CommandTask(Task):
 
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_CommandTask_>%s<'%(self.frequency, self.commandline)
+        return "%s_CommandTask_>%s<" % (self.frequency, self.commandline)
+
 
 class TrimLogTask(Task):
     """Task to trim a log file to a certain number of line.
@@ -234,14 +241,16 @@ class TrimLogTask(Task):
         to be kept with the `nlines` keyword arguments.
         """
 
-        self.path = kwargs.pop('path')
-        self.nlines = kwargs.pop('nlines')
+        self.path = kwargs.pop("path")
+        self.nlines = kwargs.pop("nlines")
         super(TrimLogTask, self).__init__(**kwargs)
 
     def _do(self):
-        with tempfile.TemporaryFile('w+t') as tf:
+        with tempfile.TemporaryFile("w+t") as tf:
             # Write tail of logfile into temporary file
-            sh.tail(self.path, lines=self.nlines, _in=self.path, _out=tf, _tty_out=False)
+            sh.tail(
+                self.path, lines=self.nlines, _in=self.path, _out=tf, _tty_out=False
+            )
             # Rewind temporary file
             tf.seek(0)
             # Overwrite old file
@@ -250,7 +259,12 @@ class TrimLogTask(Task):
 
     def __str__(self):
         """Return a string to identify the task by."""
-        return '%s_TrimLogTask_of_>%s<_to_>%s<'%(self.frequency, self.path, self.nlines)
+        return "%s_TrimLogTask_of_>%s<_to_>%s<" % (
+            self.frequency,
+            self.path,
+            self.nlines,
+        )
+
 
 class TaskLog(object):
     """Class to handle the logging of task activity."""
@@ -259,34 +273,36 @@ class TaskLog(object):
         """Use the given filename as log file."""
         self.filename = filename
         self.timeformat = "%Y-%m-%d_%H:%M:%S%z"
-        self.id = os.getpid() # Store an ID to identifiy different processes
+        self.id = os.getpid()  # Store an ID to identifiy different processes
 
     def timestamp(self):
         """Return the current timestamp."""
         time = datetime.now(utc)
         return time.strftime(self.timeformat)
 
-    def log(self, state, task, id=None, end='\n'):
+    def log(self, state, task, id=None, end="\n"):
         """Log the STARTED, DONE or FAILED of a task.
 
         Prepends a timestamp and PID.
         """
 
-        if state not in ['STARTED', 'DONE', 'FAILED']:
-            return ValueError("Not a valid task state: %s"%(state,))
+        if state not in ["STARTED", "DONE", "FAILED"]:
+            return ValueError("Not a valid task state: %s" % (state,))
 
         if id is None:
             id = self.id
-        with open(self.filename, 'at') as f:
-            f.write("%s %s %s %s%s"%(self.timestamp(), id, state, task, end))
+        with open(self.filename, "at") as f:
+            f.write("%s %s %s %s%s" % (self.timestamp(), id, state, task, end))
 
     class ParseError(Exception):
         pass
 
     def parse_time(self, timestamp):
         """Return a datetime object according to the timestamp."""
-        timeformat = self.timeformat[:-2] # Need to remove '%z' because pthon <3.2 does not understand it
-        timestamp = timestamp[:-5] # Same for timestamp, remove '+0000'
+        timeformat = self.timeformat[
+            :-2
+        ]  # Need to remove '%z' because pthon <3.2 does not understand it
+        timestamp = timestamp[:-5]  # Same for timestamp, remove '+0000'
         # We just have to assume here that everything is in UTC
         try:
             dt = datetime.strptime(timestamp, timeformat)
@@ -294,7 +310,7 @@ class TaskLog(object):
             raise TaskLog.ParseError()
 
         # Make timezone-aware
-        dt = dt.replace(tzinfo = utc)
+        dt = dt.replace(tzinfo=utc)
         return dt
 
     def _parse_line(self, line):
@@ -304,10 +320,10 @@ class TaskLog(object):
             raise TaskLog.ParseError()
 
         ret = {
-            'time': self.parse_time(elements[0]),
-            'id': elements[1],
-            'state': elements[2],
-            'task': ' '.join(elements[3:]),
+            "time": self.parse_time(elements[0]),
+            "id": elements[1],
+            "state": elements[2],
+            "task": " ".join(elements[3:]),
         }
         return ret
 
@@ -318,37 +334,44 @@ class TaskLog(object):
         last_done = {}
         last_failed = {}
 
-        with open(self.filename, 'rt') as f:
+        with open(self.filename, "rt") as f:
             for line in f:
                 line = line.strip()
-                if line.startswith('#'):
+                if line.startswith("#"):
                     # Ignore comments
                     continue
 
-                try: # to parse the line for task run information
+                try:  # to parse the line for task run information
                     ret = self._parse_line(line)
                 except TaskLog.ParseError:
                     continue
 
-                task = ret['task']
-                state = ret['state']
-                time = ret['time']
-                id = ret['id']
+                task = ret["task"]
+                state = ret["state"]
+                time = ret["time"]
+                id = ret["id"]
 
-                if state == 'STARTED':
+                if state == "STARTED":
                     # Started a task
-                    if task not in last_started or time > last_started[task][1]: # Entry is a tuple of (id, time)
+                    if (
+                        task not in last_started or time > last_started[task][1]
+                    ):  # Entry is a tuple of (id, time)
                         last_started[task] = (id, time)
-                elif state == 'DONE':
+                elif state == "DONE":
                     # Started a task
-                    if task not in last_done or time > last_done[task][1]: # Entry is a tuple of (id, time)
+                    if (
+                        task not in last_done or time > last_done[task][1]
+                    ):  # Entry is a tuple of (id, time)
                         last_done[task] = (id, time)
-                elif state == 'FAILED':
+                elif state == "FAILED":
                     # Started a task
-                    if task not in last_failed or time > last_failed[task][1]: # Entry is a tuple of (id, time)
+                    if (
+                        task not in last_failed or time > last_failed[task][1]
+                    ):  # Entry is a tuple of (id, time)
                         last_failed[task] = (id, time)
 
         return last_started, last_done, last_failed
+
 
 class Maid(object):
     """Class that deals with all regular data keeping tasks.
@@ -398,17 +421,17 @@ class Maid(object):
         self.report = report
 
         parser = configparser.SafeConfigParser(allow_no_value=True)
-        parser.optionxform = str # Need to make options case sensitive
+        parser.optionxform = str  # Need to make options case sensitive
         parser.read(configfile)
 
         # Store tasks
         self.tasks = {}
 
-        tasklog_path = parser.get('log', 'tasklog')
+        tasklog_path = parser.get("log", "tasklog")
         self.tasklog = TaskLog(tasklog_path)
 
         # Create TrimLogTask
-        trim_freq = parser.get('log', 'trimlog')
+        trim_freq = parser.get("log", "trimlog")
         new_task = TrimLogTask(path=tasklog_path, nlines=1000, frequency=trim_freq)
         new_id = new_task.get_id()
         # If an html report is requested, redirect the output to the appropriate file
@@ -419,19 +442,19 @@ class Maid(object):
 
         for sec in parser.sections():
             freq = sec.lower()
-            if freq not in ['daily', 'weekly', 'monthly']:
+            if freq not in ["daily", "weekly", "monthly"]:
                 continue
-            print_("Adding %s tasks..."%(freq,))
+            print_("Adding %s tasks..." % (freq,))
             for opt in parser.options(sec):
-                val = parser.get(sec, opt) # Create the task from the config file line
+                val = parser.get(sec, opt)  # Create the task from the config file line
                 if val is None:
-                    print_("Adding task: %s"%(opt,))
+                    print_("Adding task: %s" % (opt,))
                 else:
-                    print_("Adding task: %s = %s"%(opt,val))
+                    print_("Adding task: %s = %s" % (opt, val))
                 new_task = CommandTask(commandline=opt, frequency=freq)
                 new_id = new_task.get_id()
-                if new_id in self.tasks: # Make sure the task does not already exist
-                    raise RuntimeError("Duplicate task: %s"%(new_id,))
+                if new_id in self.tasks:  # Make sure the task does not already exist
+                    raise RuntimeError("Duplicate task: %s" % (new_id,))
                 # If an html report is requested, redirect the output to the appropriate file
                 if self.report is not None:
                     new_task.logfile = os.path.join(self.report, new_task.get_logname())
@@ -442,7 +465,7 @@ class Maid(object):
     @staticmethod
     def _quote_html(s):
         trans = html_entities.codepoint2name
-        ret = ''.join(trans[x] if x in trans else x for x in s)
+        ret = "".join(trans[x] if x in trans else x for x in s)
         return ret
 
     def generate_index(self):
@@ -452,10 +475,10 @@ class Maid(object):
             # Nothing to do
             return
         else:
-            indexfile = os.path.join(self.report, 'index.html')
+            indexfile = os.path.join(self.report, "index.html")
 
         # Build the html rows for the tasks
-        taskrows = ''
+        taskrows = ""
         for name in sorted(self.tasks):
             t = self.tasks[name]
             # Task might never have been run
@@ -465,10 +488,10 @@ class Maid(object):
             else:
                 lastrun = t.last_done.strftime(self.tasklog.timeformat)
                 state = t.state
-                if state == 'STARTED':
+                if state == "STARTED":
                     # Check if the PID is actually still there
                     if not pid_running(int(t.last_id)):
-                        state = 'STARTED - PID NOT FOUND'
+                        state = "STARTED - PID NOT FOUND"
 
             taskrows += """
                 <tr>
@@ -476,17 +499,17 @@ class Maid(object):
                     <td><a href="{logfile}">{name}</a></td>
                     <td>{state}</td>
                 </tr>
-            """.format(lastrun = lastrun,
-                        logfile = t.get_logname(),
-                        state = state,
-                        name = self._quote_html(t.get_id()))
+            """.format(
+                lastrun=lastrun,
+                logfile=t.get_logname(),
+                state=state,
+                name=self._quote_html(t.get_id()),
+            )
 
-        context = {
-            'timestamp': self.tasklog.timestamp(),
-            'taskrows': taskrows,
-        }
-        with open(indexfile, 'wt') as f:
-            f.write("""<!DOCTYPE html>
+        context = {"timestamp": self.tasklog.timestamp(), "taskrows": taskrows}
+        with open(indexfile, "wt") as f:
+            f.write(
+                """<!DOCTYPE html>
                 <html lang="en">
                   <head>
                     <meta charset="utf-8">
@@ -500,7 +523,10 @@ class Maid(object):
                     </table>
                   </body>
                 </html>
-            """.format(**context))
+            """.format(
+                    **context
+                )
+            )
 
     def do_task(self, task):
         """Do a specific task and log it in the tasklog.
@@ -509,32 +535,32 @@ class Maid(object):
         """
 
         # Report if necessary
-        self.update_task_states() # Make sure tasks are up to date
-        task._pre_do() # Set task to STARTED
+        self.update_task_states()  # Make sure tasks are up to date
+        task._pre_do()  # Set task to STARTED
         self.generate_index()
 
         # Do the task and log it
-        self.tasklog.log('STARTED', task.get_id())
+        self.tasklog.log("STARTED", task.get_id())
         try:
             success = task.do()
         except KeyboardInterrupt:
             # Catch keyboard interrupts and exit gracefully
-            self.tasklog.log('FAILED', task.get_id())
+            self.tasklog.log("FAILED", task.get_id())
             success = False
         except:
             # No idea what happened
             # Just fail
-            self.tasklog.log('FAILED', task.get_id())
+            self.tasklog.log("FAILED", task.get_id())
             raise
         else:
             # No exceptions, so go by the return value
             if success:
-                self.tasklog.log('DONE', task.get_id())
+                self.tasklog.log("DONE", task.get_id())
             else:
-                self.tasklog.log('FAILED', task.get_id())
+                self.tasklog.log("FAILED", task.get_id())
 
         # Report if necessary
-        self.update_task_states() # Update tasks that might have run in parallel
+        self.update_task_states()  # Update tasks that might have run in parallel
         self.generate_index()
 
         return success
@@ -549,33 +575,33 @@ class Maid(object):
                 t = self.tasks[task]
                 if t.last_done is None or t.last_done < started[task][1]:
                     # Do not overwrite start dates that were updated in this process
-                    t.last_done = started[task][1] # tuple of (pid, time)
-                    t.last_id =  started[task][0]
-                    t.state = 'STARTED'
+                    t.last_done = started[task][1]  # tuple of (pid, time)
+                    t.last_id = started[task][0]
+                    t.state = "STARTED"
 
         for task in done:
             if task in self.tasks:
                 t = self.tasks[task]
                 if t.last_done is None:
-                    t.last_done = done[task][1] # tuple of (pid, time)
-                    t.last_id =  done[task][0]
-                    t.state = 'DONE'
+                    t.last_done = done[task][1]  # tuple of (pid, time)
+                    t.last_id = done[task][0]
+                    t.state = "DONE"
                 elif t.last_done <= done[task][1]:
                     # Do not overwrite if task was started after last DONE
-                    t.last_id =  done[task][0]
-                    t.state = 'DONE'
+                    t.last_id = done[task][0]
+                    t.state = "DONE"
 
         for task in failed:
             if task in self.tasks:
                 t = self.tasks[task]
                 if t.last_done is None:
-                    t.last_done = failed[task][1] # tuple of (pid, time)
-                    t.last_id =  failed[task][0]
-                    t.state = 'FAILED'
+                    t.last_done = failed[task][1]  # tuple of (pid, time)
+                    t.last_id = failed[task][0]
+                    t.state = "FAILED"
                 elif t.last_done <= failed[task][1]:
                     # Do not overwrite if task was started after last FAILED
-                    t.last_id =  failed[task][0]
-                    t.state = 'FAILED'
+                    t.last_id = failed[task][0]
+                    t.state = "FAILED"
 
     def get_open_tasks(self, return_all=False):
         """Return a list of open tasks in order of how due they are.
@@ -590,7 +616,7 @@ class Maid(object):
                 ret.append(task)
 
         # Sort tasks by dueness
-        ret.sort(key=lambda tsk: tsk.get_due(), reverse=True) # Highest due on top
+        ret.sort(key=lambda tsk: tsk.get_due(), reverse=True)  # Highest due on top
         return ret
 
     def do_something(self, eager=False):
@@ -605,11 +631,11 @@ class Maid(object):
         if len(tasks) > 0:
             print_("Due tasks:")
             for t in tasks:
-                print_("* %s (%.3f)"%(t, t.get_due()))
+                print_("* %s (%.3f)" % (t, t.get_due()))
 
             for t in tasks:
-                if t.state == 'STARTED' and pid_running(int(t.last_id)):
-                    print_("%s seems to be running already. Skipping..."%(t,))
+                if t.state == "STARTED" and pid_running(int(t.last_id)):
+                    print_("%s seems to be running already. Skipping..." % (t,))
                     continue
                 else:
                     # Found a task we should do
@@ -618,7 +644,7 @@ class Maid(object):
                 print_("All due tasks seem to be running already. Nothing to do.")
                 return
 
-            print_("Starting %s..."%(t))
+            print_("Starting %s..." % (t))
             if self.do_task(t):
                 print_("Done.")
             else:
@@ -626,21 +652,34 @@ class Maid(object):
         else:
             print_("Nothing to do.")
 
+
 def run_maid():
     """Start the Maid program and do some tasks.
 
     Intended to be run multiple times per day, but at least daily.
     """
 
-    parser = argparse.ArgumentParser(description="Regular housekeeping for the T2K data. Run at least daily!")
-    parser.add_argument('-e', '--eager', action='store_true',
-                        help="do a task, even if it is not due yet")
-    parser.add_argument('-r', '--report', metavar='FOLDER', default=None,
-                        help="generate an html report in the given folder")
+    parser = argparse.ArgumentParser(
+        description="Regular housekeeping for the T2K data. Run at least daily!"
+    )
+    parser.add_argument(
+        "-e",
+        "--eager",
+        action="store_true",
+        help="do a task, even if it is not due yet",
+    )
+    parser.add_argument(
+        "-r",
+        "--report",
+        metavar="FOLDER",
+        default=None,
+        help="generate an html report in the given folder",
+    )
     args = parser.parse_args()
 
     maid = Maid(dm.config.maid_config, report=args.report)
     maid.do_something(eager=args.eager)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_maid()
