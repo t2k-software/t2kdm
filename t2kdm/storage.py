@@ -4,10 +4,13 @@ import posixpath
 import t2kdm as dm
 from six import print_
 
+
 class StorageElement(object):
     """Representation of a grid storage element"""
 
-    def __init__(self, name, host, type, location, basepath, directpath=None, broken=False):
+    def __init__(
+        self, name, host, type, location, basepath, directpath=None, broken=False
+    ):
         """Initialise StorageElement.
 
         `name`: Identifier for element
@@ -39,7 +42,7 @@ class StorageElement(object):
 
         Use the "directpath" instead of the basepath if `direct` is `True`.
         """
-        if remotepath[0] != '/':
+        if remotepath[0] != "/":
             raise ValueError("Remote path needs to be absolute, not relative!")
         if direct:
             return (self.directpath + dm.config.basedir + remotepath).strip()
@@ -50,9 +53,9 @@ class StorageElement(object):
         """Try to get the logical remotepath from a surl."""
         remotepath = None
         if surl.startswith(self.basepath):
-            remotepath = surl[len(self.basepath):]
+            remotepath = surl[len(self.basepath) :]
         if remotepath.startswith(dm.config.basedir):
-            remotepath = remotepath[len(dm.config.basedir):]
+            remotepath = remotepath[len(dm.config.basedir) :]
         return remotepath
 
     def get_distance(self, other):
@@ -62,10 +65,12 @@ class StorageElement(object):
         the closer the two SE are together.
         """
 
-        common = posixpath.commonprefix([self.location.lower()+'/', other.location.lower()+'/'])
+        common = posixpath.commonprefix(
+            [self.location.lower() + "/", other.location.lower() + "/"]
+        )
         # The more '/' are in the common prefix, the closer the SEs are.
         # So we can take the negative number as measure of distance.
-        distance = -common.count('/')
+        distance = -common.count("/")
         return distance
 
     def get_replica(self, remotepath, cached=False):
@@ -82,7 +87,10 @@ class StorageElement(object):
         If `check_dark` is `True`, check the physical file location, instead of relying on the catalogue.
         """
         if not check_dark:
-            return any(self.host in replica for replica in dm.replicas(remotepath, cached=cached))
+            return any(
+                self.host in replica
+                for replica in dm.replicas(remotepath, cached=cached)
+            )
         else:
             return dm.is_file_se(remotepath, self, cached=cached)
 
@@ -114,19 +122,21 @@ class StorageElement(object):
                 cand = get_SE_by_path(rep)
                 if cand is None:
                     continue
-                if (cand.type == 'tape') and (tape == False):
+                if (cand.type == "tape") and (tape == False):
                     on_tape = True
                     continue
                 candidates.append(cand)
 
         if len(candidates) == 0 and on_tape:
-            print_("WARNING: Replica only found on tape, but tape sources are not accepted!")
+            print_(
+                "WARNING: Replica only found on tape, but tape sources are not accepted!"
+            )
 
         def sorter(SE):
             if SE is None:
                 return 1000
             distance = self.get_distance(SE)
-            if SE.type == 'tape':
+            if SE.type == "tape":
                 # Prefer disks over tape, even if the tape is closer by
                 distance += 10
             if SE.is_blacklisted():
@@ -138,109 +148,152 @@ class StorageElement(object):
 
     def __str__(self):
         if self.broken:
-            return "%s (%s) [%s] --> BROKEN! <--"%(self.name, self.host, self.location)
+            return "%s (%s) [%s] --> BROKEN! <--" % (
+                self.name,
+                self.host,
+                self.location,
+            )
         elif self.is_blacklisted():
-            return "%s (%s) [%s] --> BLACKLISTED <--"%(self.name, self.host, self.location)
+            return "%s (%s) [%s] --> BLACKLISTED <--" % (
+                self.name,
+                self.host,
+                self.location,
+            )
         else:
-            return "%s (%s) [%s]"%(self.name, self.host, self.location)
+            return "%s (%s) [%s]" % (self.name, self.host, self.location)
+
 
 # Add actual SEs
 SEs = [
-    StorageElement('RAL-LCG2-T2K-tape',
-        host = 'srm-t2k.gridpp.rl.ac.uk',
-        type = 'tape',
-        location = '/europe/uk/ral',
-        basepath = 'srm://srm-t2k.gridpp.rl.ac.uk:8443/srm/managerv2?SFN=/castor/ads.rl.ac.uk/prod'),
-    StorageElement('UKI-SOUTHGRID-RALPP-disk',
-        host = 'heplnx204.pp.rl.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/ral',
-        basepath = 'srm://heplnx204.pp.rl.ac.uk:8443/srm/managerv2?SFN=/pnfs/pp.rl.ac.uk/data/t2k'),
-    StorageElement('UKI-SOUTHGRID-OX-HEP-disk',
-        broken = True,
-        host = 't2se01.physics.ox.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/ox',
-        basepath = 'srm://t2se01.physics.ox.ac.uk:8446/srm/managerv2?SFN=/dpm/physics.ox.ac.uk/home/t2k.org'),
-    StorageElement('UKI-NORTHGRID-SHEF-HEP-disk',
-        broken = True,
-        host = 'lcgse0.shef.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/shef',
-        basepath = 'srm://lcgse0.shef.ac.uk:8446/srm/managerv2?SFN=/dpm/shef.ac.uk/home/t2k.org'),
-    StorageElement('UKI-NORTHGRID-LANCS-HEP-disk',
-        broken = True,
-        host = 'fal-pygrid-30.lancs.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/lancs',
-        basepath = 'srm://fal-pygrid-30.lancs.ac.uk:8446/srm/managerv2?SFN=/dpm/lancs.ac.uk/home/t2k.org'),
-    StorageElement('UKI-NORTHGRID-MAN-HEP-disk',
-        broken = True,
-        host = 'bohr3226.tier2.hep.manchester.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/man',
-        basepath = 'root://bohr3226.tier2.hep.manchester.ac.uk:1094/dpm/tier2.hep.manchester.ac.uk/home/t2k.org'),
-    StorageElement('UKI-NORTHGRID-LIV-HEP-disk',
-        host = 'hepgrid11.ph.liv.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/liv',
-        basepath = 'srm://hepgrid11.ph.liv.ac.uk:8446/srm/managerv2?SFN=/dpm/ph.liv.ac.uk/home/t2k.org'),
-    StorageElement('UKI-LT2-IC-HEP-disk',
-        host = 'gfe02.grid.hep.ph.ic.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/london/ic',
-        basepath = 'srm://gfe02.grid.hep.ph.ic.ac.uk:8443/srm/managerv2?SFN=/pnfs/hep.ph.ic.ac.uk/data/t2k'),
-    StorageElement('UKI-LT2-QMUL2-disk',
-        host = 'se03.esc.qmul.ac.uk',
-        type = 'disk',
-        location = '/europe/uk/london/qmul',
-        directpath = 'root://xrootd.esc.qmul.ac.uk/t2k.org',
-        basepath = 'srm://se03.esc.qmul.ac.uk:8444/srm/managerv2?SFN=/t2k.org'),
-    StorageElement('IN2P3-CC-XRD-disk',
-        host = 'ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk',
-        type = 'disk',
-        location = '/europe/fr/in2p3',
-        directpath = 'root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/disk/t2k.org',
-        basepath = 'root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk/t2k.org'),
-    StorageElement('IN2P3-CC-XRD-tape',
-        host = 'ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape',
-        type = 'tape',
-        location = '/europe/fr/in2p3',
-        directpath = 'root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/tape/t2k.org',
-        basepath = 'root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape/t2k.org'),
-    StorageElement('IN2P3-CC-disk',
-        broken = True,
-        host = 'in2p3.fr',
-        type = 'disk',
-        location = '/europe/fr/in2p3',
-        basepath = 'srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org'),
-    StorageElement('pic-disk',
-        host = 'srm.pic.es',
-        type = 'disk',
-        location = '/europe/es/pic',
-        basepath = 'srm://srm.pic.es:8443/srm/managerv2?SFN=/pnfs/pic.es/data/t2k.org'),
-    StorageElement('CA-TRIUMF-T2K1-disk',
-        host = 't2ksrm.nd280.org',
-        type = 'disk',
-        location = '/americas/ca/triumf',
-        basepath = 'srm://t2ksrm.nd280.org:8443/srm/managerv2?SFN=/nd280data'),
-    StorageElement('CA-SFU-T21-disk',
-        host = 'lcg-t2kse1.sfu.computecanada.ca',
-        type = 'disk',
-        location = '/americas/ca/sfu',
-        basepath = 'srm://lcg-t2kse1.sfu.computecanada.ca:8443/srm/managerv2?SFN=/nd280data'),
-    StorageElement('JP-KEK-CRC-02-disk',
-        host = 'kek2-se01.cc.kek.jp',
-        type = 'disk',
-        location = '/asia/jp/kek',
-        basepath = 'srm://kek2-se01.cc.kek.jp:8444/srm/managerv2?SFN=/t2k.org'),
-    StorageElement('JP-KEK-CRC-02-disk-old',
-        broken = True,
-        host = 'kek2-tmpse.cc.kek.jp',
-        type = 'disk',
-        location = '/asia/jp/kek',
-        basepath = 'srm://kek2-tmpse.cc.kek.jp/dpm/cc.kek.jp/home/t2k.org'),
-    ]
+    StorageElement(
+        "RAL-LCG2-T2K-tape",
+        host="srm-t2k.gridpp.rl.ac.uk",
+        type="tape",
+        location="/europe/uk/ral",
+        basepath="srm://srm-t2k.gridpp.rl.ac.uk:8443/srm/managerv2?SFN=/castor/ads.rl.ac.uk/prod",
+    ),
+    StorageElement(
+        "UKI-SOUTHGRID-RALPP-disk",
+        host="heplnx204.pp.rl.ac.uk",
+        type="disk",
+        location="/europe/uk/ral",
+        basepath="srm://heplnx204.pp.rl.ac.uk:8443/srm/managerv2?SFN=/pnfs/pp.rl.ac.uk/data/t2k",
+    ),
+    StorageElement(
+        "UKI-SOUTHGRID-OX-HEP-disk",
+        broken=True,
+        host="t2se01.physics.ox.ac.uk",
+        type="disk",
+        location="/europe/uk/ox",
+        basepath="srm://t2se01.physics.ox.ac.uk:8446/srm/managerv2?SFN=/dpm/physics.ox.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-NORTHGRID-SHEF-HEP-disk",
+        broken=True,
+        host="lcgse0.shef.ac.uk",
+        type="disk",
+        location="/europe/uk/shef",
+        basepath="srm://lcgse0.shef.ac.uk:8446/srm/managerv2?SFN=/dpm/shef.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-NORTHGRID-LANCS-HEP-disk",
+        broken=True,
+        host="fal-pygrid-30.lancs.ac.uk",
+        type="disk",
+        location="/europe/uk/lancs",
+        basepath="srm://fal-pygrid-30.lancs.ac.uk:8446/srm/managerv2?SFN=/dpm/lancs.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-NORTHGRID-MAN-HEP-disk",
+        broken=True,
+        host="bohr3226.tier2.hep.manchester.ac.uk",
+        type="disk",
+        location="/europe/uk/man",
+        basepath="root://bohr3226.tier2.hep.manchester.ac.uk:1094/dpm/tier2.hep.manchester.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-NORTHGRID-LIV-HEP-disk",
+        host="hepgrid11.ph.liv.ac.uk",
+        type="disk",
+        location="/europe/uk/liv",
+        basepath="srm://hepgrid11.ph.liv.ac.uk:8446/srm/managerv2?SFN=/dpm/ph.liv.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-LT2-IC-HEP-disk",
+        host="gfe02.grid.hep.ph.ic.ac.uk",
+        type="disk",
+        location="/europe/uk/london/ic",
+        basepath="srm://gfe02.grid.hep.ph.ic.ac.uk:8443/srm/managerv2?SFN=/pnfs/hep.ph.ic.ac.uk/data/t2k",
+    ),
+    StorageElement(
+        "UKI-LT2-QMUL2-disk",
+        host="se03.esc.qmul.ac.uk",
+        type="disk",
+        location="/europe/uk/london/qmul",
+        directpath="root://xrootd.esc.qmul.ac.uk/t2k.org",
+        basepath="srm://se03.esc.qmul.ac.uk:8444/srm/managerv2?SFN=/t2k.org",
+    ),
+    StorageElement(
+        "IN2P3-CC-XRD-disk",
+        host="ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk",
+        type="disk",
+        location="/europe/fr/in2p3",
+        directpath="root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/disk/t2k.org",
+        basepath="root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk/t2k.org",
+    ),
+    StorageElement(
+        "IN2P3-CC-XRD-tape",
+        host="ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape",
+        type="tape",
+        location="/europe/fr/in2p3",
+        directpath="root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/tape/t2k.org",
+        basepath="root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape/t2k.org",
+    ),
+    StorageElement(
+        "IN2P3-CC-disk",
+        broken=True,
+        host="in2p3.fr",
+        type="disk",
+        location="/europe/fr/in2p3",
+        basepath="srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org",
+    ),
+    StorageElement(
+        "pic-disk",
+        host="srm.pic.es",
+        type="disk",
+        location="/europe/es/pic",
+        basepath="srm://srm.pic.es:8443/srm/managerv2?SFN=/pnfs/pic.es/data/t2k.org",
+    ),
+    StorageElement(
+        "CA-TRIUMF-T2K1-disk",
+        host="t2ksrm.nd280.org",
+        type="disk",
+        location="/americas/ca/triumf",
+        basepath="srm://t2ksrm.nd280.org:8443/srm/managerv2?SFN=/nd280data",
+    ),
+    StorageElement(
+        "CA-SFU-T21-disk",
+        host="lcg-t2kse1.sfu.computecanada.ca",
+        type="disk",
+        location="/americas/ca/sfu",
+        basepath="srm://lcg-t2kse1.sfu.computecanada.ca:8443/srm/managerv2?SFN=/nd280data",
+    ),
+    StorageElement(
+        "JP-KEK-CRC-02-disk",
+        host="kek2-se01.cc.kek.jp",
+        type="disk",
+        location="/asia/jp/kek",
+        basepath="srm://kek2-se01.cc.kek.jp:8444/srm/managerv2?SFN=/t2k.org",
+    ),
+    StorageElement(
+        "JP-KEK-CRC-02-disk-old",
+        broken=True,
+        host="kek2-tmpse.cc.kek.jp",
+        type="disk",
+        location="/asia/jp/kek",
+        basepath="srm://kek2-tmpse.cc.kek.jp/dpm/cc.kek.jp/home/t2k.org",
+    ),
+]
 
 SE_by_name = {}
 SE_by_host = {}
@@ -249,12 +302,14 @@ for SE in SEs:
     SE_by_name[SE.name] = SE
     SE_by_host[SE.host] = SE
 
+
 def get_SE_by_path(path):
     """Return the StorageElement corresponsing to the given srm-path."""
     for SE in SEs:
         if SE.host in path:
             return SE
     return None
+
 
 def get_SE(SE):
     """Get the StorageElement by all means necessary."""
@@ -276,17 +331,19 @@ def get_closest_SEs(remotepath=None, location=None, tape=False, cached=False):
 
     if location is None:
         location = dm.config.location
-        if location == '/':
-            print_("WARNING:\nWARNING: Current location is '/'. Did you configure the location with `%s-config`?\nWARNING:"%(dm._branding,))
+        if location == "/":
+            print_(
+                "WARNING:\nWARNING: Current location is '/'. Did you configure the location with `%s-config`?\nWARNING:"
+                % (dm._branding,)
+            )
 
     # Create a pseudo SE with the correct location
-    SE = StorageElement('local',
-        host = 'localhost',
-        type = 'disk',
-        location = location,
-        basepath = '/')
+    SE = StorageElement(
+        "local", host="localhost", type="disk", location=location, basepath="/"
+    )
 
     return SE.get_closest_SEs(remotepath, tape=tape, cached=cached)
+
 
 def get_closest_SE(remotepath=None, location=None, tape=False, cached=False):
     """Get the storage element with the closest replica.
