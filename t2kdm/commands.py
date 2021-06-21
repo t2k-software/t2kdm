@@ -256,6 +256,16 @@ replicas.add_argument(
 )
 all_commands.append(replicas)
 
+df = Command(
+    "df", interactive.free_space, "Print free disk space left on storage element."
+)
+df.add_argument(
+    "SE",
+    type=str,
+    help="the storage element",
+)
+all_commands.append(df)
+
 check = Command(
     "check", interactive.check, "Check the replicas of a given file/directory."
 )
