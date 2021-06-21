@@ -397,6 +397,7 @@ def html_index(remotepath, localpath, **kwargs):
     else:
         return 1
 
+
 def free_space(se):
     """Report the free space on a storage elment."""
     print_(dm.free_space(se))
