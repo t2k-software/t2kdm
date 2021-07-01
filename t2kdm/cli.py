@@ -12,7 +12,7 @@ from t2kdm.commands import all_commands
 
 
 def ls(*args, **kwargs):
-    return [x.name for x in dm.iter_ls(*args, cached=True, **kwargs)]
+    return [x.name for x in dm.ls(*args, cached=True, **kwargs)]
 
 
 class T2KDmCli(cmd.Cmd):
