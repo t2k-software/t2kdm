@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Official code style is now Black.
 
+### Fixed
+- CLI now actually caches directory entries for quicker tab completion.
+
 ## [1.15.0] - 2021-06-17
 ### Added
 - Added `IN2P3-CC-XRD-disk` and `IN2P3-CC-XRD-tape`.
