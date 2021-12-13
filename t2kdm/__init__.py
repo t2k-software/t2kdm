@@ -4,11 +4,11 @@ Helpful tools to manage the T2K data on the grid.
 """
 
 from .version import version as __version__
-import configuration
-from configuration import _branding
-import backends
-import storage
-import utils
+from . import configuration
+from .configuration import _branding
+from . import backends
+from . import storage
+from . import utils
 import sys
 
 if sys.argv[0].endswith("%s-config" % (_branding,)):
