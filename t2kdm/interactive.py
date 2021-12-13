@@ -156,7 +156,7 @@ def ls(remotepath, *args, **kwargs):
         entries = dm.iter_ls(remotepath, *args, **kwargs)
     else:
         entries = dm.iter_ls_se(remotepath, *args, se=se, **kwargs)
-    if long:
+    if int:
         # Detailed listing
         for e in entries:
             print_(

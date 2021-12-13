@@ -763,7 +763,7 @@ class DIRACBackend(GridBackend):
     def _check_return_value(ret):
         if not ret["OK"]:
             raise BackendException("Failed: %s", ret["Message"])
-        for path, error in ret["Value"]["Failed"].items():
+        for path, error in list(ret["Value"]["Failed"].items()):
             if ("No such" in error) or ("Directory does not" in error):
                 raise DoesNotExistException("No such file or directory.")
             else:
@@ -790,11 +790,11 @@ class DIRACBackend(GridBackend):
                 raise BackendException(
                     "Failed to list path '%s': %s", lurl, md["Message"]
                 )
-            for path, error in md["Value"]["Failed"].items():
+            for path, error in list(md["Value"]["Failed"].items()):
                 if "No such file" in error:
                     # File does not exist, maybe a directory?
                     md = self.fc.getDirectoryMetadata(lurl)
-                    for path, error in md["Value"]["Failed"].items():
+                    for path, error in list(md["Value"]["Failed"].items()):
                         raise DoesNotExistException("No such file or directory.")
                 else:
                     raise BackendException(md["Value"]["Failed"][lurl])
@@ -815,7 +815,7 @@ class DIRACBackend(GridBackend):
         ret = self.fc.listDirectory(lurl)
         if not ret["OK"]:
             raise BackendException("Failed to list path '%s': %s", lurl, ret["Message"])
-        for path, error in ret["Value"]["Failed"].items():
+        for path, error in list(ret["Value"]["Failed"].items()):
             if "Directory does not" in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
@@ -828,8 +828,8 @@ class DIRACBackend(GridBackend):
         else:
             # Sort items by keys, i.e. paths
             lst = sorted(
-                ret["Value"]["Successful"][lurl]["Files"].items()
-                + ret["Value"]["Successful"][lurl]["SubDirs"].items()
+                list(ret["Value"]["Successful"][lurl]["Files"].items())
+                + list(ret["Value"]["Successful"][lurl]["SubDirs"].items())
             )
 
         for item in lst:
@@ -885,7 +885,7 @@ class DIRACBackend(GridBackend):
         self._check_return_value(rep)
         rep = rep["Value"]["Successful"][lurl]
 
-        return rep.values()
+        return list(rep.values())
 
     def _exists(self, surl, **kwargs):
         try:
@@ -1081,7 +1081,7 @@ class DIRACBackend(GridBackend):
         if not ret["OK"]:
             raise BackendException("Failed: %s" % (ret["Message"]))
 
-        for lurl, error in ret["Value"]["Failed"].items():
+        for lurl, error in list(ret["Value"]["Failed"].items()):
             if "No such file" in error:
                 raise DoesNotExistException("No such file or directory.")
             else:
