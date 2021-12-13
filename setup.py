@@ -1,6 +1,5 @@
 from setuptools import setup
 import setuptools_scm  # noqa: F401
-import toml  # noqa: F401
 
 # Todo: Parse this from a proper readme file in the future
 description = "T2K Data Manager"
