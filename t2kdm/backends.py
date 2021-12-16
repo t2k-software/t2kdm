@@ -215,10 +215,12 @@ class GridBackend(object):
     @cache.cached
     def is_file_se(self, remotepath, se, **kwargs):
         """Chcek whether a replica actually exists on a storage element."""
-        print("->",se)
-        print("->",storage.get_SE(se))
+        print("->", se)
+        print("->", storage.get_SE(se))
         se = storage.get_SE(se)
-        print("-->",self._exists(se.get_storage_path(remotepath, direct=True), **kwargs))
+        print(
+            "-->", self._exists(se.get_storage_path(remotepath, direct=True), **kwargs)
+        )
         return self._exists(se.get_storage_path(remotepath, direct=True), **kwargs)
 
     def _exists(self, surl, **kwargs):

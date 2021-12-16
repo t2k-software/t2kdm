@@ -42,7 +42,7 @@ class StorageElement(object):
 
         Use the "directpath" instead of the basepath if `direct` is `True`.
         """
-        print("plouf",remotepath)
+        print("plouf", remotepath)
         if remotepath[0] != "/":
             raise ValueError("Remote path needs to be absolute, not relative!")
         if direct:
@@ -88,8 +88,12 @@ class StorageElement(object):
         If `check_dark` is `True`, check the physical file location, instead of relying on the catalogue.
         """
         print(dm.replicas(remotepath, cached=cached))
-        print(any(self.host in replica
-                for replica in dm.replicas(remotepath, cached=cached)))
+        print(
+            any(
+                self.host in replica
+                for replica in dm.replicas(remotepath, cached=cached)
+            )
+        )
         if not check_dark:
             print("here1")
             return any(
