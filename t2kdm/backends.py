@@ -215,10 +215,7 @@ class GridBackend(object):
     @cache.cached
     def is_file_se(self, remotepath, se, **kwargs):
         """Chcek whether a replica actually exists on a storage element."""
-        print("->",se)
-        print("->",storage.get_SE(se))
         se = storage.get_SE(se)
-        print("-->",self._exists(se.get_storage_path(remotepath, direct=True), **kwargs))
         return self._exists(se.get_storage_path(remotepath, direct=True), **kwargs)
 
     def _exists(self, surl, **kwargs):
@@ -371,22 +368,16 @@ class GridBackend(object):
 
         Returns `True` if the replication was succesful, `False` if not.
         """
-        print("prout")
         lurl = self.get_lurl(remotepath)
-        print("prout")
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
-        print("prout")
         if dst is None:
             raise BackendException(
                 "Could not find storage element %s." % (destination,)
             )
-        print("prout")
         destination_path = dst.get_storage_path(remotepath)
-        print("prout2")
 
-        print(remotepath)
         if dst.has_replica(remotepath, check_dark=True):
             # Replica already at destination, nothing to do here
             if verbose:
@@ -395,7 +386,6 @@ class GridBackend(object):
                     % (remotepath, dst.name)
                 )
 
-            print(remotepath)
             try:
                 dark = not dst.has_replica(remotepath)
             except DoesNotExistException:
@@ -408,7 +398,6 @@ class GridBackend(object):
                 # Replica already present, nothing to do.
                 return True
 
-        print("prout3")
         if dst.has_replica(remotepath, check_dark=False):
             raise BackendException(
                 "Replica of %s not present at destination storage element %s, but catalogue claims it is. Aborting."
@@ -898,13 +887,9 @@ class DIRACBackend(GridBackend):
         return list(rep.values())
 
     def _exists(self, surl, **kwargs):
-        print("ahh")
-        print(surl)
-        # print("ahah",self._ls_se_cmd(surl).strip())
         try:
             ret = self._ls_se_cmd(surl, "-d", "-l", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            print("No such file" in str(e))
             if "No such file" in str(e):
                 return False
             else:

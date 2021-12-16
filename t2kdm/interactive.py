@@ -148,7 +148,6 @@ def _check_path(remotepath):
 
 def ls(remotepath, *args, **kwargs):
     """Print the contents of a directory on screen."""
-    print("here?")
     _check_path(remotepath)
 
     long_str = kwargs.pop("long", False)
