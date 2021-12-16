@@ -55,7 +55,7 @@ class Configuration(object):
         """
 
         # Load the default values
-        for key, val in list(defaults.items()):
+        for key, val in defaults.items():
             setattr(self, key, val)
         self.defaults = defaults
 

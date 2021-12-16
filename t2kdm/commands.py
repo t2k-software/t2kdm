@@ -194,6 +194,7 @@ class Command(object):
 
     def __call__(self, *args, **kwargs):
         """Call the underlying function directly."""
+        print(self.function)
         return self.function(*args, **kwargs)
 
 

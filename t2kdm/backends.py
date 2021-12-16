@@ -215,7 +215,10 @@ class GridBackend(object):
     @cache.cached
     def is_file_se(self, remotepath, se, **kwargs):
         """Chcek whether a replica actually exists on a storage element."""
+        print("->",se)
+        print("->",storage.get_SE(se))
         se = storage.get_SE(se)
+        print("-->",self._exists(se.get_storage_path(remotepath, direct=True), **kwargs))
         return self._exists(se.get_storage_path(remotepath, direct=True), **kwargs)
 
     def _exists(self, surl, **kwargs):
@@ -264,7 +267,6 @@ class GridBackend(object):
     @cache.cached
     def replicas(self, remotepath, **kwargs):
         """Return a list of replica surls of a remote logical path."""
-
         lurl = self.get_lurl(remotepath)
         return self._replicas(lurl, **kwargs)
 
@@ -369,17 +371,22 @@ class GridBackend(object):
 
         Returns `True` if the replication was succesful, `False` if not.
         """
-
+        print("prout")
         lurl = self.get_lurl(remotepath)
+        print("prout")
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
+        print("prout")
         if dst is None:
             raise BackendException(
                 "Could not find storage element %s." % (destination,)
             )
+        print("prout")
         destination_path = dst.get_storage_path(remotepath)
+        print("prout2")
 
+        print(remotepath)
         if dst.has_replica(remotepath, check_dark=True):
             # Replica already at destination, nothing to do here
             if verbose:
@@ -387,6 +394,8 @@ class GridBackend(object):
                     "Replica of %s already present at destination storage element %s."
                     % (remotepath, dst.name)
                 )
+
+            print(remotepath)
             try:
                 dark = not dst.has_replica(remotepath)
             except DoesNotExistException:
@@ -399,6 +408,7 @@ class GridBackend(object):
                 # Replica already present, nothing to do.
                 return True
 
+        print("prout3")
         if dst.has_replica(remotepath, check_dark=False):
             raise BackendException(
                 "Replica of %s not present at destination storage element %s, but catalogue claims it is. Aborting."
@@ -763,7 +773,7 @@ class DIRACBackend(GridBackend):
     def _check_return_value(ret):
         if not ret["OK"]:
             raise BackendException("Failed: %s", ret["Message"])
-        for path, error in list(ret["Value"]["Failed"].items()):
+        for path, error in ret["Value"]["Failed"].items():
             if ("No such" in error) or ("Directory does not" in error):
                 raise DoesNotExistException("No such file or directory.")
             else:
@@ -790,11 +800,11 @@ class DIRACBackend(GridBackend):
                 raise BackendException(
                     "Failed to list path '%s': %s", lurl, md["Message"]
                 )
-            for path, error in list(md["Value"]["Failed"].items()):
+            for path, error in md["Value"]["Failed"].items():
                 if "No such file" in error:
                     # File does not exist, maybe a directory?
                     md = self.fc.getDirectoryMetadata(lurl)
-                    for path, error in list(md["Value"]["Failed"].items()):
+                    for path, error in md["Value"]["Failed"].items():
                         raise DoesNotExistException("No such file or directory.")
                 else:
                     raise BackendException(md["Value"]["Failed"][lurl])
@@ -815,7 +825,7 @@ class DIRACBackend(GridBackend):
         ret = self.fc.listDirectory(lurl)
         if not ret["OK"]:
             raise BackendException("Failed to list path '%s': %s", lurl, ret["Message"])
-        for path, error in list(ret["Value"]["Failed"].items()):
+        for path, error in ret["Value"]["Failed"].items():
             if "Directory does not" in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
@@ -888,10 +898,14 @@ class DIRACBackend(GridBackend):
         return list(rep.values())
 
     def _exists(self, surl, **kwargs):
+        print("ahh")
+        print(surl)
+        # print("ahah",self._ls_se_cmd(surl).strip())
         try:
             ret = self._ls_se_cmd(surl, "-d", "-l", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            print("No such file" in str(e))
+            if "No such file" in str(e):
                 return False
             else:
                 if len(e.stderr) == 0:
@@ -1081,7 +1095,7 @@ class DIRACBackend(GridBackend):
         if not ret["OK"]:
             raise BackendException("Failed: %s" % (ret["Message"]))
 
-        for lurl, error in list(ret["Value"]["Failed"].items()):
+        for lurl, error in ret["Value"]["Failed"].items():
             if "No such file" in error:
                 raise DoesNotExistException("No such file or directory.")
             else:

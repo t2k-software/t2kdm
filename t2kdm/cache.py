@@ -27,13 +27,13 @@ class Cache(object):
 
     def clean(self):
         """Remove old entries from the cache."""
-        for key in list(self.cache.keys()):
+        for key in self.cache.keys():
             if not self.cache[key].is_valid():
                 del self.cache[key]
 
     def flush(self):
         """Remove all entries from the cache."""
-        for key in list(self.cache.keys()):
+        for key in self.cache.keys():
             del self.cache[key]
 
     def hash(self, function, *args, **kwargs):
