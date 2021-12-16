@@ -42,6 +42,10 @@ class StorageElement(object):
 
         Use the "directpath" instead of the basepath if `direct` is `True`.
         """
+<<<<<<< HEAD
+=======
+        print("plouf", remotepath)
+>>>>>>> cae7b83df1eaa1c598c558d8693310c2e6aa233d
         if remotepath[0] != "/":
             raise ValueError("Remote path needs to be absolute, not relative!")
         if direct:
