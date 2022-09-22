@@ -857,7 +857,7 @@ class DIRACBackend(GridBackend):
         try:
             output = self._ls_se_cmd(*args, **kwargs)
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
@@ -890,7 +890,7 @@ class DIRACBackend(GridBackend):
         try:
             ret = self._ls_se_cmd(surl, "-d", "-l", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if "No such file" in str(e):
+            if "No such file" in str(e.stderr):
                 return False
             else:
                 if len(e.stderr) == 0:
@@ -939,7 +939,7 @@ class DIRACBackend(GridBackend):
         try:
             state = self._xattr_cmd(surl, "user.status", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or Directory.")
             state = "?"
         except sh.SignalException_SIGSEGV:
@@ -977,7 +977,7 @@ class DIRACBackend(GridBackend):
         except sh.ErrorReturnCode as e:
             # The command fails if the file is not online
             # To be expected after 10 seconds
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 # Except when the file does not actually exist on the tape storage
                 raise DoesNotExistException("No such file or Directory.")
 
@@ -1016,7 +1016,7 @@ class DIRACBackend(GridBackend):
         try:
             self._replicate_cmd(lurl, destination, source, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -1036,7 +1036,7 @@ class DIRACBackend(GridBackend):
                 "-f", "--checksum", "ADLER32", surl, localpath, _out=out, **kwargs
             )
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -1055,7 +1055,7 @@ class DIRACBackend(GridBackend):
         try:
             self._add_cmd(lurl, localpath, se, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -1105,7 +1105,7 @@ class DIRACBackend(GridBackend):
             self._mkdir_cmd(folder, "-p", _out=out, **kwargs)
             self._move_cmd(surl, new_surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
