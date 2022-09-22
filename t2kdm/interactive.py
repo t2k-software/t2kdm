@@ -150,13 +150,13 @@ def ls(remotepath, *args, **kwargs):
     """Print the contents of a directory on screen."""
     _check_path(remotepath)
 
-    long = kwargs.pop("long", False)
+    long_str = kwargs.pop("long", False)
     se = kwargs.pop("se", None)
     if se is None:
         entries = dm.iter_ls(remotepath, *args, **kwargs)
     else:
         entries = dm.iter_ls_se(remotepath, *args, se=se, **kwargs)
-    if long:
+    if long_str:
         # Detailed listing
         for e in entries:
             print_(

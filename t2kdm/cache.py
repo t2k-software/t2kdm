@@ -1,7 +1,7 @@
 """A cache for grid tool output to make CLI experience more snappy."""
 
 from time import time
-from cPickle import dumps
+from pickle import dumps
 
 
 class CacheEntry(object):
@@ -42,7 +42,7 @@ class Cache(object):
         args = list(args)
         if len(args) > 0:
             args[0] = repr(args[0])
-        return hash(dumps((function.func_name, args, kwargs)))
+        return hash(dumps((function.__name__, args, kwargs)))
 
     def get_entry(self, function, *args, **kwargs):
         """Get a valid entry from the cache or `None`."""

@@ -1,6 +1,5 @@
 from setuptools import setup
 import setuptools_scm  # noqa: F401
-import toml  # noqa: F401
 
 # Todo: Parse this from a proper readme file in the future
 description = "T2K Data Manager"
@@ -27,7 +26,7 @@ setup(
         "multiprocess>=0.70.8",
     ],
     extras_require={},
-    python_requires=">=2.6",
+    python_requires=">=3.6",
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -42,9 +41,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.6",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.9",
     ],
     entry_points={
         "console_scripts": [
