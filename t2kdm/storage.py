@@ -266,6 +266,7 @@ SEs = [
     ),
     StorageElement(
         "CA-TRIUMF-T2K1-disk",
+        broken=True,
         host="t2ksrm.nd280.org",
         type="disk",
         location="/americas/ca/triumf",
