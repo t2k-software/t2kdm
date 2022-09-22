@@ -8,26 +8,10 @@ You will need a working setup of the DIRAC UI to access the grid data.
 Follow the instructions here:
 https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
 
-DIRAC comes with its own Python interpreter. To make it work with other Python
-software, we need to modify DIRAC's `bashrc` file. Append the following lines
-to it:
+DIRAC comes with its own Python interpreter. When you source DIRAC's bashrc,
+you will havea somewhat isolated Python environment. Within this environment
+you can install t2kdm releases directly with pip:
 
-    # Turn DIRAC into something resembling a virtualenv
-    unset REQUESTS_CA_BUNDLE SSL_CERT_DIR # These upset pip
-    export PYTHONNOUSERSITE=1
-
-    # Fix the broken gfal bundle with SL6
-    export PYTHONPATH=${PYTHONPATH}:${DIRAC}/Linux_x86_64_glibc-2.12/lib/python2.6/site-packages
-
-    # Re-enable Python "assert" statements
-    # Only needed for the `t2kdm-tests` command
-    unset PYTHONOPTIMIZE
-
-Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
-environment. Within this environment you can install t2kdm releases directly
-with pip:
-
-    $ pip install --upgrade pip # Upgrade pip
     $ pip install t2kdm
 
 Or you can clone and install the HEAD version from the repository:
@@ -117,7 +101,7 @@ Please use `pre-commit <https://pre-commit.com/>`_ to check your code before
 checking in anything. To install pre-commit and the repository hooks just run
 these commands inside the repository:
 
-    $ pip3 install --user pre-commit
+    $ pip3 install pre-commit
     $ pre-commit install
 
 That's it. Now pre-commit should check your code for compliance whenever you
