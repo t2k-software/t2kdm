@@ -8,6 +8,8 @@ You will need a working setup of the DIRAC UI to access the grid data.
 Follow the instructions here:
 https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
 
+You will also need a valid Grid certificate. Instructions on how to obtain one are available at: https://t2k.org/nd280/datacomp/gridandirac/gridcert
+
 DIRAC comes with its own Python interpreter. When you source DIRAC's bashrc,
 you will havea somewhat isolated Python environment. Within this environment
 you can install t2kdm releases directly with pip:
