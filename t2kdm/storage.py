@@ -167,10 +167,10 @@ class StorageElement(object):
 SEs = [
     StorageElement(
         "RAL-LCG2-T2K-tape",
-        host="srm-t2k.gridpp.rl.ac.uk",
+        host="x509up_u8000133@antares.stfc.ac.uk",
         type="tape",
         location="/europe/uk/ral",
-        basepath="srm://srm-t2k.gridpp.rl.ac.uk:8443/srm/managerv2?SFN=/castor/ads.rl.ac.uk/prod",
+        basepath="root://x509up_u8000133@antares.stfc.ac.uk:1094//eos/antares/prod",
     ),
     StorageElement(
         "UKI-SOUTHGRID-RALPP-disk",
