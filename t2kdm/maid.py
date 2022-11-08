@@ -189,7 +189,10 @@ class Task(object):
 
     def get_logname(self):
         """Get a valid filename that can be used to log the output of the task."""
-        return base64.b64encode(self.get_id(), altchars="+_") + ".txt"
+        return (
+            base64.b64encode(self.get_id().encode(), altchars="+_".encode()).decode()
+            + ".txt"
+        )
 
     def get_id(self):
         """Return a string that identifies the task."""
