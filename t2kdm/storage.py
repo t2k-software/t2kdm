@@ -252,7 +252,7 @@ SEs = [
     StorageElement(
         "IN2P3-CC-disk",
         broken=True,
-        host="in2p3.fr",
+        host="polgrid4.in2p3.fr",
         type="disk",
         location="/europe/fr/in2p3",
         basepath="srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org",
