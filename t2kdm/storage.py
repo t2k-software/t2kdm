@@ -171,7 +171,9 @@ SEs = [
         host="x509up_u" + str(os.getuid()) + "@antares.stfc.ac.uk",
         type="tape",
         location="/europe/uk/ral",
-        basepath="root://x509up_u" + str(os.getuid()) + "@antares.stfc.ac.uk:1094//eos/antares/prod",
+        basepath="root://x509up_u"
+        + str(os.getuid())
+        + "@antares.stfc.ac.uk:1094//eos/antares/prod",
     ),
     StorageElement(
         "UKI-SOUTHGRID-RALPP-disk",
