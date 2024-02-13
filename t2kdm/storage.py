@@ -1,6 +1,7 @@
 """Module to organise storage elements."""
 
 import posixpath
+import os
 import t2kdm as dm
 from six import print_
 
@@ -167,10 +168,10 @@ class StorageElement(object):
 SEs = [
     StorageElement(
         "RAL-LCG2-T2K-tape",
-        host="x509up_u8000133@antares.stfc.ac.uk",
+        host="x509up_u" + str(os.getuid()) + "@antares.stfc.ac.uk",
         type="tape",
         location="/europe/uk/ral",
-        basepath="root://x509up_u8000133@antares.stfc.ac.uk:1094//eos/antares/prod",
+        basepath="root://x509up_u" + str(os.getuid()) + "@antares.stfc.ac.uk:1094//eos/antares/prod",
     ),
     StorageElement(
         "UKI-SOUTHGRID-RALPP-disk",
