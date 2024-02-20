@@ -3,6 +3,7 @@
 import posixpath
 import t2kdm as dm
 from six import print_
+import os
 
 
 class StorageElement(object):
@@ -167,10 +168,10 @@ class StorageElement(object):
 SEs = [
     StorageElement(
         "RAL-LCG2-T2K-tape",
-        host="x509up_u8000133@antares.stfc.ac.uk",
+        host="antares.stfc.ac.uk",
         type="tape",
         location="/europe/uk/ral",
-        basepath="root://x509up_u8000133@antares.stfc.ac.uk:1094//eos/antares/prod",
+        basepath="root://x509up_u%s@antares.stfc.ac.uk:1094//eos/antares/prod" % (os.getuid()),
     ),
     StorageElement(
         "UKI-SOUTHGRID-RALPP-disk",
