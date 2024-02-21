@@ -3,6 +3,7 @@
 import posixpath
 import t2kdm as dm
 from six import print_
+import os
 
 
 class StorageElement(object):
@@ -167,10 +168,11 @@ class StorageElement(object):
 SEs = [
     StorageElement(
         "RAL-LCG2-T2K-tape",
-        host="x509up_u8000133@antares.stfc.ac.uk",
+        host="antares.stfc.ac.uk",
         type="tape",
         location="/europe/uk/ral",
-        basepath="root://x509up_u8000133@antares.stfc.ac.uk:1094//eos/antares/prod",
+        basepath="root://x509up_u%s@antares.stfc.ac.uk:1094//eos/antares/prod"
+        % (os.getuid()),
     ),
     StorageElement(
         "UKI-SOUTHGRID-RALPP-disk",
@@ -235,24 +237,24 @@ SEs = [
     ),
     StorageElement(
         "IN2P3-CC-XRD-disk",
-        host="ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk",
+        host="ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/disk",
         type="disk",
         location="/europe/fr/in2p3",
-        directpath="root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/disk/t2k.org",
-        basepath="root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/disk/t2k.org",
+        directpath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/disk/t2k.org",
+        basepath="root://ccxrdrli04.in2p3.fr:1097//xrootd/in2p3.fr/disk/t2k.org",
     ),
     StorageElement(
         "IN2P3-CC-XRD-tape",
-        host="ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape",
+        host="ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape",
         type="tape",
         location="/europe/fr/in2p3",
-        directpath="root://ccxrdli283.in2p3.fr:1094/xrootd/in2p3.fr/tape/t2k.org",
-        basepath="root://ccxroot.in2p3.fr:1097//xrootd/in2p3.fr/tape/t2k.org",
+        directpath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape/t2k.org",
+        basepath="root://ccxrdrli04.in2p3.fr:1097//xrootd/in2p3.fr/tape/t2k.org",
     ),
     StorageElement(
         "IN2P3-CC-disk",
         broken=True,
-        host="in2p3.fr",
+        host="polgrid4.in2p3.fr",
         type="disk",
         location="/europe/fr/in2p3",
         basepath="srm://polgrid4.in2p3.fr/dpm/in2p3.fr/home/t2k.org",

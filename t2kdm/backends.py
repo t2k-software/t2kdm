@@ -747,9 +747,7 @@ class DIRACBackend(GridBackend):
 
         self._xattr_cmd = sh.Command("gfal-xattr").bake(_tty_out=False)
         self._replica_checksum_cmd = sh.Command("gfal-sum").bake(_tty_out=False)
-        self._bringonline_cmd = sh.Command("gfal-legacy-bringonline").bake(
-            _tty_out=False
-        )
+        self._bringonline_cmd = sh.Command("gfal-bringonline").bake(_tty_out=False)
         self._cp_cmd = sh.Command("gfal-copy").bake(_tty_out=False)
         self._ls_se_cmd = sh.Command("gfal-ls").bake(color="never", _tty_out=False)
         self._move_cmd = sh.Command("gfal-rename").bake(_tty_out=False)
