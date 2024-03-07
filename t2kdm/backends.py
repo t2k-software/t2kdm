@@ -1011,10 +1011,16 @@ class DIRACBackend(GridBackend):
 
         source = storage.get_SE(source_surl)
         if source is None:
-            raise BackendException("Could not find storage element with host name string contained inside %s." % (source_surl))
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (source_surl)
+            )
         destination = storage.get_SE(destination_surl)
         if destination is None:
-            raise BackendException("Could not find storage element with host name string contained inside %s." % (destination_surl))
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (destination_surl)
+            )
         try:
             self._replicate_cmd(lurl, destination.name, source.name, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
@@ -1054,7 +1060,10 @@ class DIRACBackend(GridBackend):
             out = None
         se = storage.get_SE(surl)
         if se is None:
-            raise BackendException("Could not find storage element with host name string contained inside %s." % (surl))
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (surl)
+            )
 
         try:
             self._add_cmd(lurl, localpath, se.name, _out=out, **kwargs)
@@ -1071,7 +1080,10 @@ class DIRACBackend(GridBackend):
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
         se = storage.get_SE(surl)
         if se is None:
-            raise BackendException("Could not find storage element with host name string contained inside %s." % (surl))
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (surl)
+            )
 
         if last:
             # Delete lfn
