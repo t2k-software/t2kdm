@@ -241,7 +241,7 @@ SEs = [
         type="disk",
         location="/europe/fr/in2p3",
         directpath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/disk/t2k.org",
-        basepath="root://ccxrdrli04.in2p3.fr:1097//xrootd/in2p3.fr/disk/t2k.org",
+        basepath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/disk/t2k.org",
     ),
     StorageElement(
         "IN2P3-CC-XRD-tape",
@@ -249,7 +249,7 @@ SEs = [
         type="tape",
         location="/europe/fr/in2p3",
         directpath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape/t2k.org",
-        basepath="root://ccxrdrli04.in2p3.fr:1097//xrootd/in2p3.fr/tape/t2k.org",
+        basepath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape/t2k.org",
     ),
     StorageElement(
         "IN2P3-CC-disk",
