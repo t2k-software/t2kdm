@@ -6,11 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+Nothing
+
+## [1.17.6] - 2024-03-15
 ### Fixed
 - Basepath string for IN2P3-CC-XRD-tape and IN2P3-CC-XRD-disk is corrected (// is replaced with / for an exact string match with the host name string).
 - BackendException for cases where the get_SE method returns None because the host name string is not contained inside the file URL are added.
 
-## [1.17.5] - 2022-02-26
+## [1.17.5] - 2024-02-26
 ### Changed
 - Updated pythonpublish.yml to fix the API token error that kept popping up when attempting to upload releases from GitHub to PyPi.
 
