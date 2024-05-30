@@ -199,11 +199,19 @@ SEs = [
     ),
     StorageElement(
         "UKI-NORTHGRID-LANCS-HEP-disk",
-        broken=True,
+        broken=False,
         host="fal-pygrid-30.lancs.ac.uk",
         type="disk",
-        location="/europe/uk/lancs",
+        location="/europe/uk/oldlancs",
         basepath="srm://fal-pygrid-30.lancs.ac.uk:8446/srm/managerv2?SFN=/dpm/lancs.ac.uk/home/t2k.org",
+    ),
+    StorageElement(
+        "UKI-NORTHGRID-LANCS-HEP-XGATE-disk",
+        broken=False,
+        host="xgate.hec.lancs.ac.uk",
+        type="disk",
+        location="/europe/uk/lancs",
+        basepath="root://xgate.hec.lancs.ac.uk:1094/cephfs/grid/t2k.org",
     ),
     StorageElement(
         "UKI-NORTHGRID-MAN-HEP-disk",
