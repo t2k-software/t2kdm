@@ -40,18 +40,23 @@ from time import sleep
 # This is enabled by providing the `cached=True` argument.
 cache = Cache(60)
 
+
 class BackendException(Exception):
     """Exception that is thrown if something goes (horribly) wrong."""
+
     pass
+
 
 class DoesNotExistException(BackendException):
     """Thrown when a file/directory does not exist."""
+
     pass
+
 
 class DirEntry(object):
     """Class representing a directory entry."""
 
-    def __init__(self, name, mode='?', links=-1, uid=-1, gid=-1, size=-1, modified='?'):
+    def __init__(self, name, mode="?", links=-1, uid=-1, gid=-1, size=-1, modified="?"):
         self.name = name
         self.mode = mode
         self.links = links
@@ -59,6 +64,7 @@ class DirEntry(object):
         self.gid = gid
         self.size = size
         self.modified = modified
+
 
 class GridBackend(object):
     """Class that handles the actual work on the grid.
@@ -76,9 +82,11 @@ class GridBackend(object):
             All paths are specified relative to that position.
         """
 
-        self.baseurl = kwargs.pop('catalogue_prefix', '') + kwargs.pop('basedir', '/hyperk.org')
+        self.baseurl = kwargs.pop("catalogue_prefix", "") + kwargs.pop(
+            "basedir", "/hyperk.org"
+        )
         if len(kwargs) > 0:
-            raise TypeError("Invalid keyword arguments: %s"%(list(kwargs.keys),))
+            raise TypeError("Invalid keyword arguments: %s" % (list(kwargs.keys),))
 
     def get_lurl(self, remotepath):
         return posixpath.normpath(self.baseurl + remotepath)
@@ -106,7 +114,7 @@ class GridBackend(object):
                 # Do not try egain if target does not exist.
                 raise e
             except Exception as e:
-                print_("`iter_ls` failed! (%d/3)"%(i+1,))
+                print_("`iter_ls` failed! (%d/3)" % (i + 1,))
                 ex = e
             else:
                 # Break loop if no exception was raised (success)
@@ -158,13 +166,13 @@ class GridBackend(object):
         lurl = self.get_lurl(remotepath)
         ses = storage.get_SE(se)
         if ses is None:
-            raise BackendException("Could not find storage element %s."%(se,))
+            raise BackendException("Could not find storage element %s." % (se,))
         surl = ses.get_storage_path(remotepath, direct=True)
         return self._ls_se(surl, **kwargs)
 
     def _is_dir(self, lurl):
         entry = next(self._ls(lurl, directory=True))
-        return entry.mode[0] == 'd'
+        return entry.mode[0] == "d"
 
     @cache.cached
     def is_dir(self, remotepath):
@@ -175,7 +183,7 @@ class GridBackend(object):
             try:
                 isdir = self._is_dir(lurl)
             except Exception as e:
-                print_("`is_dir` failed! (%d/3)"%(i+1,))
+                print_("`is_dir` failed! (%d/3)" % (i + 1,))
                 ex = e
             else:
                 # Break loop if no exception was raised (success)
@@ -188,7 +196,7 @@ class GridBackend(object):
 
     def _is_dir_se(self, surl):
         entry = next(self._ls_se(surl, directory=True))
-        return entry.mode[0] == 'd'
+        return entry.mode[0] == "d"
 
     @cache.cached
     def is_dir_se(self, remotepath, se):
@@ -256,7 +264,6 @@ class GridBackend(object):
     @cache.cached
     def replicas(self, remotepath, **kwargs):
         """Return a list of replica surls of a remote logical path."""
-
         lurl = self.get_lurl(remotepath)
         return self._replicas(lurl, **kwargs)
 
@@ -272,12 +279,12 @@ class GridBackend(object):
             else:
                 raise BackendException(e.stderr)
 
-        return state.startswith('ONLINE')
+        return state.startswith("ONLINE")
 
     def _bringonline(self, surl, timeout, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def bringonline(self, surl, timeout=60*60*6, verbose=False, **kwargs):
+    def bringonline(self, surl, timeout=60 * 60 * 6, verbose=False, **kwargs):
         """Try to bring `surl` online within `timeout` seconds.
 
         Returns `True` when file is online, `False` if not.
@@ -289,7 +296,11 @@ class GridBackend(object):
 
     def get_file_source(self, remotepath, source=None, destination=None, tape=False):
         """Return the closest replica and corresponding SE of the given file."""
-        return next(self.iter_file_sources(remotepath, source=source, destination=destination, tape=tape))
+        return next(
+            self.iter_file_sources(
+                remotepath, source=source, destination=destination, tape=tape
+            )
+        )
 
     def iter_file_sources(self, remotepath, source=None, destination=None, tape=False):
         """Iterate over the closest replicas and corresponding SEs of the given file."""
@@ -299,17 +310,25 @@ class GridBackend(object):
             if destination is None:
                 srclst = storage.get_closest_SEs(remotepath, tape=tape)
                 if len(srclst) == 0:
-                    raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
+                    raise BackendException(
+                        "Could not find valid storage element with replica of %s."
+                        % (remotepath,)
+                    )
                 for src in srclst:
                     yield src.get_replica(remotepath), src
                 return
             else:
                 dst = storage.get_SE(destination)
                 if dst is None:
-                    raise BackendException("Could not find storage element %s."%(destination,))
+                    raise BackendException(
+                        "Could not find storage element %s." % (destination,)
+                    )
                 srclst = dst.get_closest_SEs(remotepath, tape=tape)
                 if len(srclst) == 0:
-                    raise BackendException("Could not find valid storage element with replica of %s."%(remotepath,))
+                    raise BackendException(
+                        "Could not find valid storage element with replica of %s."
+                        % (remotepath,)
+                    )
                 else:
                     for src in srclst:
                         yield src.get_replica(remotepath), src
@@ -317,18 +336,30 @@ class GridBackend(object):
         else:
             src = storage.get_SE(source)
             if src is None:
-                raise BackendException("Could not find storage element %s."%(source,))
+                raise BackendException("Could not find storage element %s." % (source,))
 
             if not src.has_replica(remotepath):
                 # Replica not present at source, throw error
-                raise BackendException("%s\nNo replica present at source storage element %s"%(remotepath, src.name,))
+                raise BackendException(
+                    "%s\nNo replica present at source storage element %s"
+                    % (remotepath, src.name)
+                )
             yield src.get_replica(remotepath), src
             return
 
     def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def replicate(self, remotepath, destination, source=None, tape=False, verbose=False, bringonline_timeout=60*60*6, **kwargs):
+    def replicate(
+        self,
+        remotepath,
+        destination,
+        source=None,
+        tape=False,
+        verbose=False,
+        bringonline_timeout=60 * 60 * 6,
+        **kwargs
+    ):
         """Replicate the file to the specified storage element.
 
         If no source storage elment is provided, the closest replica is chosen.
@@ -337,19 +368,24 @@ class GridBackend(object):
 
         Returns `True` if the replication was succesful, `False` if not.
         """
-
         lurl = self.get_lurl(remotepath)
 
         # Get destination SE and check if file is already present
         dst = storage.get_SE(destination)
         if dst is None:
-            raise BackendException("Could not find storage element %s."%(destination,))
+            raise BackendException(
+                "Could not find storage element %s." % (destination,)
+            )
         destination_path = dst.get_storage_path(remotepath)
 
         if dst.has_replica(remotepath, check_dark=True):
             # Replica already at destination, nothing to do here
             if verbose:
-                print_("Replica of %s already present at destination storage element %s."%(remotepath, dst.name,))
+                print_(
+                    "Replica of %s already present at destination storage element %s."
+                    % (remotepath, dst.name)
+                )
+
             try:
                 dark = not dst.has_replica(remotepath)
             except DoesNotExistException:
@@ -363,18 +399,25 @@ class GridBackend(object):
                 return True
 
         if dst.has_replica(remotepath, check_dark=False):
-            raise BackendException("Replica of %s not present at destination storage element %s, but catalogue claims it is. Aborting."%(remotepath, dst.name,))
+            raise BackendException(
+                "Replica of %s not present at destination storage element %s, but catalogue claims it is. Aborting."
+                % (remotepath, dst.name)
+            )
 
         failure = None
-        for source_path, src in self.iter_file_sources(remotepath, source, destination, tape):
+        for source_path, src in self.iter_file_sources(
+            remotepath, source, destination, tape
+        ):
             if verbose:
-                print_("Copying %s to %s"%(source_path, destination_path))
+                print_("Copying %s to %s" % (source_path, destination_path))
 
-            if src.type == 'tape':
+            if src.type == "tape":
                 if verbose:
-                    print_("Bringing online %s"%(source_path,))
+                    print_("Bringing online %s" % (source_path,))
                 try:
-                    ret = self.bringonline(source_path, timeout=bringonline_timeout, verbose=verbose)
+                    ret = self.bringonline(
+                        source_path, timeout=bringonline_timeout, verbose=verbose
+                    )
                 except BackendException as e:
                     failure = e
                     ret = False
@@ -387,7 +430,9 @@ class GridBackend(object):
                         print_("File online. Copying...")
 
             try:
-                ret = self._replicate(source_path, destination_path, lurl, verbose=verbose)
+                ret = self._replicate(
+                    source_path, destination_path, lurl, verbose=verbose
+                )
             except BackendException as e:
                 failure = e
                 ret = False
@@ -403,7 +448,17 @@ class GridBackend(object):
     def _get(self, surl, localpath, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def get(self, remotepath, localpath, source=None, tape=False, force=False, verbose=False, bringonline_timeout=60*60*6, **kwargs):
+    def get(
+        self,
+        remotepath,
+        localpath,
+        source=None,
+        tape=False,
+        force=False,
+        verbose=False,
+        bringonline_timeout=60 * 60 * 6,
+        **kwargs
+    ):
         """Download a file from the grid.
 
         If no source storage elment is provided, the closest replica is chosen.
@@ -418,19 +473,21 @@ class GridBackend(object):
 
         # Do not overwrite files unless explicitly told to
         if os.path.isfile(localpath) and not force:
-            raise BackendException("File does already exist: %s."%(localpath,))
+            raise BackendException("File does already exist: %s." % (localpath,))
 
         # Get the source replica
         failure = None
         for replica, src in self.iter_file_sources(remotepath, source, tape=tape):
             if verbose:
-                print_("Copying %s to %s"%(replica, localpath))
+                print_("Copying %s to %s" % (replica, localpath))
 
-            if src.type == 'tape':
+            if src.type == "tape":
                 if verbose:
-                    print_("Bringing online %s"%(replica,))
+                    print_("Bringing online %s" % (replica,))
                 try:
-                    ret = self.bringonline(replica, timeout=bringonline_timeout, verbose=verbose) and self._get(replica, localpath, verbose=verbose, **kwargs)
+                    ret = self.bringonline(
+                        replica, timeout=bringonline_timeout, verbose=verbose
+                    ) and self._get(replica, localpath, verbose=verbose, **kwargs)
                 except BackendException as e:
                     failure = e
                     ret = False
@@ -451,7 +508,15 @@ class GridBackend(object):
     def _put(self, localpath, surl, remotepath, verbose=False, **kwargs):
         raise NotImplementedError()
 
-    def put(self, localpath, remotepath, destination=None, tape=False, verbose=False, **kwargs):
+    def put(
+        self,
+        localpath,
+        remotepath,
+        destination=None,
+        tape=False,
+        verbose=False,
+        **kwargs
+    ):
         """Upload and register a file.
 
         If no destination storage element is provided, the closest one will be chosen.
@@ -461,7 +526,7 @@ class GridBackend(object):
         path, base = posixpath.split(localpath)
 
         # If the remotepath is a directory, append the filename to it
-        if remotepath[-1]==posixpath.sep or self.is_dir(remotepath):
+        if remotepath[-1] == posixpath.sep or self.is_dir(remotepath):
             remotepath += base
 
         # Get the destination
@@ -474,7 +539,9 @@ class GridBackend(object):
             # Use the provided destination
             SE = storage.get_SE(destination)
             if SE is None:
-                raise BackendException("Could not find storage element %s."%(destination,))
+                raise BackendException(
+                    "Could not find storage element %s." % (destination,)
+                )
 
         # Get the storage path
         surl = SE.get_storage_path(remotepath)
@@ -491,7 +558,15 @@ class GridBackend(object):
         """
         raise NotImplementedError()
 
-    def remove(self, remotepath, destination, final=False, verbose=False, deregister=False, **kwargs):
+    def remove(
+        self,
+        remotepath,
+        destination,
+        final=False,
+        verbose=False,
+        deregister=False,
+        **kwargs
+    ):
         """Remove the replica of a file from a storage element.
 
         This command will refuse to remove the last replica of a file
@@ -503,20 +578,27 @@ class GridBackend(object):
         """
 
         lurl = self.get_lurl(remotepath)
-        if final and destination == 'any' and len(self.replicas(remotepath)) == 0:
+        if final and destination == "any" and len(self.replicas(remotepath)) == 0:
             # Delete file catalogue entry
             # Needs dummy storage element
-            return self._remove(storage.SEs[0], lurl, last=True, verbose=verbose, **kwargs)
+            return self._remove(
+                storage.SEs[0], lurl, last=True, verbose=verbose, **kwargs
+            )
 
         # Get destination SE and check if file is already not present
         dst = storage.get_SE(destination)
         if dst is None:
-            raise BackendException("Could not find storage element %s.\n"%(destination,))
+            raise BackendException(
+                "Could not find storage element %s.\n" % (destination,)
+            )
 
         if not dst.has_replica(remotepath, check_dark=False):
             # Replica already not present at destination, nothing to do here
             if verbose:
-                print_("%s\nReplica not present at destination storage element %s."%(remotepath, dst.name,))
+                print_(
+                    "%s\nReplica not present at destination storage element %s."
+                    % (remotepath, dst.name)
+                )
             return True
 
         # Check how many replicas there are
@@ -539,16 +621,20 @@ class GridBackend(object):
         # Only actually the last one if there is only one replica left
         # And the se is the correct one
         # If there are no replicas at all, also give the "last" flag to remove the empty catalogue entry
-        last = (nrep==0) or (nrep==1 and se.name==dst.name)
+        last = (nrep == 0) or (nrep == 1 and se.name == dst.name)
         if deregister:
             ret = self.deregister(destination_path, remotepath, verbose=verbose)
             if ret and last:
                 # Delete file catalogue entry
-                return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
+                return self._remove(
+                    destination_path, lurl, last=last, verbose=verbose, **kwargs
+                )
             else:
                 return ret
         else:
-            return self._remove(destination_path, lurl, last=last, verbose=verbose, **kwargs)
+            return self._remove(
+                destination_path, lurl, last=last, verbose=verbose, **kwargs
+            )
 
     def _rmdir(self, lurl, verbose=False):
         """Remove the an empty directory from the catalogue."""
@@ -576,8 +662,10 @@ class GridBackend(object):
         """
 
         # Append the basename to the new remotepath if it is a directory
-        if new_remotepath[-1]==posixpath.sep or self.is_dir(new_remotepath):
-            new_remotepath = posixpath.join(new_remotepath, posixpath.basename(remotepath))
+        if new_remotepath[-1] == posixpath.sep or self.is_dir(new_remotepath):
+            new_remotepath = posixpath.join(
+                new_remotepath, posixpath.basename(remotepath)
+            )
 
         # Make sure destination does not exist already
         if self.is_file(new_remotepath):
@@ -592,7 +680,7 @@ class GridBackend(object):
             raise BackendException("File has no replicas!")
         for surl in replicas:
             if verbose:
-                print_("Moving replica: %s"%(surl))
+                print_("Moving replica: %s" % (surl))
             # Get target storage elment
             se = storage.get_SE(surl)
             if se is None:
@@ -600,7 +688,7 @@ class GridBackend(object):
             # Get the new surl
             new_surl = se.get_storage_path(new_remotepath)
             if verbose:
-                print_("New surl: %s"%(new_surl))
+                print_("New surl: %s" % (new_surl))
             # Move the file
             success &= self._move_replica(surl, new_surl, verbose)
             # Register new replica
@@ -616,7 +704,7 @@ class GridBackend(object):
         if success:
             if verbose:
                 print_("Removing old catalogue entry...")
-            return self.remove(remotepath, 'any', final=True, verbose=verbose)
+            return self.remove(remotepath, "any", final=True, verbose=verbose)
         else:
             return False
 
@@ -625,43 +713,55 @@ class GridBackend(object):
         new_remotepath = re.sub(re_from, re_to, remotepath)
         return self.move(remotepath, new_remotepath, **kwargs)
 
+
 class DIRACBackend(GridBackend):
     """Grid backend using the GFAL command line tools `gfal-*`."""
 
     def __init__(self, **kwargs):
-        GridBackend.__init__(self, catalogue_prefix='', **kwargs)
+        GridBackend.__init__(self, catalogue_prefix="", **kwargs)
+
+        # Set environment variables, needed for in2p3
+        os.environ["XrdSecGSIDELEGPROXY"] = "1"
 
         from DIRAC.Core.Base import Script
+
         Script.initialize()
         from DIRAC.FrameworkSystem.Client.ProxyManagerClient import ProxyManagerClient
+
         self.pm = ProxyManagerClient()
 
         proxy = self.pm.getUserProxiesInfo()
-        if not proxy['OK']:
+        if not proxy["OK"]:
             raise BackendException("Proxy error.")
 
+        from DIRAC.Interfaces.API.Dirac import Dirac
+
+        self.dirac = Dirac()
+
         from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
+
         self.fc = FileCatalog()
         from DIRAC.DataManagementSystem.Client.DataManager import DataManager
+
         self.dm = DataManager()
 
-        self._xattr_cmd = sh.Command('gfal-xattr').bake(_tty_out=False)
-        self._replica_checksum_cmd = sh.Command('gfal-sum').bake(_tty_out=False)
-        self._bringonline_cmd = sh.Command('gfal-legacy-bringonline').bake(_tty_out=False)
-        self._cp_cmd = sh.Command('gfal-copy').bake(_tty_out=False)
-        self._ls_se_cmd = sh.Command('gfal-ls').bake(color='never', _tty_out=False)
-        self._move_cmd = sh.Command('gfal-rename').bake(_tty_out=False)
-        self._mkdir_cmd = sh.Command('gfal-mkdir').bake(_tty_out=False)
+        self._xattr_cmd = sh.Command("gfal-xattr").bake(_tty_out=False)
+        self._replica_checksum_cmd = sh.Command("gfal-sum").bake(_tty_out=False)
+        self._bringonline_cmd = sh.Command("gfal-bringonline").bake(_tty_out=False)
+        self._cp_cmd = sh.Command("gfal-copy").bake(_tty_out=False)
+        self._ls_se_cmd = sh.Command("gfal-ls").bake(color="never", _tty_out=False)
+        self._move_cmd = sh.Command("gfal-rename").bake(_tty_out=False)
+        self._mkdir_cmd = sh.Command("gfal-mkdir").bake(_tty_out=False)
 
-        self._replicate_cmd = sh.Command('dirac-dms-replicate-lfn').bake(_tty_out=False)
-        self._add_cmd = sh.Command('dirac-dms-add-file').bake(_tty_out=False)
+        self._replicate_cmd = sh.Command("dirac-dms-replicate-lfn").bake(_tty_out=False)
+        self._add_cmd = sh.Command("dirac-dms-add-file").bake(_tty_out=False)
 
     @staticmethod
     def _check_return_value(ret):
-        if not ret['OK']:
-            raise BackendException("Failed: %s", ret['Message'])
-        for path, error in ret['Value']['Failed'].items():
-            if ('No such' in error) or ('Directory does not' in error):
+        if not ret["OK"]:
+            raise BackendException("Failed: %s", ret["Message"])
+        for path, error in ret["Value"]["Failed"].items():
+            if ("No such" in error) or ("Directory does not" in error):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(error)
@@ -669,41 +769,51 @@ class DIRACBackend(GridBackend):
     def _is_dir(self, lurl):
         isdir = self.fc.isDirectory(lurl)
         self._check_return_value(isdir)
-        return isdir['Value']['Successful'][lurl]
+        return isdir["Value"]["Successful"][lurl]
 
     def _is_file(self, lurl):
         isfile = self.fc.isFile(lurl)
         self._check_return_value(isfile)
-        return isfile['Value']['Successful'][lurl]
+        return isfile["Value"]["Successful"][lurl]
 
     def _get_dir_entry(self, lurl, infodict=None):
         """Take a lurl and return a DirEntry."""
         # If no dctionary with the information is specified, get it from the catalogue
         try:
-            md = infodict['MetaData']
+            md = infodict["MetaData"]
         except TypeError:
             md = self.fc.getFileMetadata(lurl)
-            if not md['OK']:
-                raise BackendException("Failed to list path '%s': %s", lurl, md['Message'])
-            for path, error in md['Value']['Failed'].items():
-                if 'No such file' in error:
+            if not md["OK"]:
+                raise BackendException(
+                    "Failed to list path '%s': %s", lurl, md["Message"]
+                )
+            for path, error in md["Value"]["Failed"].items():
+                if "No such file" in error:
                     # File does not exist, maybe a directory?
                     md = self.fc.getDirectoryMetadata(lurl)
-                    for path, error in md['Value']['Failed'].items():
+                    for path, error in md["Value"]["Failed"].items():
                         raise DoesNotExistException("No such file or directory.")
                 else:
-                    raise BackendException(md['Value']['Failed'][lurl])
-            md = md['Value']['Successful'][lurl]
-        return DirEntry(posixpath.basename(lurl), mode=oct(md.get('Mode', -1)), links=md.get('links', -1), gid=md['OwnerGroup'], uid=md['Owner'], size=md.get('Size', -1), modified=str(md.get('ModificationDate', '?')))
+                    raise BackendException(md["Value"]["Failed"][lurl])
+            md = md["Value"]["Successful"][lurl]
+        return DirEntry(
+            posixpath.basename(lurl),
+            mode=oct(md.get("Mode", -1)),
+            links=md.get("links", -1),
+            gid=md["OwnerGroup"],
+            uid=md["Owner"],
+            size=md.get("Size", -1),
+            modified=str(md.get("ModificationDate", "?")),
+        )
 
     def _iter_directory(self, lurl):
         """Iterate over entries in a directory."""
 
         ret = self.fc.listDirectory(lurl)
-        if not ret['OK']:
-            raise BackendException("Failed to list path '%s': %s", lurl, ret['Message'])
-        for path, error in ret['Value']['Failed'].items():
-            if 'Directory does not' in error:
+        if not ret["OK"]:
+            raise BackendException("Failed to list path '%s': %s", lurl, ret["Message"])
+        for path, error in ret["Value"]["Failed"].items():
+            if "Directory does not" in error:
                 # Dir does not exist, maybe a File?
                 if self.fc.isFile(lurl):
                     lst = [(lurl, None)]
@@ -711,17 +821,20 @@ class DIRACBackend(GridBackend):
                 else:
                     raise DoesNotExistException("No such file or Directory.")
             else:
-                raise BackendException(ret['Value']['Failed'][lurl])
+                raise BackendException(ret["Value"]["Failed"][lurl])
         else:
             # Sort items by keys, i.e. paths
-            lst = sorted(ret['Value']['Successful'][lurl]['Files'].items() + ret['Value']['Successful'][lurl]['SubDirs'].items())
+            lst = sorted(
+                list(ret["Value"]["Successful"][lurl]["Files"].items())
+                + list(ret["Value"]["Successful"][lurl]["SubDirs"].items())
+            )
 
         for item in lst:
-            yield item # = path, dict
+            yield item  # = path, dict
 
     def _ls(self, lurl, **kwargs):
         # Translate keyword arguments
-        d = kwargs.pop('directory', False)
+        d = kwargs.pop("directory", False)
 
         if d:
             # Just the requested entry itself
@@ -733,16 +846,16 @@ class DIRACBackend(GridBackend):
 
     def _ls_se(self, surl, **kwargs):
         # Translate keyword arguments
-        d = kwargs.pop('directory', False)
+        d = kwargs.pop("directory", False)
         args = []
         if -d:
-            args.append('-d')
-        args.append('-l')
+            args.append("-d")
+        args.append("-l")
         args.append(surl)
         try:
             output = self._ls_se_cmd(*args, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or Directory.")
             else:
                 raise BackendException(e.stderr)
@@ -750,24 +863,32 @@ class DIRACBackend(GridBackend):
             fields = line.split()
             mode, links, gid, uid, size = fields[:5]
             name = fields[-1]
-            modified = ' '.join(fields[5:-1])
-            yield DirEntry(name, mode=mode, links=int(links), gid=gid, uid=uid, size=int(size), modified=modified)
+            modified = " ".join(fields[5:-1])
+            yield DirEntry(
+                name,
+                mode=mode,
+                links=int(links),
+                gid=gid,
+                uid=uid,
+                size=int(size),
+                modified=modified,
+            )
 
     def _replicas(self, lurl, **kwargs):
         # Check the lurl actually exists
         self._ls(lurl, directory=True)
 
-        rep = self.fc.getReplicas(lurl)
+        rep = self.dirac.getReplicas(lurl)
         self._check_return_value(rep)
-        rep = rep['Value']['Successful'][lurl]
+        rep = rep["Value"]["Successful"][lurl]
 
-        return rep.values()
+        return list(rep.values())
 
     def _exists(self, surl, **kwargs):
         try:
-            ret = self._ls_se_cmd(surl, '-d', '-l', **kwargs).strip()
+            ret = self._ls_se_cmd(surl, "-d", "-l", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 return False
             else:
                 if len(e.stderr) == 0:
@@ -775,7 +896,7 @@ class DIRACBackend(GridBackend):
                 else:
                     raise BackendException(e.stderr)
         else:
-            return ret[0] != 'd' # Return `False` for directories
+            return ret[0] != "d"  # Return `False` for directories
 
     def _register(self, surl, lurl, verbose=False, **kwargs):
         # Register an existing physical copy in the file catalogue
@@ -788,7 +909,9 @@ class DIRACBackend(GridBackend):
             # Add new file
             size = next(self._ls_se(surl, directory=True)).size
             checksum = self.checksum(surl)
-            guid = str(uuid.uuid4()) # The guid does not seem to be important. Make it unique if possible.
+            guid = str(
+                uuid.uuid4()
+            )  # The guid does not seem to be important. Make it unique if possible.
             ret = self.dm.registerFile((lurl, surl, size, se, guid, checksum))
         else:
             # Add new replica
@@ -796,7 +919,9 @@ class DIRACBackend(GridBackend):
 
         self._check_return_value(ret)
         if verbose:
-            print_("Successfully registered replica %s of %s from %s."%(surl, lurl, se))
+            print_(
+                "Successfully registered replica %s of %s from %s." % (surl, lurl, se)
+            )
         return True
 
     def _deregister(self, surl, lurl, verbose=False, **kwargs):
@@ -805,29 +930,29 @@ class DIRACBackend(GridBackend):
         ret = self.dm.removeReplicaFromCatalog(se, [lurl])
         self._check_return_value(ret)
         if verbose:
-            print_("Successfully deregistered replica of %s from %s."%(lurl, se))
+            print_("Successfully deregistered replica of %s from %s." % (lurl, se))
         return True
 
     def _state(self, surl, **kwargs):
         try:
-            state = self._xattr_cmd(surl, 'user.status', **kwargs).strip()
+            state = self._xattr_cmd(surl, "user.status", **kwargs).strip()
         except sh.ErrorReturnCode as e:
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or Directory.")
-            state = '?'
+            state = "?"
         except sh.SignalException_SIGSEGV:
-            state = '?'
+            state = "?"
         return state
 
     def _checksum(self, surl, **kwargs):
         try:
-            checksum = self._replica_checksum_cmd(surl, 'ADLER32', **kwargs).split()[1]
+            checksum = self._replica_checksum_cmd(surl, "ADLER32", **kwargs).split()[1]
         except sh.ErrorReturnCode:
-            checksum = '?'
+            checksum = "?"
         except sh.SignalException_SIGSEGV:
-            checksum = '?'
+            checksum = "?"
         except IndexError:
-            checksum = '?'
+            checksum = "?"
         return checksum
 
     def _bringonline(self, surl, timeout, verbose=False, **kwargs):
@@ -846,16 +971,16 @@ class DIRACBackend(GridBackend):
         end = time.time() + timeout
 
         try:
-            self._bringonline_cmd('-t', 10, surl, _out=out, **kwargs)
+            self._bringonline_cmd("-t", 10, surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
             # The command fails if the file is not online
             # To be expected after 10 seconds
-            if "No such file" in e.stderr:
+            if "No such file" in str(e.stderr):
                 # Except when the file does not actually exist on the tape storage
                 raise DoesNotExistException("No such file or Directory.")
 
         wait = 5
-        while(True):
+        while True:
             if verbose:
                 print_("Checking replica state...")
             if self.is_online(surl):
@@ -874,8 +999,8 @@ class DIRACBackend(GridBackend):
                 wait = time_left
 
             if verbose:
-                print_("Timeout remaining: %d s"%(time_left))
-                print_("Checking again in: %d s"%(wait))
+                print_("Timeout remaining: %d s" % (time_left))
+                print_("Checking again in: %d s" % (wait))
             time.sleep(wait)
 
     def _replicate(self, source_surl, destination_surl, lurl, verbose=False, **kwargs):
@@ -884,12 +1009,22 @@ class DIRACBackend(GridBackend):
         else:
             out = None
 
-        source = storage.get_SE(source_surl).name
-        destination = storage.get_SE(destination_surl).name
+        source = storage.get_SE(source_surl)
+        if source is None:
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (source_surl)
+            )
+        destination = storage.get_SE(destination_surl)
+        if destination is None:
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (destination_surl)
+            )
         try:
-            self._replicate_cmd(lurl, destination, source, _out=out, **kwargs)
+            self._replicate_cmd(lurl, destination.name, source.name, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -905,9 +1040,11 @@ class DIRACBackend(GridBackend):
         else:
             out = None
         try:
-            self._cp_cmd('-f', '--checksum', 'ADLER32', surl, localpath, _out=out, **kwargs)
+            self._cp_cmd(
+                "-f", "--checksum", "ADLER32", surl, localpath, _out=out, **kwargs
+            )
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -921,12 +1058,17 @@ class DIRACBackend(GridBackend):
             out = sys.stdout
         else:
             out = None
-        se = storage.get_SE(surl).name
+        se = storage.get_SE(surl)
+        if se is None:
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (surl)
+            )
 
         try:
-            self._add_cmd(lurl, localpath, se, _out=out, **kwargs)
+            self._add_cmd(lurl, localpath, se.name, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -936,23 +1078,28 @@ class DIRACBackend(GridBackend):
         return True
 
     def _remove(self, surl, lurl, last=False, verbose=False, **kwargs):
-        se = storage.get_SE(surl).name
+        se = storage.get_SE(surl)
+        if se is None:
+            raise BackendException(
+                "Could not find storage element with host name string contained inside %s."
+                % (surl)
+            )
 
         if last:
             # Delete lfn
             if verbose:
-                print_("Removing all replicas of %s."%(lurl,))
+                print_("Removing all replicas of %s." % (lurl,))
             ret = self.dm.removeFile([lurl])
         else:
             if verbose:
-                print_("Removing replica of %s from %s."%(lurl, se))
-            ret = self.dm.removeReplica(se, [lurl])
+                print_("Removing replica of %s from %s." % (lurl, se.name))
+            ret = self.dm.removeReplica(se.name, [lurl])
 
-        if not ret['OK']:
-            raise BackendException('Failed: %s'%(ret['Message']))
+        if not ret["OK"]:
+            raise BackendException("Failed: %s" % (ret["Message"]))
 
-        for lurl, error in ret['Value']['Failed'].items():
-            if 'No such file' in error:
+        for lurl, error in ret["Value"]["Failed"].items():
+            if "No such file" in error:
                 raise DoesNotExistException("No such file or directory.")
             else:
                 raise BackendException(error)
@@ -973,10 +1120,10 @@ class DIRACBackend(GridBackend):
 
         try:
             folder = posixpath.dirname(new_surl)
-            self._mkdir_cmd(folder, '-p', _out=out, **kwargs)
+            self._mkdir_cmd(folder, "-p", _out=out, **kwargs)
             self._move_cmd(surl, new_surl, _out=out, **kwargs)
         except sh.ErrorReturnCode as e:
-            if 'No such file' in e.stderr:
+            if "No such file" in str(e.stderr):
                 raise DoesNotExistException("No such file or directory.")
             else:
                 if len(e.stderr) == 0:
@@ -985,16 +1132,17 @@ class DIRACBackend(GridBackend):
                     raise BackendException(e.stderr)
         return True
 
+
 def get_backend(config):
     """Return the backend according to the provided configuration."""
 
-    if config.backend == 'lcg':
+    if config.backend == "lcg":
         from hkdm.legacy_backends import LCGBackend
         return LCGBackend(basedir = config.basedir)
-    if config.backend == 'gfal':
+    if config.backend == "gfal":
         from hkdm.legacy_backends import GFALBackend
         return GFALBackend(basedir = config.basedir)
-    if config.backend == 'dirac':
+    if config.backend == "dirac":
         return DIRACBackend(basedir = config.basedir)
     else:
-        raise config.ConfigError('backend', "Unknown backend!")
+        raise config.ConfigError("backend", "Unknown backend!")

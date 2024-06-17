@@ -1,4 +1,5 @@
 from setuptools import setup
+import setuptools_scm  # noqa: F401
 
 # Todo: Parse this from a proper readme file in the future
 description='HyperK Data Manager'
@@ -9,53 +10,38 @@ experiment. A fork of the T2K Data Manager t2kdm.
 
 """
 
-def get_version():
-    """Get the version number by parsing the package's __init__.py."""
-    with open("hkdm/__init__.py", 'rt') as f:
-        for line in f:
-            if line.startswith("__version__ = "):
-                return eval(line[14:])
-        else:
-            raise RuntimeError("Could not determine package version!")
-
-setup(name='hkdm',
-    version=get_version(),
+setup(
+    name="hkdm",
     description=description,
     long_description=long_description,
-    url='https://github.com/t2k-software/t2kdm',
-    author='Lukas Koch',
-    author_email='lukas.koch@mailbox.org',
-    license='MIT',
-    packages=['hkdm'],
+    url="https://github.com/t2k-software/t2kdm",
+    author="Lukas Koch",
+    author_email="lukas.koch@mailbox.org",
+    license="MIT",
+    packages=["hkdm"],
     install_requires=[
-        'sh>=1.12.14',
-        'six>=1.10.0',
-        'appdirs>=1.4.3',
-        'multiprocess>=0.70.8',
+        "sh>=1.12.14",
+        "six>=1.10.0",
+        "appdirs>=1.4.3",
+        "multiprocess>=0.70.8",
     ],
-    extras_require = {
-    },
-    python_requires='>=2.6',
+    extras_require={},
+    python_requires=">=3.6",
     classifiers=[
         # How mature is this project? Common values are
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 5 - Production/Stable',
-
+        "Development Status :: 5 - Production/Stable",
         # Indicate who your project is intended for
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering',
-
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering",
         # Pick your license as you wish (should match "license" above)
-         'License :: OSI Approved :: MIT License',
-
+        "License :: OSI Approved :: MIT License",
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
+        "Programming Language :: Python :: 3.9",
     ],
     entry_points = {
         'console_scripts': [
@@ -78,4 +64,5 @@ setup(name='hkdm',
             'hkdm-maid=hkdm.maid:run_maid',
         ],
     },
-    zip_safe=True)
+    zip_safe=True,
+)

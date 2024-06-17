@@ -3,16 +3,15 @@
 Helpful tools to manage the HyperK data on the grid.
 """
 
-__version__ = '1.11.4-dev'
-
-import configuration
-from configuration import _branding
-import backends
-import storage
-import utils
+from .version import version as __version__
+from . import configuration
+from .configuration import _branding
+from . import backends
+from . import storage
+from . import utils
 import sys
 
-if sys.argv[0].endswith('%s-config'%(_branding,)):
+if sys.argv[0].endswith("%s-config" % (_branding,)):
     # Someone is calling <brandname>-config.
     # Do not try to load any configuration, as that is what they might be trying to fix!
     pass
@@ -30,6 +29,8 @@ else:
     is_dir = backend.is_dir
     is_dir_se = backend.is_dir_se
     replicas = backend.replicas
+    get_file_source = backend.get_file_source
+    iter_file_sources = backend.iter_file_sources
     is_file = backend.is_file
     is_file_se = backend.is_file_se
     exists = backend.exists

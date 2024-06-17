@@ -1,7 +1,8 @@
 """A cache for grid tool output to make CLI experience more snappy."""
 
 from time import time
-from cPickle import dumps
+from pickle import dumps
+
 
 class CacheEntry(object):
     """An entry in the cache."""
@@ -14,6 +15,7 @@ class CacheEntry(object):
 
     def is_valid(self):
         return (self.creation_time + self.cache_time) > time()
+
 
 class Cache(object):
     """A simple cache for function calls."""
@@ -40,7 +42,7 @@ class Cache(object):
         args = list(args)
         if len(args) > 0:
             args[0] = repr(args[0])
-        return hash(dumps( (function.func_name, args, kwargs) ))
+        return hash(dumps((function.__name__, args, kwargs)))
 
     def get_entry(self, function, *args, **kwargs):
         """Get a valid entry from the cache or `None`."""
@@ -63,7 +65,7 @@ class Cache(object):
         """Decorator to turn a regular function into a cached one."""
 
         def cached_function(*args, **kwargs):
-            cached = kwargs.pop('cached', False)
+            cached = kwargs.pop("cached", False)
             if cached:
                 entry = self.get_entry(function, *args, **kwargs)
                 if entry is not None:

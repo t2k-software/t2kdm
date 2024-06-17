@@ -10,8 +10,10 @@ import posixpath
 import hkdm as dm
 from hkdm.commands import all_commands
 
+
 def ls(*args, **kwargs):
-    return [x.name for x in dm.iter_ls(*args, cached=True, **kwargs)]
+    return [x.name for x in dm.ls(*args, cached=True, **kwargs)]
+
 
 class HyperKDmCli(cmd.Cmd):
     """HyperK Data Manager Command Line Interface (CLI)
@@ -31,13 +33,13 @@ A fork of the T2K Data Manager.
 
 Type 'help' or '?' to list commands.
 """
-    prompt = '(%s) '%(dm._branding)
+    prompt = "(%s) " % (dm._branding)
 
     def __init__(self, *args, **kwargs):
         cmd.Cmd.__init__(self, *args, **kwargs)
 
         # Current directories for relative paths
-        self.remotedir = posixpath.abspath('/')
+        self.remotedir = posixpath.abspath("/")
         self.localdir = os.path.abspath(os.getcwd())
 
     def do_pwd(self, arg):
@@ -84,7 +86,7 @@ Type 'help' or '?' to list commands.
             if dm.is_dir(pwd, cached=True):
                 self.remotedir = pwd
             else:
-                print_("ERROR, not a directory: %s"%(pwd,))
+                print_("ERROR, not a directory: %s" % (pwd,))
 
     def do_lcd(self, arg):
         """usage: cd localpath
@@ -95,11 +97,11 @@ Type 'help' or '?' to list commands.
         if os.path.isdir(pwd):
             try:
                 os.chdir(pwd)
-            except OSError as e: # Catch permission errors
+            except OSError as e:  # Catch permission errors
                 print_(e)
             self.localdir = os.path.abspath(os.getcwd())
         else:
-            print_("ERROR, no such local directory: %s"%(pwd,))
+            print_("ERROR, no such local directory: %s" % (pwd,))
 
     def do_lls(self, arg):
         """usage: lls [-l] localpath
@@ -108,14 +110,14 @@ Type 'help' or '?' to list commands.
         """
         try:
             argv = shlex.split(arg)
-        except ValueError as e: # Catch errors from bad bash syntax
+        except ValueError as e:  # Catch errors from bad bash syntax
             print_(e)
             return False
 
         try:
-            print_(sh.ls('-1', *argv, _bg_exc=False, _tty_out=False), end='')
+            print_(sh.ls("-1", *argv, _bg_exc=False, _tty_out=False), end="")
         except sh.ErrorReturnCode as e:
-            print_(e.stderr, end='')
+            print_(e.stderr, end="")
 
     def do_exit(self, arg):
         """Exit the CLI."""
@@ -137,13 +139,13 @@ Type 'help' or '?' to list commands.
         # Let's try our own.
         try:
             args = shlex.split(line)
-        except ValueError: # Catch badly formatted strings
+        except ValueError:  # Catch badly formatted strings
             args = line.split()
 
         if len(args) == 1:
             # Just the main command
             # Text should be empty
-            search_text = ''
+            search_text = ""
         else:
             search_text = args[-1]
 
@@ -151,7 +153,7 @@ Type 'help' or '?' to list commands.
 
         # Local commands start with 'l'.
         # Special case 'ls'
-        if line[0] == 'l' and line[1] != 's':
+        if line[0] == "l" and line[1] != "s":
             # Local path
             # Look further than just current dir
             searchdir, searchfile = os.path.split(search_text)
@@ -159,7 +161,7 @@ Type 'help' or '?' to list commands.
             if not os.path.isabs(abs_searchdir):
                 abs_searchdir = os.path.join(self.localdir, abs_searchdir)
             # Get contents of dir
-            for l in sh.ls(abs_searchdir, '-1', _iter=True, _tty_out=False):
+            for l in sh.ls(abs_searchdir, "-1", _iter=True, _tty_out=False):
                 l = l.strip()
                 if l.startswith(searchfile):
                     cand = os.path.join(searchdir, l)
@@ -184,18 +186,19 @@ Type 'help' or '?' to list commands.
 
         return candidates
 
+
 # Load all commands into the CLI
 # Each `do_X` method in the class is interpreted as a possible command for the CLI.
 # Each `help_X` method in the class is called when `help X` is executed.
 for command in all_commands:
-    do_name = 'do_'+command.name
+    do_name = "do_" + command.name
     # Since this is a method, the first argument will be the CLI instance
     # Also need to pass the command as default value of argument,
     # so it does not change when the variable `command` changes.
     do_cmd = lambda cli, arg, com=command: com.run_from_cli(arg, localdir=cli.localdir, remotedir=cli.remotedir)
     setattr(HyperKDmCli, do_name, do_cmd) # Set the `do_X` attribute of the class
 
-    help_name = 'help_'+command.name
+    help_name = "help_" + command.name
     # Since this is a method, the first argument will be the CLI instance
     # Also need to pass the command as default value of argument,
     # so it does not change when the variable `command` changes.
@@ -211,7 +214,7 @@ def run_cli():
     try:
         HyperKDmCli().cmdloop()
     except KeyboardInterrupt: # Exit gracefully on CTRL-C
-        print_('')
+        print_("")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_cli()

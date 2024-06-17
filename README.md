@@ -8,24 +8,11 @@ You will need a working setup of the DIRAC UI to access the grid data.
 Follow the instructions here:
 https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
 
-DIRAC comes with its own Python interpreter. To make it work with other Python
-software, we need to modify DIRAC's `bashrc` file. Append the following lines
-to it:
+You will also need a valid Grid certificate. Instructions on how to obtain one are available at: https://t2k.org/nd280/datacomp/gridandirac/gridcert
 
-    # Turn DIRAC into something resembling a virtualenv
-    unset REQUESTS_CA_BUNDLE SSL_CERT_DIR # These upset pip
-    export PYTHONNOUSERSITE=1
-
-    # Fix the broken gfal bundle with SL6
-    export PYTHONPATH=${PYTHONPATH}:${DIRAC}/Linux_x86_64_glibc-2.12/lib/python2.6/site-packages
-
-    # Re-enable Python "assert" statements
-    # Only needed for the `hkdm-tests` command
-    unset PYTHONOPTIMIZE
-
-Now when you source DIRAC's bashrc, you will havea somewhat isolated Python
-environment. Within this environment you can install hkdm releases directly
-with pip:
+DIRAC comes with its own Python interpreter. When you source DIRAC's bashrc,
+you will havea somewhat isolated Python environment. Within this environment
+you can install t2kdm releases directly with pip:
 
     $ pip install hkdm
 
@@ -108,6 +95,22 @@ Check which files are replicated to a given storage element:
 
     $ hkdm-check /test/hkdm -s UKI-SOUTHGRID-OX-HEP-disk -r
 
-Remove replicas of files from a specififc storage element:
+Remove replicas of files from a specific storage element:
 
-    $ hkdm-remove /test/hkdm/test1.txt UKI-SOUTHGRID-OX-HEP-disk
+    $ hkdm-remove /test/hkdm/test1.txt UKI-LT2-IC-HEP-disk
+
+Contributing
+------------
+
+Please use `pre-commit <https://pre-commit.com/>`_ to check your code before
+checking in anything. To install pre-commit and the repository hooks just run
+these commands inside the repository:
+
+    $ pip3 install pre-commit
+    $ pre-commit install
+
+That's it. Now pre-commit should check your code for compliance whenever you
+try to check it in.
+
+Among other things, it will check that the code adheres to the `Black
+<https://black.readthedocs.io/en/stable/index.html>`_ code style.
