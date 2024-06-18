@@ -212,6 +212,13 @@ SEs = [
         location="/europe/fr/in2p3",
         directpath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape/hyperk.org",
         basepath="root://ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/tape/hyperk.org"),
+    StorageElement(
+        "INFN-CNAF-ARCHIVE-disk",
+        broken=False,
+        host="xfer-archive.cr.cnaf.infn.it",
+        type="disk",
+        location="/europe/italy/infn",
+        basepath="davs://xfer-archive.cr.cnaf.infn.it:8443/hyperk"),
     ]
 
 SE_by_name = {}
