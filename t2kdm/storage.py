@@ -192,6 +192,13 @@ SEs = [
         location="/europe/uk/lancs",
         basepath="srm://fal-pygrid-30.lancs.ac.uk:8446/srm/managerv2?SFN=/dpm/lancs.ac.uk/home/hyperk.org"),
     StorageElement(
+        "UKI-NORTHGRID-LANCS-HEP-XGATE-disk",
+        broken=False,
+        host="xgate.hec.lancs.ac.uk",
+        type="disk",
+        location="/europe/uk/lancs",
+        basepath="root://xgate.hec.lancs.ac.uk:1094/cephfs/grid/hyperk.org"),
+    StorageElement(
         "IN2P3-CC-XRD-disk",
         host="ccxrdrli04.in2p3.fr:1097/xrootd/in2p3.fr/disk",
         type="disk",
