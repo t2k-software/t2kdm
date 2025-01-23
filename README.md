@@ -6,7 +6,7 @@ Install
 
 You will need a working setup of the DIRAC UI to access the grid data.
 Follow the instructions here:
-https://gridpp.ac.uk/wiki/Quick_Guide_to_Dirac#Dirac_client_installation
+https://github.com/ic-hep/gridpp-dirac-users/wiki/GridPP-DIRAC:-A-quick-introduction
 
 You will also need a valid Grid certificate. Instructions on how to obtain one are available at: https://t2k.org/nd280/datacomp/gridandirac/gridcert
 
