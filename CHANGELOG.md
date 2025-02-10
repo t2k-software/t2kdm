@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 Nothing
 
+## [1.17.7] - 2025-02-10
+### Fixed
+- Basepath and host name for JP-KEK-CRC-02-disk have been updated to reflect recent changes in this Storage Element.
+
 ## [1.17.6] - 2024-03-15
 ### Fixed
 - Basepath string for IN2P3-CC-XRD-tape and IN2P3-CC-XRD-disk is corrected (// is replaced with / for an exact string match with the host name string).
