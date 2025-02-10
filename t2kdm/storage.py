@@ -283,10 +283,10 @@ SEs = [
     ),
     StorageElement(
         "JP-KEK-CRC-02-disk",
-        host="kek2-se01.cc.kek.jp",
+        host="t2k-webdav.cc.kek.jp",
         type="disk",
         location="/asia/jp/kek",
-        basepath="srm://kek2-se01.cc.kek.jp:8444/srm/managerv2?SFN=/t2k.org",
+        basepath="davs://t2k-webdav.cc.kek.jp:8443/t2k.org",
     ),
     StorageElement(
         "JP-KEK-CRC-02-disk-old",
