@@ -511,8 +511,7 @@ class Maid(object):
 
         context = {"timestamp": self.tasklog.timestamp(), "taskrows": taskrows}
         with open(indexfile, "wt") as f:
-            f.write(
-                """<!DOCTYPE html>
+            f.write("""<!DOCTYPE html>
                 <html lang="en">
                   <head>
                     <meta charset="utf-8">
@@ -526,10 +525,7 @@ class Maid(object):
                     </table>
                   </body>
                 </html>
-            """.format(
-                    **context
-                )
-            )
+            """.format(**context))
 
     def do_task(self, task):
         """Do a specific task and log it in the tasklog.
